@@ -1,0 +1,10 @@
+{
+  "default_ref": "main",
+  "targets": [
+    { "repo": "StegVerse-Labs/Site", "workflow": "ingestion-orchestrator.yml", "ref": "main" },
+    { "repo": "StegVerse-Labs/SCW", "workflow": "ingestion-orchestrator.yml", "ref": "main" },
+    { "repo": "StegVerse-Labs/TV", "workflow": "ingestion-orchestrator.yml", "ref": "main" },
+    { "repo": "StegVerse-Labs/CosDen", "workflow": "ingestion-orchestrator.yml", "ref": "main" },
+    { "repo": "StegVerse-Labs/Continuity", "workflow": "ingestion-orchestrator.yml", "ref": "main" }
+  ]
+}
