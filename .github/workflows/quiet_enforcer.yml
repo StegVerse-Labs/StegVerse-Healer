@@ -1,0 +1,72 @@
+name: Quiet Enforcer (Detect Zombie Schedules)
+
+on:
+  schedule:
+    - cron: "23 3 * * *"   # daily 03:23
+  workflow_dispatch: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Audit downstream repos for 'schedule:' usage
+        env:
+          HEALER_GH_TOKEN: ${{ secrets.HEALER_GH_TOKEN }}
+        run: |
+          python - << 'PY'
+          import json, os, urllib.request
+
+          API="https://api.github.com"
+          token=os.environ["HEALER_GH_TOKEN"].strip()
+
+          def gh(url):
+            req=urllib.request.Request(url, headers={
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "User-Agent": "StegVerse-Healer"
+            })
+            with urllib.request.urlopen(req) as r:
+              return json.loads(r.read().decode("utf-8"))
+
+          def gh_raw(url):
+            req=urllib.request.Request(url, headers={
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github.raw",
+              "User-Agent": "StegVerse-Healer"
+            })
+            with urllib.request.urlopen(req) as r:
+              return r.read().decode("utf-8", errors="replace")
+
+          cfg=json.load(open("data/orchestrator_targets.json","r",encoding="utf-8"))
+          repos=sorted({t["repo"] for t in cfg.get("targets",[])})
+          found=[]
+
+          for repo in repos:
+            try:
+              items=gh(f"{API}/repos/{repo}/contents/.github/workflows")
+            except Exception as e:
+              print(f"[WARN] Cannot read workflows for {repo}: {e}")
+              continue
+
+            for it in items:
+              name=it.get("name","")
+              if not (name.endswith(".yml") or name.endswith(".yaml")):
+                continue
+              try:
+                raw=gh_raw(f"{API}/repos/{repo}/contents/.github/workflows/{name}")
+              except Exception as e:
+                print(f"[WARN] Cannot read {repo}:{name}: {e}")
+                continue
+              if "\n" in raw and "schedule:" in raw:
+                found.append((repo,name))
+
+          if not found:
+            print("OK: No zombie schedules detected.")
+          else:
+            print("FOUND zombie schedules (should be removed; Healer must be the only scheduler):")
+            for repo,name in found:
+              print(f" - {repo}/.github/workflows/{name}")
+            raise SystemExit(1)
+          PY
