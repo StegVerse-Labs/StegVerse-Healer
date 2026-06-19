@@ -1,0 +1,18 @@
+version: 1
+owner: StegVerse-Labs
+manager: StegVerse-Healer
+activation_goal: task_handoff_and_completion_managed_by_ecosystem
+repos:
+  - name: TV
+    full_name: StegVerse-Labs/TV
+    status: connected
+    caller_workflow: .github/workflows/tv_self_heal.yml
+    handoff: docs/TV_MIRROR_HANDOFF.md
+    mode: branch-repair-until-healer-pat
+    required_paths:
+      - .github/workflows/**/*.yml
+      - .github/workflows/**/*.yaml
+      - tv_manifest.yml
+      - roles_templates/**
+      - schema/**
+      - scripts/**
