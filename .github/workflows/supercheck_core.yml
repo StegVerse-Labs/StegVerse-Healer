@@ -1,104 +1,91 @@
-name: Supercheck Core (Reusable)
+name: SuperCheck Core
 
 on:
   workflow_call:
     inputs:
-      auto_apply:
-        description: "Apply safe fixes autonomously"
+      paths:
+        description: Space-separated paths/globs to scan and fix.
         required: false
         type: string
-        default: "false"
-      auto_commit:
-        description: "Commit fixes directly to main (else PR)"
+        default: ".github/workflows/**/*.yml .github/workflows/**/*.yaml tv_manifest.yml roles_templates/**/*.yml schema/**/*.yml"
+      direct_commit:
+        description: Commit fixes directly to the caller branch.
         required: false
-        type: string
-        default: "false"
-      api_base:
-        description: "Optional API base for runtime diag"
+        type: boolean
+        default: false
+    secrets:
+      HEALER_PAT:
         required: false
-        type: string
-        default: ""
-      queue_key:
-        required: false
-        type: string
-        default: "queue:runs"
-      timeout_sec:
-        required: false
-        type: string
-        default: "75"
-      poll_sec:
-        required: false
-        type: string
-        default: "3"
 
 permissions:
   contents: write
   pull-requests: write
-  checks: write
-  security-events: write
 
 jobs:
-  supercheck-core:
+  heal:
     runs-on: ubuntu-latest
+    env:
+      HEALER_PAT: ${{ secrets.HEALER_PAT }}
     steps:
-      - name: Checkout target repo
+      - name: Checkout caller repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      # --- YAML correction (composite action in this repo) ---
-      - name: YAML Corrector
-        uses: StegVerse/StegVerse-Healer/.github/actions/yaml-corrector@main
+      - name: Run YAML corrector
+        uses: StegVerse-Labs/StegVerse-Healer/actions/yaml-corrector@main
+        with:
+          paths: ${{ inputs.paths }}
 
-      # --- Optional: run local scripts if present ---
-      - name: Repo Inventory & Drift (if scripts exist)
+      - name: Detect changes
+        id: changes
+        shell: bash
         run: |
-          set -e
-          mkdir -p self_healing_out
-          [ -f scripts/repo_audit.py ] && python3 scripts/repo_audit.py || echo "repo_audit.py missing"
-          [ -f scripts/topic_drift_audit.py ] && python3 scripts/topic_drift_audit.py || echo "topic_drift_audit.py missing"
-          [ -f scripts/collect_self_healing.py ] && python3 scripts/collect_self_healing.py || echo "collect_self_healing.py missing"
+          count="$(git status --porcelain | wc -l | tr -d ' ')"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          git status --porcelain
 
-      - name: Auto-Triage (plan + optional apply)
-        env:
-          APPLY: ${{ inputs.auto_apply }}
+      - name: Commit directly when requested
+        if: steps.changes.outputs.count != '0' && inputs.direct_commit == true
+        shell: bash
         run: |
-          if [ -f scripts/auto_triage.py ]; then
-            if [ "${APPLY}" = "true" ]; then APPLY=1 python3 scripts/auto_triage.py; else python3 scripts/auto_triage.py; fi
-          else
-            echo "auto_triage.py missing"
-          fi
+          git config user.name "steg-healer-bot"
+          git config user.email "steg-healer-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "Healer: auto-correct repo consistency issues"
+          git push
 
-      - name: Commit or PR changes
-        if: ${{ inputs.auto_apply == 'true' }}
-        env:
-          DO_COMMIT: ${{ inputs.auto_commit }}
-          GH_TOKEN: ${{ github.token }}
+      - name: Create PR when HEALER_PAT is available
+        if: steps.changes.outputs.count != '0' && inputs.direct_commit == false && env.HEALER_PAT != ''
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.HEALER_PAT }}
+          commit-message: "Healer: auto-correct repo consistency issues"
+          title: "Healer: auto-correct repo consistency issues"
+          body: |
+            Automated consistency corrections from StegVerse-Healer.
+
+            Review data/summary/heal_report.json for detected problems and applied fixes.
+          branch: auto-heal/${{ github.run_id }}
+          delete-branch: true
+
+      - name: Push repair branch when no PAT is available
+        if: steps.changes.outputs.count != '0' && inputs.direct_commit == false && env.HEALER_PAT == ''
+        shell: bash
         run: |
-          set -e
-          git config user.name "healer-bot"
-          git config user.email "bot@stegverse.local"
-          if [ "$DO_COMMIT" = "true" ]; then
-            git add -A
-            git commit -m "healer(auto): yaml normalize + triage" || echo "No changes"
-            git push origin HEAD:main || true
-          else
-            BR="healer/supercheck-core-${GITHUB_RUN_ID}"
-            git checkout -b "$BR"
-            git add -A
-            git commit -m "healer(auto): yaml normalize + triage" || echo "No changes"
-            git push origin "$BR" || true
-            TITLE="Healer: supercheck-core (auto)"
-            BODY="Reusable workflow applied YAML normalization + triage. Review artifacts."
-            curl -sS -X POST \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              -d "$(jq -nc --arg t "$TITLE" --arg b "$BODY" --arg head "$BR" '{"title":$t,"body":$b,"head":$head,"base":"main"}')" \
-              "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls" >/dev/null || true
+          branch="auto-heal/${GITHUB_RUN_ID}"
+          git config user.name "steg-healer-bot"
+          git config user.email "steg-healer-bot@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add -A
+          git commit -m "Healer: auto-correct repo consistency issues"
+          git push -u origin "$branch"
+          echo "::notice::Repair branch pushed: $branch. Add HEALER_PAT later to open PRs automatically."
 
-      - name: Upload bundle
+      - name: Upload heal report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: healer_supercheck_core_bundle
-          path: |
-            self_healing_out/**
+          name: heal_report
+          path: data/summary/heal_report.json
           if-no-files-found: warn
