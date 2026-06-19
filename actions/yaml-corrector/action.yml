@@ -1,31 +1,35 @@
-name: "YAML Corrector"
-description: "Normalize/fix GitHub Workflows (actionlint + yamllint + ruamel.yaml)"
+name: YAML Corrector
+description: Normalize YAML files and produce a healer report.
+
+inputs:
+  paths:
+    description: Space-separated paths/globs to inspect.
+    required: false
+    default: ".github/workflows/**/*.yml .github/workflows/**/*.yaml tv_manifest.yml roles_templates/**/*.yml schema/**/*.yml"
+
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Install tools
       shell: bash
       run: |
         set -e
         python3 -m pip install --upgrade pip
-        pip install ruamel.yaml yamllint
-        curl -sSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash
+        pip install yamllint
 
-    - name: Apply fixes
+    - name: Normalize YAML files
       shell: bash
       run: |
         set -e
-        mkdir -p self_healing_out
-        WF_DIR=".github/workflows"
+        mkdir -p data/summary self_healing_out
+        touch data/summary/chainlog.jsonl
+        echo '{"problems":[],"fixes":[],"checked":[]}' > data/summary/heal_report.json
         echo "# YAML Corrector Report" > self_healing_out/YAML_CORRECTOR_REPORT.md
-        if [ -d "$WF_DIR" ]; then
-          ./actionlint -color -shellcheck= || true
-          yamllint -f parsable "$WF_DIR" || true
-          # Light-touch normalize: ensure newline at EOF in each workflow
-          find "$WF_DIR" -type f -name "*.y*ml" -print0 | while IFS= read -r -d '' f; do
-            perl -0777 -pe 'END{print "\n" unless /\n\z/}' "$f" > "$f.tmp" && mv "$f.tmp" "$f"
-          done
-          echo "- Ran actionlint + yamllint + newline normalize" >> self_healing_out/YAML_CORRECTOR_REPORT.md
-        else
-          echo "- No .github/workflows directory found" >> self_healing_out/YAML_CORRECTOR_REPORT.md
-        fi
+        echo "- Repository: ${GITHUB_REPOSITORY}" >> self_healing_out/YAML_CORRECTOR_REPORT.md
+        echo "- Run: ${GITHUB_RUN_ID}" >> self_healing_out/YAML_CORRECTOR_REPORT.md
+        find . -path './.git' -prune -o \( -name '*.yml' -o -name '*.yaml' \) -type f -print0 | while IFS= read -r -d '' f; do
+          perl -0777 -pe 's/\r\n/\n/g; s/\t/  /g; END{print "\n" unless /\n\z/}' "$f" > "$f.tmp"
+          mv "$f.tmp" "$f"
+          yamllint -f parsable "$f" >> self_healing_out/YAML_CORRECTOR_REPORT.md 2>&1 || true
+        done
+        echo "- Normalized line endings, tabs, and final newlines for YAML files." >> self_healing_out/YAML_CORRECTOR_REPORT.md
