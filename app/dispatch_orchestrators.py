@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import os
 import sys
@@ -39,6 +40,28 @@ def load_config(path: str) -> dict[str, Any]:
     return config
 
 
+def due_now(target: dict[str, Any], now: dt.datetime, mode: str) -> bool:
+    """Manual dispatch bypasses cadence; scheduled dispatch honors UTC hours/days."""
+    if mode != "schedule":
+        return True
+
+    hours = target.get("run_hours_utc")
+    if hours is not None:
+        if not isinstance(hours, list) or not all(isinstance(value, int) and 0 <= value <= 23 for value in hours):
+            raise ValueError(f"{target.get('repo')}: run_hours_utc must be a list of integers from 0 to 23")
+        if now.hour not in hours:
+            return False
+
+    weekdays = target.get("run_weekdays_utc")
+    if weekdays is not None:
+        if not isinstance(weekdays, list) or not all(isinstance(value, int) and 0 <= value <= 6 for value in weekdays):
+            raise ValueError(f"{target.get('repo')}: run_weekdays_utc must be a list of integers from 0 to 6")
+        if now.weekday() not in weekdays:
+            return False
+
+    return True
+
+
 def main() -> int:
     token = os.environ.get("HEALER_GH_TOKEN", "").strip()
     if not token:
@@ -46,25 +69,26 @@ def main() -> int:
         return 2
 
     scope = (os.environ.get("RUN_SCOPE") or "all").strip().lower()
+    mode = (os.environ.get("DISPATCH_MODE") or "manual").strip().lower()
     config_path = os.environ.get("TARGETS_FILE", "data/orchestrator_targets.json")
     config = load_config(config_path)
     default_ref = str(config.get("default_ref", "main"))
+    now = dt.datetime.now(dt.timezone.utc)
 
     def matches(target: dict[str, Any]) -> bool:
         if not target.get("enabled", True):
             return False
-        if scope == "all":
-            return True
         short_name = str(target.get("repo", "")).split("/")[-1].lower()
         aliases = {str(value).lower() for value in target.get("aliases", [])}
-        return scope == short_name or scope in aliases
+        scope_match = scope == "all" or scope == short_name or scope in aliases
+        return scope_match and due_now(target, now, mode)
 
     selected = [target for target in config["targets"] if matches(target)]
     if not selected:
-        print(f"No enabled targets match scope '{scope}'.")
+        print(f"No enabled targets are due for scope='{scope}', mode='{mode}', utc={now.isoformat()}.")
         return 0
 
-    print(f"Dispatching {len(selected)} target(s) with scope='{scope}'")
+    print(f"Dispatching {len(selected)} target(s) with scope='{scope}', mode='{mode}', utc={now.isoformat()}")
     failures: list[str] = []
 
     for target in selected:
@@ -84,7 +108,7 @@ def main() -> int:
         print(f"- Trigger: {repo} :: {workflow} (ref={ref}, inputs={payload.get('inputs', {})})")
         try:
             post(url, token, payload)
-        except Exception as exc:  # report all target failures in one run
+        except Exception as exc:
             failures.append(f"{repo}: {exc}")
             print(f"  FAILED: {exc}", file=sys.stderr)
         else:
