@@ -2,11 +2,11 @@ name: Healer Scheduler (Single Clock)
 
 on:
   schedule:
-    - cron: "7 * * * *"   # hourly at :07 (stagger to avoid top-of-hour load)
+    - cron: "7 * * * *"
   workflow_dispatch:
     inputs:
       run_scope:
-        description: "all | site | scw | tv | cosden | continuity"
+        description: "all or a configured repository short name"
         required: false
         default: "all"
 
@@ -18,49 +18,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  trigger:
+  dispatch:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Trigger downstream orchestrators
-        env:
-          GH_TOKEN: ${{ secrets.HEALER_GH_TOKEN }}
-          SCOPE: ${{ github.event.inputs.run_scope || 'all' }}
+      - uses: actions/checkout@v4
+
+      - name: Validate scheduler configuration
         run: |
-          set -euo pipefail
+          python -m json.tool data/orchestrator_targets.json >/dev/null
+          python -m py_compile app/dispatch_orchestrators.py
 
-          trigger () {
-            local repo="$1"
-            local workflow_file="$2"
-            local ref="${3:-main}"
-
-            echo "Triggering ${repo} -> ${workflow_file} (ref=${ref})"
-
-            curl -sS -X POST \
-              -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${repo}/actions/workflows/${workflow_file}/dispatches" \
-              -d "{\"ref\":\"${ref}\",\"inputs\":{\"master_override\":\"false\"}}"
-
-            echo "OK: ${repo}"
-          }
-
-          # ---- Edit these to match your repo names + branches ----
-          if [ "$SCOPE" = "all" ] || [ "$SCOPE" = "site" ]; then
-            trigger "StegVerse-Labs/Site" "ingestion-orchestrator.yml" "main"
-          fi
-
-          if [ "$SCOPE" = "all" ] || [ "$SCOPE" = "scw" ]; then
-            trigger "StegVerse-Labs/SCW" "ingestion-orchestrator.yml" "main"
-          fi
-
-          if [ "$SCOPE" = "all" ] || [ "$SCOPE" = "tv" ]; then
-            trigger "StegVerse-Labs/TV" "ingestion-orchestrator.yml" "main"
-          fi
-
-          if [ "$SCOPE" = "all" ] || [ "$SCOPE" = "cosden" ]; then
-            trigger "StegVerse-Labs/CosDen" "ingestion-orchestrator.yml" "main"
-          fi
-
-          if [ "$SCOPE" = "all" ] || [ "$SCOPE" = "continuity" ]; then
-            trigger "StegVerse-Labs/Continuity" "ingestion-orchestrator.yml" "main"
-          fi
+      - name: Dispatch downstream orchestrators
+        env:
+          HEALER_GH_TOKEN: ${{ secrets.HEALER_GH_TOKEN }}
+          RUN_SCOPE: ${{ github.event.inputs.run_scope || 'all' }}
+          TARGETS_FILE: data/orchestrator_targets.json
+        run: python app/dispatch_orchestrators.py
