@@ -1,0 +1,41 @@
+{
+  "schema": "stegverse.healer.single-scheduler-migration.v1",
+  "manager": "StegVerse-Labs/StegVerse-Healer",
+  "target": "StegVerse-Labs/SCW",
+  "state": "CONFIGURED_PENDING_RUNTIME_VALIDATION",
+  "authority": {
+    "sole_scheduler": "StegVerse-Labs/StegVerse-Healer",
+    "downstream_schedules_permitted": false,
+    "mutation_authorized": false
+  },
+  "retained_workflows": [
+    {
+      "path": ".github/workflows/scw_orchestrator.yml",
+      "trigger": "workflow_dispatch",
+      "healer_inputs": {
+        "cmd": "org-scan",
+        "orgs": "StegVerse-Labs",
+        "dry_run": "true"
+      },
+      "scw_commit": "caeaff52297070bdfcd55ec69b7abba7d2048e62"
+    },
+    {
+      "path": ".github/workflows/uptime.yml",
+      "trigger": "workflow_dispatch",
+      "healer_inputs": {},
+      "scw_commit": "e39e70f0caa2439a805444b72555a2654df4d04e"
+    }
+  ],
+  "healer_registry_commits": [
+    "9c554a1d70c6b80e6133faf302695bf38d0b3085",
+    "24f693933f176ade0218656265205916e3c12b00"
+  ],
+  "pending_validation": [
+    "HEALER_GH_TOKEN permits Actions dispatch and Contents read",
+    "controlled Healer dispatch of scw_orchestrator.yml succeeds",
+    "controlled Healer dispatch of uptime.yml succeeds",
+    "SCW contains zero unauthorized schedule triggers",
+    "quiet_enforcer produces a zero-violation result"
+  ],
+  "next_target_after_scw_validation": "StegVerse-Labs/TV"
+}
