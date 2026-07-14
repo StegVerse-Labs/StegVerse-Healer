@@ -1,0 +1,115 @@
+name: Ingestion Orchestrator (Universal)
+
+on:
+  workflow_dispatch:
+    inputs:
+      master_override:
+        description: "Run even when MASTER_INGESTION_ENABLED is false"
+        required: false
+        default: "false"
+      task:
+        description: "Task name, or all"
+        required: false
+        default: "all"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ingestion-orchestrator-${{ github.repository }}
+  cancel-in-progress: true
+
+env:
+  MASTER_INGESTION_ENABLED: ${{ vars.MASTER_INGESTION_ENABLED || 'false' }}
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.resolve.outputs.proceed }}
+      task: ${{ steps.resolve.outputs.task }}
+      reason: ${{ steps.resolve.outputs.reason }}
+    steps:
+      - id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          master="${MASTER_INGESTION_ENABLED,,}"
+          override="${{ github.event.inputs.master_override || 'false' }}"
+          task="${{ github.event.inputs.task || 'all' }}"
+          override="${override,,}"
+          task="${task,,}"
+
+          if [[ "$override" == "true" ]]; then
+            proceed=true
+            reason="manual override"
+          elif [[ "$master" == "true" ]]; then
+            proceed=true
+            reason="repository master switch enabled"
+          else
+            proceed=false
+            reason="repository master switch disabled"
+          fi
+
+          echo "proceed=$proceed" >> "$GITHUB_OUTPUT"
+          echo "task=$task" >> "$GITHUB_OUTPUT"
+          echo "reason=$reason" >> "$GITHUB_OUTPUT"
+
+  run:
+    needs: gate
+    if: ${{ needs.gate.outputs.proceed == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve repository task adapter
+        id: adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          task="${{ needs.gate.outputs.task }}"
+
+          if [[ -x "scripts/ingestion/run.sh" ]]; then
+            echo "command=scripts/ingestion/run.sh $task" >> "$GITHUB_OUTPUT"
+          elif [[ -f "scripts/ingestion/run.py" ]]; then
+            echo "command=python scripts/ingestion/run.py --task $task" >> "$GITHUB_OUTPUT"
+          elif [[ -x "scripts/orchestrate.sh" ]]; then
+            echo "command=scripts/orchestrate.sh $task" >> "$GITHUB_OUTPUT"
+          elif [[ -f "scripts/orchestrate.py" ]]; then
+            echo "command=python scripts/orchestrate.py --task $task" >> "$GITHUB_OUTPUT"
+          else
+            echo "No supported repository adapter was found." >&2
+            echo "Install one of:" >&2
+            echo "  scripts/ingestion/run.sh" >&2
+            echo "  scripts/ingestion/run.py" >&2
+            echo "  scripts/orchestrate.sh" >&2
+            echo "  scripts/orchestrate.py" >&2
+            exit 78
+          fi
+
+      - name: Execute repository task adapter
+        shell: bash
+        run: ${{ steps.adapter.outputs.command }}
+
+      - name: Write execution summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "## Universal ingestion orchestrator"
+            echo "- Repository: ${{ github.repository }}"
+            echo "- Requested task: ${{ needs.gate.outputs.task }}"
+            echo "- Gate reason: ${{ needs.gate.outputs.reason }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  quiet:
+    needs: gate
+    if: ${{ needs.gate.outputs.proceed != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record intentional no-op
+        run: |
+          echo "No work dispatched: ${{ needs.gate.outputs.reason }}"
+          echo "## Intentional no-op" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ needs.gate.outputs.reason }}" >> "$GITHUB_STEP_SUMMARY"
