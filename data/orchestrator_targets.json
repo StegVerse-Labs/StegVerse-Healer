@@ -1,10 +1,64 @@
 {
   "default_ref": "main",
   "targets": [
-    { "repo": "StegVerse-Labs/Site", "workflow": "ingestion-orchestrator.yml", "ref": "main" },
-    { "repo": "StegVerse-Labs/SCW", "workflow": "ingestion-orchestrator.yml", "ref": "main" },
-    { "repo": "StegVerse-Labs/TV", "workflow": "ingestion-orchestrator.yml", "ref": "main" },
-    { "repo": "StegVerse-Labs/CosDen", "workflow": "ingestion-orchestrator.yml", "ref": "main" },
-    { "repo": "StegVerse-Labs/Continuity", "workflow": "ingestion-orchestrator.yml", "ref": "main" }
+    {
+      "repo": "StegVerse-Labs/Site",
+      "workflow": "site-task-runner.yml",
+      "ref": "main",
+      "enabled": true,
+      "aliases": ["site"],
+      "inputs": {
+        "task": "all-local"
+      },
+      "status": "verified-existing-entrypoint"
+    },
+    {
+      "repo": "StegVerse-Labs/SCW",
+      "workflow": "ingestion-orchestrator.yml",
+      "ref": "main",
+      "enabled": false,
+      "aliases": ["scw"],
+      "inputs": {
+        "master_override": "false",
+        "task": "all"
+      },
+      "status": "disabled-until-entrypoint-installed"
+    },
+    {
+      "repo": "StegVerse-Labs/TV",
+      "workflow": "ingestion-orchestrator.yml",
+      "ref": "main",
+      "enabled": false,
+      "aliases": ["tv"],
+      "inputs": {
+        "master_override": "false",
+        "task": "all"
+      },
+      "status": "disabled-until-entrypoint-installed"
+    },
+    {
+      "repo": "StegVerse-Labs/CosDen",
+      "workflow": "ingestion-orchestrator.yml",
+      "ref": "main",
+      "enabled": false,
+      "aliases": ["cosden"],
+      "inputs": {
+        "master_override": "false",
+        "task": "all"
+      },
+      "status": "disabled-until-entrypoint-installed"
+    },
+    {
+      "repo": "StegVerse-Labs/Continuity",
+      "workflow": "ingestion-orchestrator.yml",
+      "ref": "main",
+      "enabled": false,
+      "aliases": ["continuity"],
+      "inputs": {
+        "master_override": "false",
+        "task": "all"
+      },
+      "status": "disabled-until-entrypoint-installed"
+    }
   ]
 }
