@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       run_scope:
-        description: "all or a configured repository short name"
+        description: "all or a configured repository/workflow alias"
         required: false
         default: "all"
 
@@ -33,5 +33,6 @@ jobs:
         env:
           HEALER_GH_TOKEN: ${{ secrets.HEALER_GH_TOKEN }}
           RUN_SCOPE: ${{ github.event.inputs.run_scope || 'all' }}
+          DISPATCH_MODE: ${{ github.event_name }}
           TARGETS_FILE: data/orchestrator_targets.json
         run: python app/dispatch_orchestrators.py
