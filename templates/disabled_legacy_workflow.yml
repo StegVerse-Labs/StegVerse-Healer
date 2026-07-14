@@ -1,0 +1,38 @@
+name: Legacy Workflow [DISABLED]
+
+# This file intentionally preserves the historical workflow path while
+# removing every automatic trigger. Restore prior logic from Git history
+# only after migrating it behind the universal orchestrator contract.
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Optional reason for opening this disabled workflow"
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: disabled-${{ github.repository }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  disabled:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Record intentional disablement
+        shell: bash
+        run: |
+          echo "Legacy workflow is intentionally disabled."
+          echo "Repository: ${{ github.repository }}"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Reason: ${{ github.event.inputs.reason || 'not supplied' }}"
+          {
+            echo "## Legacy workflow disabled"
+            echo "This path has no scheduled, push, pull-request, or repository-dispatch trigger."
+            echo "Move any retained logic into .github/workflows/ingestion-orchestrator.yml."
+          } >> "$GITHUB_STEP_SUMMARY"
