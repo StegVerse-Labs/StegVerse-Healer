@@ -7,10 +7,11 @@
       "ref": "main",
       "enabled": true,
       "aliases": ["site"],
+      "run_hours_utc": [0, 6, 12, 18],
       "inputs": {
         "task": "all-local"
       },
-      "status": "verified-existing-entrypoint-schedule-migration-pending"
+      "status": "verified-existing-entrypoint-central-six-hour-cadence-local-schedule-removal-pending"
     },
     {
       "repo": "StegVerse-Labs/SCW",
@@ -18,12 +19,13 @@
       "ref": "main",
       "enabled": true,
       "aliases": ["scw"],
+      "run_hours_utc": [0, 6, 12, 18],
       "inputs": {
         "cmd": "org-scan",
         "orgs": "StegVerse-Labs",
         "dry_run": "true"
       },
-      "status": "verified-existing-entrypoint-healer-dispatched-observation-mode"
+      "status": "verified-existing-entrypoint-healer-six-hour-observation-mode"
     },
     {
       "repo": "StegVerse-Labs/SCW",
@@ -32,7 +34,7 @@
       "enabled": true,
       "aliases": ["scw-uptime", "uptime"],
       "inputs": {},
-      "status": "verified-existing-entrypoint-healer-managed-hourly-cadence"
+      "status": "verified-existing-entrypoint-healer-hourly-cadence"
     },
     {
       "repo": "StegVerse-Labs/TV",
@@ -40,8 +42,9 @@
       "ref": "main",
       "enabled": true,
       "aliases": ["tv", "tv-self-heal"],
+      "run_hours_utc": [6],
       "inputs": {},
-      "status": "verified-existing-entrypoint-healer-managed-daily-cadence-pending-runtime-validation"
+      "status": "verified-existing-entrypoint-healer-daily-cadence-pending-runtime-validation"
     },
     {
       "repo": "StegVerse-Labs/CosDen",
