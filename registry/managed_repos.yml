@@ -1,12 +1,19 @@
-version: 1
+version: 2
 owner: StegVerse-Labs
 manager: StegVerse-Healer
 activation_goal: task_handoff_and_completion_managed_by_ecosystem
+scheduler_policy:
+  authority_repo: StegVerse-Labs/StegVerse-Healer
+  automatic_schedules_allowed_outside_authority: false
+  downstream_entrypoint: .github/workflows/ingestion-orchestrator.yml
+  required_trigger: workflow_dispatch
+  master_switch: MASTER_INGESTION_ENABLED
 repos:
   - name: TV
     full_name: StegVerse-Labs/TV
-    status: connected
+    status: connected-needs-scheduler-migration
     caller_workflow: .github/workflows/tv_self_heal.yml
+    orchestrator_workflow: .github/workflows/ingestion-orchestrator.yml
     handoff: docs/TV_MIRROR_HANDOFF.md
     mode: branch-repair-until-healer-pat
     required_paths:
@@ -16,3 +23,39 @@ repos:
       - roles_templates/**
       - schema/**
       - scripts/**
+
+  - name: Site
+    full_name: StegVerse-Labs/Site
+    status: audit-pending
+    orchestrator_workflow: .github/workflows/ingestion-orchestrator.yml
+    handoff: docs/SITE_MIRROR_HANDOFF.md
+    legacy_workflow_families:
+      - CFP
+      - Universal Sports
+      - data ingestion
+      - site update
+
+  - name: SCW
+    full_name: StegVerse-Labs/SCW
+    status: audit-pending
+    orchestrator_workflow: .github/workflows/ingestion-orchestrator.yml
+    handoff: docs/SCW_MIRROR_HANDOFF.md
+    legacy_workflow_families:
+      - SCW Orchestrator
+      - uptime
+
+  - name: CosDen
+    full_name: StegVerse-Labs/CosDen
+    status: audit-pending
+    orchestrator_workflow: .github/workflows/ingestion-orchestrator.yml
+    handoff: docs/COSDEN_MIRROR_HANDOFF.md
+    legacy_workflow_families:
+      - StegDB sync
+
+  - name: Continuity
+    full_name: StegVerse-Labs/Continuity
+    status: audit-pending
+    orchestrator_workflow: .github/workflows/ingestion-orchestrator.yml
+    handoff: docs/CONTINUITY_MIRROR_HANDOFF.md
+    legacy_workflow_families:
+      - continuity
