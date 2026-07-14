@@ -26,6 +26,15 @@
       "status": "verified-existing-entrypoint-healer-dispatched-observation-mode"
     },
     {
+      "repo": "StegVerse-Labs/SCW",
+      "workflow": "uptime.yml",
+      "ref": "main",
+      "enabled": true,
+      "aliases": ["scw-uptime", "uptime"],
+      "inputs": {},
+      "status": "verified-existing-entrypoint-healer-managed-hourly-cadence"
+    },
+    {
       "repo": "StegVerse-Labs/TV",
       "workflow": "ingestion-orchestrator.yml",
       "ref": "main",
