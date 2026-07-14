@@ -10,19 +10,20 @@
       "inputs": {
         "task": "all-local"
       },
-      "status": "verified-existing-entrypoint"
+      "status": "verified-existing-entrypoint-schedule-migration-pending"
     },
     {
       "repo": "StegVerse-Labs/SCW",
-      "workflow": "ingestion-orchestrator.yml",
+      "workflow": "scw_orchestrator.yml",
       "ref": "main",
-      "enabled": false,
+      "enabled": true,
       "aliases": ["scw"],
       "inputs": {
-        "master_override": "false",
-        "task": "all"
+        "cmd": "org-scan",
+        "orgs": "StegVerse-Labs",
+        "dry_run": "true"
       },
-      "status": "disabled-until-entrypoint-installed"
+      "status": "verified-existing-entrypoint-healer-dispatched-observation-mode"
     },
     {
       "repo": "StegVerse-Labs/TV",
