@@ -36,15 +36,12 @@
     },
     {
       "repo": "StegVerse-Labs/TV",
-      "workflow": "ingestion-orchestrator.yml",
+      "workflow": "tv_self_heal.yml",
       "ref": "main",
-      "enabled": false,
-      "aliases": ["tv"],
-      "inputs": {
-        "master_override": "false",
-        "task": "all"
-      },
-      "status": "disabled-until-entrypoint-installed"
+      "enabled": true,
+      "aliases": ["tv", "tv-self-heal"],
+      "inputs": {},
+      "status": "verified-existing-entrypoint-healer-managed-daily-cadence-pending-runtime-validation"
     },
     {
       "repo": "StegVerse-Labs/CosDen",
