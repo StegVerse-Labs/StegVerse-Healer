@@ -1,60 +1,84 @@
 # StegVerse-Healer Activation Plan
 
 ## Goal
-Continue building until repository-level repair can be handled by StegVerse-Healer without manual reconstruction by the user.
+Operate StegVerse-Healer as the sole scheduler and reusable repair authority for managed repositories, without requiring the user to identify or silence obsolete workflows manually.
 
 ## Activation target
-A target repository is considered healer-managed when it can:
+A repository is fully Healer-managed when it can:
+1. Preserve an accurate repo-local `*_MIRROR_HANDOFF.md`.
+2. Call `StegVerse-Labs/StegVerse-Healer/.github/workflows/supercheck_core.yml@main` for repair.
+3. Accept Healer dispatch through `.github/workflows/ingestion-orchestrator.yml`.
+4. Keep all non-Healer workflows free of `on.schedule`.
+5. Gate downstream work with `MASTER_INGESTION_ENABLED`.
+6. Execute real repository adapters rather than placeholder steps.
+7. Produce a successful execution receipt or an intentional no-op receipt.
+8. Avoid failing when GitHub blocks PR creation by falling back to a repair branch.
 
-1. Call `StegVerse-Labs/StegVerse-Healer/.github/workflows/supercheck_core.yml@main`.
-2. Normalize YAML files and generate `data/summary/heal_report.json`.
-3. Avoid failing when GitHub blocks PR creation.
-4. Push a repair branch when no `HEALER_PAT` is present.
-5. Open a repair PR when `HEALER_PAT` is present.
-6. Preserve a repo-local `*_MIRROR_HANDOFF.md` file.
+## Central scheduling contract
+Only `StegVerse-Labs/StegVerse-Healer` may host approved schedules for repositories listed in `registry/managed_repos.yml`.
 
-## Current managed repository
-- `StegVerse-Labs/TV`
+The central path is:
+1. `.github/workflows/healer_scheduler.yml`
+2. `data/orchestrator_targets.json`
+3. `app/dispatch_orchestrators.py`
+4. target `.github/workflows/ingestion-orchestrator.yml`
+5. target repository adapter
 
-## Current operating mode
-- Default: branch repair mode when `HEALER_PAT` is absent.
-- Optional: PR repair mode when `HEALER_PAT` is added.
-- Optional: direct commit mode only when `direct_commit: true` is set by a caller repo.
+The audit path is `.github/workflows/quiet_enforcer.yml`.
 
-## Required target repo caller
-Each managed repo should include a caller workflow equivalent to:
+## Universal downstream contract
+Install `templates/universal_ingestion_orchestrator.yml` as `.github/workflows/ingestion-orchestrator.yml` in a target repository, then provide one executable adapter:
+- `scripts/ingestion/run.sh`
+- `scripts/ingestion/run.py`
+- `scripts/orchestrate.sh`
+- `scripts/orchestrate.py`
 
-```yaml
-name: Repo Self-Heal
-on:
-  workflow_dispatch: {}
-  push:
-    branches: ["main"]
-    paths:
-      - ".github/workflows/**/*.yml"
-      - ".github/workflows/**/*.yaml"
-      - "tv_manifest.yml"
-      - "roles_templates/**"
-      - "schema/**"
-      - "scripts/**"
-permissions:
-  contents: write
-  pull-requests: write
-jobs:
-  heal:
-    uses: StegVerse-Labs/StegVerse-Healer/.github/workflows/supercheck_core.yml@main
-    secrets: inherit
-    with:
-      direct_commit: false
-      paths: ".github/workflows/**/*.yml .github/workflows/**/*.yaml tv_manifest.yml roles_templates/**/*.yml schema/**/*.yml"
-```
+A target with no adapter is scaffolding and is not activation-complete.
 
-## Next build tasks
-1. Add stronger repo-specific validation packs.
-2. Add machine-readable registry of managed repos.
-3. Add stale dependency detection for referenced workflow files, scripts, manifests, schemas, and role templates.
-4. Add stable report schema for downstream StegCore ingestion.
-5. Add test caller inside StegVerse-Healer for self-validation.
+## Legacy workflow contract
+Use `templates/disabled_legacy_workflow.yml` only after:
+1. reading the target handoff;
+2. reconstructing the old workflow's purpose and dependencies;
+3. mapping retained logic to the universal adapter;
+4. recording the migration in the target handoff.
+
+The stub has only `workflow_dispatch`, empty permissions, and a one-minute timeout.
+
+## Current managed migration set
+- `StegVerse-Labs/Site` — audit pending; first priority because of repeated CFP and sports ingestion failures.
+- `StegVerse-Labs/SCW` — audit pending.
+- `StegVerse-Labs/TV` — connected to reusable repair; scheduler migration pending.
+- `StegVerse-Labs/CosDen` — audit pending.
+- `StegVerse-Labs/Continuity` — audit pending.
+
+## Authentication
+`HEALER_GH_TOKEN` must be configured as a StegVerse-Healer repository secret with:
+- Actions: read and write for target repositories;
+- Contents: read for audit and discovery;
+- access to every configured private target, when applicable.
+
+No token value belongs in committed files.
+
+## Validation sequence
+1. Validate `data/orchestrator_targets.json` and compile `app/dispatch_orchestrators.py`.
+2. Manually run `Healer Scheduler (Single Clock)` with one target scope.
+3. Confirm the downstream orchestrator accepted the dispatch.
+4. Confirm enabled targets executed their real adapter.
+5. Confirm disabled targets emitted an intentional no-op.
+6. Remove or stub superseded schedules.
+7. Run `Quiet Enforcer` and obtain zero unauthorized schedules.
+8. Update the target handoff and registry status with commit and run evidence.
+
+## Remaining build tasks
+1. Scan target repos in the registry order defined by the handoff.
+2. Add machine-readable workflow inventories and migration maps.
+3. Add stable audit receipt schema for downstream StegCore ingestion.
+4. Add Healer self-validation.
+5. Add controlled auto-fix PR generation only after audit-only behavior is proven.
+6. Add failure backoff and notification deduplication to prevent Healer itself becoming noisy.
 
 ## Handoff condition
-Task handoff is capable of ecosystem management when StegVerse-Healer can discover target repo drift, produce a repair branch or PR, and leave a report plus handoff record without requiring the user to identify broken YAML manually.
+The migration can be continued without this conversation when the Healer handoff, activation plan, registry, target handoffs, adapter mappings, and validation receipts contain all ownership and continuation information.
+
+## Done condition
+Activation is complete when every registered target is dispatchable through Healer, has no unauthorized schedules, uses a real adapter, preserves a current handoff, and leaves durable success or intentional-no-op evidence without manual reconstruction.
