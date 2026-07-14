@@ -1,41 +1,80 @@
 {
-  "schema": "stegverse.healer.single-scheduler-migration.v1",
+  "schema": "stegverse.healer.single-scheduler-migration.v2",
   "manager": "StegVerse-Labs/StegVerse-Healer",
-  "target": "StegVerse-Labs/SCW",
-  "state": "CONFIGURED_PENDING_RUNTIME_VALIDATION",
+  "state": "MULTI_TARGET_CONFIGURED_PENDING_RUNTIME_VALIDATION",
   "authority": {
     "sole_scheduler": "StegVerse-Labs/StegVerse-Healer",
     "downstream_schedules_permitted": false,
-    "mutation_authorized": false
+    "mutation_authorized": false,
+    "manual_dispatch_bypasses_cadence": true
   },
-  "retained_workflows": [
+  "targets": [
     {
-      "path": ".github/workflows/scw_orchestrator.yml",
-      "trigger": "workflow_dispatch",
-      "healer_inputs": {
-        "cmd": "org-scan",
-        "orgs": "StegVerse-Labs",
-        "dry_run": "true"
-      },
-      "scw_commit": "caeaff52297070bdfcd55ec69b7abba7d2048e62"
+      "repo": "StegVerse-Labs/SCW",
+      "state": "LOCAL_SCHEDULES_REMOVED_CENTRAL_CADENCE_CONFIGURED",
+      "retained_workflows": [
+        {
+          "path": ".github/workflows/scw_orchestrator.yml",
+          "trigger": "workflow_dispatch",
+          "run_hours_utc": [0, 6, 12, 18],
+          "healer_inputs": {
+            "cmd": "org-scan",
+            "orgs": "StegVerse-Labs",
+            "dry_run": "true"
+          },
+          "target_commit": "caeaff52297070bdfcd55ec69b7abba7d2048e62"
+        },
+        {
+          "path": ".github/workflows/uptime.yml",
+          "trigger": "workflow_dispatch",
+          "cadence": "hourly",
+          "healer_inputs": {},
+          "target_commit": "e39e70f0caa2439a805444b72555a2654df4d04e"
+        }
+      ]
     },
     {
-      "path": ".github/workflows/uptime.yml",
-      "trigger": "workflow_dispatch",
-      "healer_inputs": {},
-      "scw_commit": "e39e70f0caa2439a805444b72555a2654df4d04e"
+      "repo": "StegVerse-Labs/TV",
+      "state": "SELF_HEAL_LOCAL_SCHEDULE_REMOVED_CENTRAL_CADENCE_CONFIGURED",
+      "retained_workflows": [
+        {
+          "path": ".github/workflows/tv_self_heal.yml",
+          "triggers": ["workflow_dispatch", "push"],
+          "run_hours_utc": [6],
+          "healer_inputs": {},
+          "target_commit": "9db4f33ad0e6545dcbeb7da407c71707a41fb33c",
+          "delegates_to": "StegVerse-Labs/StegVerse-Healer/.github/workflows/supercheck_core.yml@main"
+        }
+      ]
+    },
+    {
+      "repo": "StegVerse-Labs/Site",
+      "state": "CENTRAL_CADENCE_CONFIGURED_LOCAL_SCHEDULE_REMOVAL_PENDING",
+      "retained_workflows": [
+        {
+          "path": ".github/workflows/site-task-runner.yml",
+          "triggers": ["workflow_dispatch", "workflow_run", "schedule"],
+          "run_hours_utc": [0, 6, 12, 18],
+          "healer_inputs": {
+            "task": "all-local"
+          }
+        }
+      ]
     }
   ],
-  "healer_registry_commits": [
-    "9c554a1d70c6b80e6133faf302695bf38d0b3085",
-    "24f693933f176ade0218656265205916e3c12b00"
-  ],
+  "healer_commits": {
+    "cadence_dispatcher": "e9cc1ca67ad525425cc2f135da67c8a151ff00d8",
+    "dispatch_mode_workflow": "78d729b3e5b8022b91ab00014aaaa9bcc8958808",
+    "cadence_registry": "ca9329470ecd63836ed045bdb65ce117c890b67e"
+  },
   "pending_validation": [
     "HEALER_GH_TOKEN permits Actions dispatch and Contents read",
-    "controlled Healer dispatch of scw_orchestrator.yml succeeds",
-    "controlled Healer dispatch of uptime.yml succeeds",
-    "SCW contains zero unauthorized schedule triggers",
-    "quiet_enforcer produces a zero-violation result"
+    "controlled Healer dispatch of SCW workflows succeeds",
+    "controlled Healer dispatch of TV Self-Heal succeeds",
+    "scheduled mode honors run_hours_utc while manual mode bypasses cadence",
+    "SCW and TV contain zero unauthorized schedule triggers",
+    "Site local schedule is removed after exact-content update",
+    "quiet_enforcer produces a zero-violation result for migrated targets"
   ],
-  "next_target_after_scw_validation": "StegVerse-Labs/TV"
+  "next_target": "StegVerse-Labs/Site"
 }
