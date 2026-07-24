@@ -5,16 +5,25 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
 
+permissions:
+  contents: read
+
 jobs:
   forward:
     runs-on: ubuntu-latest
     steps:
-      - name: Call repository_dispatch on bridge
+      - name: Forward PR when bridge credentials are available
         env:
           GH_TOKEN: ${{ secrets.GH_STEGVERSE_AI_TOKEN }}
+          TARGET_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          echo "${GH_TOKEN}" | gh auth login --with-token
+          if [ -z "$GH_TOKEN" ]; then
+            echo "Bridge forwarding skipped: GH_STEGVERSE_AI_TOKEN is unavailable."
+            echo "No review, merge, release, or execution authority is implied."
+            exit 0
+          fi
           gh api repos/StegVerse/hybrid-collab-bridge/dispatches \
             -X POST \
             -F event_type="stegverse-ai-review" \
-            -F client_payload="{\"target_repo\":\"${GITHUB_REPOSITORY}\",\"pr_number\":${{ github.event.pull_request.number }}}"
+            -F client_payload="{\"target_repo\":\"${TARGET_REPO}\",\"pr_number\":${PR_NUMBER}}"
