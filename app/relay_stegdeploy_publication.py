@@ -14,6 +14,7 @@ from typing import Any
 API = "https://api.github.com"
 SOURCE_REPO = "StegVerse-org/LLM-adapter"
 SOURCE_PATH = "receipts/stegdeploy-image-publication.json"
+SOURCE_WORKFLOW = "stegdeploy-image.yml"
 TARGET_REPO = "StegVerse-org/core-node-runtime-demo"
 EVENT_TYPE = "stegdeploy-image-published"
 STATE_PATH = Path("data/summary/stegdeploy_publication_dispatch.json")
@@ -68,28 +69,53 @@ def validate_receipt(receipt: dict[str, Any]) -> list[str]:
     return blockers
 
 
-def previous_hash() -> str | None:
+def load_previous_state() -> dict[str, Any]:
     if not STATE_PATH.exists():
-        return None
+        return {}
     try:
-        return json.loads(STATE_PATH.read_text(encoding="utf-8")).get("last_dispatched_receipt_sha256")
+        value = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
     except Exception:
-        return None
+        return {}
 
 
-def write_state(*, state: str, blockers: list[str], receipt: dict[str, Any] | None, dispatched: bool) -> None:
+def dispatch_publication_workflow(token: str) -> None:
+    request_json(
+        f"{API}/repos/{SOURCE_REPO}/actions/workflows/{SOURCE_WORKFLOW}/dispatches",
+        token,
+        method="POST",
+        payload={"ref": "main"},
+    )
+
+
+def write_state(
+    *,
+    state: str,
+    blockers: list[str],
+    receipt: dict[str, Any] | None,
+    dispatched: bool,
+    remediation_dispatched: bool = False,
+) -> None:
     STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    previous = load_previous_state()
+    source_commit = receipt.get("source_commit") if receipt else None
     body = {
-        "schema": "stegverse.healer.stegdeploy_publication_dispatch.v1",
+        "schema": "stegverse.healer.stegdeploy_publication_dispatch.v2",
         "state": state,
         "source_repository": SOURCE_REPO,
         "source_path": SOURCE_PATH,
+        "source_workflow": SOURCE_WORKFLOW,
         "target_repository": TARGET_REPO,
         "event_type": EVENT_TYPE,
-        "observed_source_commit": receipt.get("source_commit") if receipt else None,
+        "observed_source_commit": source_commit,
         "observed_digest": receipt.get("digest") if receipt else None,
         "observed_receipt_sha256": receipt.get("receipt_sha256") if receipt else None,
-        "last_dispatched_receipt_sha256": receipt.get("receipt_sha256") if dispatched and receipt else previous_hash(),
+        "last_dispatched_receipt_sha256": (
+            receipt.get("receipt_sha256") if dispatched and receipt else previous.get("last_dispatched_receipt_sha256")
+        ),
+        "last_remediation_source_commit": (
+            source_commit if remediation_dispatched else previous.get("last_remediation_source_commit")
+        ),
         "blockers": blockers,
         "manual_user_action_required": False,
         "provider_execution_authorized": False,
@@ -111,12 +137,35 @@ def main() -> int:
     receipt = load_source_receipt(token)
     blockers = validate_receipt(receipt)
     if blockers:
-        write_state(state="BLOCKED", blockers=blockers, receipt=receipt, dispatched=False)
+        previous = load_previous_state()
+        source_commit = receipt.get("source_commit")
+        stale_contract = receipt.get("schema") != "stegdeploy.image-publication.v2"
+        already_requested = bool(source_commit) and previous.get("last_remediation_source_commit") == source_commit
+        if stale_contract and not already_requested:
+            try:
+                dispatch_publication_workflow(token)
+            except Exception as exc:
+                blockers = [*blockers, f"publication remediation dispatch failed: {exc}"]
+                write_state(state="BLOCKED", blockers=blockers, receipt=receipt, dispatched=False)
+                print("StegDeploy publication remediation dispatch failed", file=sys.stderr)
+                return 1
+            write_state(
+                state="REMEDIATION_DISPATCHED",
+                blockers=blockers,
+                receipt=receipt,
+                dispatched=False,
+                remediation_dispatched=True,
+            )
+            print(f"Requested canonical StegDeploy publication workflow for stale receipt source {source_commit}")
+            return 0
+
+        state = "BLOCKED_REMEDIATION_PENDING" if stale_contract and already_requested else "BLOCKED"
+        write_state(state=state, blockers=blockers, receipt=receipt, dispatched=False)
         print("StegDeploy publication relay blocked: " + "; ".join(blockers))
         return 0
 
     receipt_hash = receipt["receipt_sha256"]
-    if previous_hash() == receipt_hash:
+    if load_previous_state().get("last_dispatched_receipt_sha256") == receipt_hash:
         write_state(state="NOOP_ALREADY_DISPATCHED", blockers=[], receipt=receipt, dispatched=False)
         print(f"StegDeploy receipt already dispatched: {receipt_hash}")
         return 0
