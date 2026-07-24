@@ -8,12 +8,13 @@ This file, `docs/HEALER_ACTIVATION_PLAN.md`, `registry/managed_repos.yml`, `data
 
 ## Decisions now durable
 1. `StegVerse-Healer` is the only managed repository permitted to contain approved `on.schedule` triggers.
-2. Downstream managed repositories must expose verified `workflow_dispatch` entrypoints and contain no local schedules after migration.
+2. Downstream managed repositories must expose verified `workflow_dispatch` or bounded event entrypoints and contain no local schedules after migration.
 3. Existing repository-specific orchestrators should be adapted rather than duplicated when they already preserve required logic.
 4. Obsolete workflows are replaced in place by `templates/disabled_legacy_workflow.yml` or deleted only after their logic is migrated and history is preserved in Git.
-5. The scheduler reads `data/orchestrator_targets.json`; target duplication inside workflow YAML is prohibited.
+5. The scheduler reads `data/orchestrator_targets.json`; target duplication inside workflow YAML is prohibited for ordinary cadence targets.
 6. `quiet_enforcer.yml` audits configured target repositories for unauthorized schedules.
 7. Cross-repository mutation is not implied by dispatch. Observation-only inputs are required until runtime validation and authority checks pass.
+8. Evidence-dependent relays may use dedicated Healer workflows when their payload must be derived from a verified upstream receipt rather than static scheduler inputs.
 
 ## Current implemented files
 - `.github/workflows/healer_scheduler.yml` — sole hourly clock; validates configuration and invokes the dispatcher.
@@ -25,6 +26,9 @@ This file, `docs/HEALER_ACTIVATION_PLAN.md`, `registry/managed_repos.yml`, `data
 - `templates/disabled_legacy_workflow.yml` — manual-only legacy workflow tombstone.
 - `actions/yaml-corrector/action.yml` — YAML normalization and healer reporting.
 - `.github/workflows/supercheck_core.yml` — reusable repair workflow.
+- `.github/workflows/stegdeploy-publication-relay.yml` — Healer-owned hourly evidence relay for a newly verified StegDeploy publication receipt.
+- `app/relay_stegdeploy_publication.py` — validates the upstream v2 receipt, suppresses duplicate dispatch, and emits a bounded repository event.
+- `data/summary/stegdeploy_publication_dispatch.json` — durable relay state and blocker receipt.
 
 ## Managed migration scope and state
 
@@ -49,6 +53,21 @@ This file, `docs/HEALER_ACTIVATION_PLAN.md`, `registry/managed_repos.yml`, `data
   - Healer uptime target: `24f693933f176ade0218656265205916e3c12b00`
   - Migration receipt: `87306f88660643424a3c2dbc2d26c7ed9f6cafd4`
 
+### StegDeploy publication relay
+- Source evidence: `StegVerse-org/LLM-adapter/receipts/stegdeploy-image-publication.json`.
+- Downstream entrypoint: `StegVerse-org/core-node-runtime-demo/.github/workflows/stegdeploy-runtime-intake.yml`.
+- The downstream non-Healer schedule was removed and replaced by `repository_dispatch` event `stegdeploy-image-published` at merge `f742105877541f67a85abd7fbe23154ce4addee7`.
+- The Healer relay accepts only a source receipt with:
+  - schema `stegdeploy.image-publication.v2`;
+  - state `PUBLISHED`;
+  - SHA-256 image digest;
+  - `consumer_pull_verified=true`;
+  - source repository identity `StegVerse-org/LLM-adapter`;
+  - a retained receipt hash.
+- A receipt hash is dispatched once. Repeated observations become `NOOP_ALREADY_DISPATCHED`.
+- The relay grants no provider execution, custody, deployment, publication, release, or Site-activation authority.
+- Current source receipt remains v1, so the first relay run is expected to retain `BLOCKED` until the canonical image workflow produces a v2 receipt.
+
 ### Remaining initial targets
 - `StegVerse-Labs/TV`
 - `StegVerse-Labs/CosDen`
@@ -68,6 +87,8 @@ Cross-repository dispatch and private-repository auditing require `HEALER_GH_TOK
 - SCW observation dispatch uses `dry_run=true` and creates no commit or PR.
 - `quiet_enforcer.yml` reports zero SCW schedules.
 - The resulting run IDs and conclusions are added to `data/summary/single_scheduler_migration.json`.
+- StegDeploy relay retains an exact `BLOCKED`, `DISPATCHED`, or `NOOP_ALREADY_DISPATCHED` state.
+- A future `DISPATCHED` state must correspond to a v2 `PUBLISHED` receipt and a downstream runtime-intake run with the same receipt hash and image digest.
 
 ### Required downstream work
 1. Read each target repository's `*_MIRROR_HANDOFF.md` before mutation; create it first when absent.
@@ -78,22 +99,24 @@ Cross-repository dispatch and private-repository auditing require `HEALER_GH_TOK
 6. Remove unauthorized schedules only after confirming central dispatch coverage in configuration and preserving required behavior.
 
 ## Ownership
-- Central scheduler, templates, registry, dispatch, audit policy, and central receipts: `StegVerse-Labs/StegVerse-Healer`.
+- Central scheduler, templates, registry, dispatch, audit policy, evidence relays, and central receipts: `StegVerse-Labs/StegVerse-Healer`.
 - Repository-specific logic and handoff accuracy: each target repository, coordinated through Healer.
 - Pending secret installation or scope correction: repository/organization administrator.
 - Runtime evidence observation and receipt update: successor Healer validation session.
 
 ## Permitted continuation scope
-A continuation session may inspect registered target repositories, update their mirror handoffs, adapt event-driven entrypoints, migrate retained workflow logic, disable obsolete automatic triggers, update the registry, and record dispatch/audit evidence. It must not blindly disable workflows whose purpose, dependencies, and replacement path have not been reconstructed, expose secrets, or claim activation without observed runtime evidence.
+A continuation session may inspect registered target repositories, update their mirror handoffs, adapt event-driven entrypoints, migrate retained workflow logic, disable obsolete automatic triggers, update the registry, add evidence-derived relay logic, and record dispatch/audit evidence. It must not blindly disable workflows whose purpose, dependencies, and replacement path have not been reconstructed, expose secrets, or claim activation without observed runtime evidence.
 
 ## Next activation tasks
-1. Observe or initiate a controlled Healer scheduler dispatch for scope `scw`.
-2. Verify both configured SCW targets were accepted by GitHub Actions and remained observation-only where applicable.
-3. Run the quiet enforcer and record a zero-schedule SCW result.
-4. Update `data/summary/single_scheduler_migration.json` with run IDs, conclusions, and timestamps.
-5. Adapt Site's existing task runner to remove its local schedule only after preserving its two-workflow architecture and Healer dispatch coverage.
-6. After SCW validation, scan `TV`, then `CosDen`, then `Continuity`.
-7. Add StegVerse-Healer self-validation and stable machine-readable audit receipts.
+1. Validate and merge the StegDeploy publication relay.
+2. Observe its first Healer-owned run and retain the exact source-receipt blocker or successful dispatch evidence.
+3. Observe or initiate a controlled Healer scheduler dispatch for scope `scw`.
+4. Verify both configured SCW targets were accepted by GitHub Actions and remained observation-only where applicable.
+5. Run the quiet enforcer and record a zero-schedule SCW result.
+6. Update `data/summary/single_scheduler_migration.json` with run IDs, conclusions, and timestamps.
+7. Adapt Site's existing task runner to remove its local schedule only after preserving its two-workflow architecture and Healer dispatch coverage.
+8. After SCW validation, scan `TV`, then `CosDen`, then `Continuity`.
+9. Add StegVerse-Healer self-validation and stable machine-readable audit receipts.
 
 ## Release and ecosystem propagation
 When the single-scheduler migration reaches release readiness, tag StegVerse-Healer and create verification tasks for relevant policy or integration updates in:
