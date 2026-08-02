@@ -1,7 +1,7 @@
 {
-  "schema": "stegverse.healer.single-scheduler-migration.v2",
+  "schema": "stegverse.healer.single-scheduler-migration.v3",
   "manager": "StegVerse-Labs/StegVerse-Healer",
-  "state": "MULTI_TARGET_CONFIGURED_PENDING_RUNTIME_VALIDATION",
+  "state": "MULTI_TARGET_IMPLEMENTED_PENDING_HOSTED_VALIDATION",
   "authority": {
     "sole_scheduler": "StegVerse-Labs/StegVerse-Healer",
     "downstream_schedules_permitted": false,
@@ -69,8 +69,19 @@
       ]
     },
     {
+      "repo": "StegVerse-Labs/CosDen",
+      "state": "AUDIT_ONLY_CANONICALIZED_IN_STEGDB_HOSTED_AUDIT_PENDING",
+      "dispatch_required": false,
+      "audit_only": true,
+      "canonical_owner": "StegVerse-Labs/StegDB",
+      "canonical_path": "canonical/cosden",
+      "handoff_commit": "b90916883e4a25a260184eebb542e2472389fedd",
+      "registry_commit": "072e5aca80406e44bdbea6f8b1c81c690eaf9848",
+      "release_condition": "quiet_enforcer_latest.json records an exact CosDen workflow inventory with zero unauthorized schedules or a deterministic non-COMPLETE state"
+    },
+    {
       "repo": "StegVerse-Labs/Site",
-      "state": "CENTRAL_CADENCE_CONFIGURED_LOCAL_SCHEDULE_REMOVAL_PENDING",
+      "state": "CENTRAL_CADENCE_CONFIGURED_LOCAL_SCHEDULE_REMOVAL_BLOCKED_BY_SITE_ORCHESTRATOR_ADMISSION",
       "retained_workflows": [
         {
           "path": ".github/workflows/site-task-runner.yml",
@@ -80,25 +91,39 @@
             "task": "all-local"
           }
         }
-      ]
+      ],
+      "blocker": "data/site-orchestration-state.json reports active OBSERVED_BLOCKED sequence, external tasks disallowed, and no admitted scheduler-migration task",
+      "release_condition": "Site repository orchestrator admits the scheduler migration or the active sequence reaches its terminal idle state"
     }
   ],
   "healer_commits": {
     "cadence_dispatcher": "e9cc1ca67ad525425cc2f135da67c8a151ff00d8",
     "dispatch_mode_workflow": "78d729b3e5b8022b91ab00014aaaa9bcc8958808",
     "cadence_registry": "ca9329470ecd63836ed045bdb65ce117c890b67e",
-    "continuity_registry": "0c57885b5268776a1f746f751eb960528bc90d06"
+    "continuity_registry": "0c57885b5268776a1f746f751eb960528bc90d06",
+    "quiet_enforcer_script": "e00757db076257e2c6e5258e7c17d7b0c45c955f",
+    "quiet_enforcer_workflow": "0ef344f703589c3fddf14539562688433dc8740a",
+    "cosden_audit_registry": "072e5aca80406e44bdbea6f8b1c81c690eaf9848"
+  },
+  "receipt_automation": {
+    "workflow": ".github/workflows/quiet_enforcer.yml",
+    "script": "app/audit_schedules.py",
+    "latest_state": "data/summary/quiet_enforcer_latest.json",
+    "artifact_retention_days": 90,
+    "states": ["COMPLETE", "BLOCKED", "RETRY", "REVIEW_REQUIRED", "FAILED"],
+    "duplicate_prevention": "stable projections preserve the prior observation when no material state changes",
+    "fail_closed": true
   },
   "pending_validation": [
     "HEALER_GH_TOKEN permits Actions dispatch and Contents read",
+    "quiet_enforcer hosted run produces data/summary/quiet_enforcer_latest.json",
     "controlled Healer dispatch of SCW workflows succeeds",
     "controlled Healer dispatch of TV Self-Heal succeeds",
     "controlled Healer dispatch of Continuity Guardian succeeds",
     "Continuity OIDC and TV exchange steps complete without exposing protected values",
     "scheduled mode honors run_hours_utc while manual mode bypasses cadence",
-    "SCW, TV, and Continuity contain zero unauthorized schedule triggers",
-    "Site local schedule is removed after exact-content update",
-    "quiet_enforcer produces a persisted zero-violation result for migrated targets"
+    "SCW, TV, Continuity, and CosDen audit records contain zero unauthorized schedule triggers",
+    "Site repository orchestration admits and completes local schedule removal"
   ],
-  "next_target": "StegVerse-Labs/Site"
+  "next_executable_task": "Run or observe StegVerse-Healer Quiet Enforcer; if blocked, retain the exact token/access state. Site mutation remains deferred until its repository orchestrator admits the task."
 }
