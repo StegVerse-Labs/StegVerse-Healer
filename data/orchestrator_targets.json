@@ -48,15 +48,13 @@
     },
     {
       "repo": "StegVerse-Labs/CosDen",
-      "workflow": "ingestion-orchestrator.yml",
-      "ref": "main",
       "enabled": false,
+      "audit_only": true,
       "aliases": ["cosden"],
-      "inputs": {
-        "master_override": "false",
-        "task": "all"
-      },
-      "status": "disabled-until-entrypoint-installed"
+      "canonical_owner": "StegVerse-Labs/StegDB",
+      "canonical_path": "canonical/cosden",
+      "handoff": "docs/COSDEN_MIRROR_HANDOFF.md",
+      "status": "audit-only-canonicalized-in-stegdb-no-dispatch-entrypoint-required"
     },
     {
       "repo": "StegVerse-Labs/Continuity",
