@@ -2,71 +2,112 @@ name: Quiet Enforcer (Detect Zombie Schedules)
 
 on:
   schedule:
-    - cron: "23 3 * * *"   # daily 03:23
+    - cron: "23 3 * * *"
   workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: healer-quiet-enforcer
+  cancel-in-progress: true
 
 jobs:
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Audit downstream repos for 'schedule:' usage
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate audit implementation
+        run: |
+          python -m json.tool data/orchestrator_targets.json >/dev/null
+          python -m py_compile app/audit_schedules.py
+
+      - name: Audit managed repositories
+        id: audit
+        continue-on-error: true
         env:
           HEALER_GH_TOKEN: ${{ secrets.HEALER_GH_TOKEN }}
+          TARGETS_FILE: data/orchestrator_targets.json
+          QUIET_RECEIPT: data/summary/quiet_enforcer_latest.json
+        run: python app/audit_schedules.py
+
+      - name: Validate receipt vocabulary and structure
+        if: always()
         run: |
-          python - << 'PY'
-          import json, os, urllib.request
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("data/summary/quiet_enforcer_latest.json")
+          if not path.exists():
+              raise SystemExit("quiet_enforcer_latest.json was not produced")
+          receipt = json.loads(path.read_text(encoding="utf-8"))
+          valid = {"COMPLETE", "BLOCKED", "RETRY", "REVIEW_REQUIRED", "FAILED"}
+          if receipt.get("schema") != "stegverse.healer.quiet-enforcer-receipt.v1":
+              raise SystemExit("unexpected receipt schema")
+          if receipt.get("state") not in valid:
+              raise SystemExit("invalid receipt state")
+          if not isinstance(receipt.get("repositories"), list):
+              raise SystemExit("repositories must be a list")
+          if not receipt.get("next_executable_task"):
+              raise SystemExit("next_executable_task is required")
+          print(json.dumps(receipt, indent=2, sort_keys=True))
+          PY
 
-          API="https://api.github.com"
-          token=os.environ["HEALER_GH_TOKEN"].strip()
+      - name: Commit changed audit state
+        if: always()
+        run: |
+          git config user.name "StegVerse-Healer"
+          git config user.email "healer@users.noreply.github.com"
+          git add data/summary/quiet_enforcer_latest.json
+          if git diff --cached --quiet; then
+            echo "No material quiet-enforcer state change."
+          else
+            git commit -m "healer: update quiet-enforcer state"
+            git pull --rebase
+            git push
+          fi
 
-          def gh(url):
-            req=urllib.request.Request(url, headers={
-              "Authorization": f"Bearer {token}",
-              "Accept": "application/vnd.github+json",
-              "User-Agent": "StegVerse-Healer"
-            })
-            with urllib.request.urlopen(req) as r:
-              return json.loads(r.read().decode("utf-8"))
+      - name: Upload inspectable receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quiet-enforcer-receipt-${{ github.run_id }}-${{ github.run_attempt }}
+          path: data/summary/quiet_enforcer_latest.json
+          if-no-files-found: error
+          retention-days: 90
 
-          def gh_raw(url):
-            req=urllib.request.Request(url, headers={
-              "Authorization": f"Bearer {token}",
-              "Accept": "application/vnd.github.raw",
-              "User-Agent": "StegVerse-Healer"
-            })
-            with urllib.request.urlopen(req) as r:
-              return r.read().decode("utf-8", errors="replace")
+      - name: Write job summary
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+          receipt = json.loads(Path("data/summary/quiet_enforcer_latest.json").read_text())
+          print("## Quiet Enforcer")
+          print(f"State: {receipt['state']}")
+          print(f"Repositories: {receipt['summary']['repository_count']}")
+          print(f"Violations: {receipt['summary']['violation_count']}")
+          print(f"Blocked: {receipt['summary']['blocked_count']}")
+          print(f"Retry: {receipt['summary']['retry_count']}")
+          print(f"Review required: {receipt['summary']['review_required_count']}")
+          print(f"Next task: {receipt['next_executable_task']}")
+          PY
 
-          cfg=json.load(open("data/orchestrator_targets.json","r",encoding="utf-8"))
-          repos=sorted({t["repo"] for t in cfg.get("targets",[])})
-          found=[]
-
-          for repo in repos:
-            try:
-              items=gh(f"{API}/repos/{repo}/contents/.github/workflows")
-            except Exception as e:
-              print(f"[WARN] Cannot read workflows for {repo}: {e}")
-              continue
-
-            for it in items:
-              name=it.get("name","")
-              if not (name.endswith(".yml") or name.endswith(".yaml")):
-                continue
-              try:
-                raw=gh_raw(f"{API}/repos/{repo}/contents/.github/workflows/{name}")
-              except Exception as e:
-                print(f"[WARN] Cannot read {repo}:{name}: {e}")
-                continue
-              if "\n" in raw and "schedule:" in raw:
-                found.append((repo,name))
-
-          if not found:
-            print("OK: No zombie schedules detected.")
-          else:
-            print("FOUND zombie schedules (should be removed; Healer must be the only scheduler):")
-            for repo,name in found:
-              print(f" - {repo}/.github/workflows/{name}")
-            raise SystemExit(1)
+      - name: Enforce fail-closed result
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          state = json.loads(Path("data/summary/quiet_enforcer_latest.json").read_text())["state"]
+          if state != "COMPLETE":
+              raise SystemExit(f"quiet enforcer state is {state}")
           PY
