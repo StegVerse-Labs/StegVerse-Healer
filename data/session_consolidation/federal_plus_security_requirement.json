@@ -1,0 +1,32 @@
+{
+  "schema": "stegverse.session-requirement-transfer.v1",
+  "requirement_id": "SV-SEC-FEDERAL-PLUS-001",
+  "originating_session_goal": "Any security measures required by the federal government are the minimum requirement; StegVerse should exceed that requirement.",
+  "canonical_owner": "StegVerse-Labs/StegVerse-Healer",
+  "canonical_policy": "docs/SECURITY_BASELINE.md",
+  "claim_state": "MERGED_INTO_CANONICAL_WORKSTREAM",
+  "implementation_state": "POLICY_INSTALLED",
+  "validation_state": "REPOSITORY_VALIDATION_PENDING",
+  "integration_state": "APPLIED_TO_STEGDEPLOY_RELAY_CONTROLS",
+  "requirements": [
+    "Select and record the applicable federal baseline per system and deployment.",
+    "Treat the applicable baseline as a floor, not a ceiling.",
+    "Require stronger controls where feasible and evidence-supported.",
+    "Fail closed when baseline selection, control evidence, or validation is missing.",
+    "Do not claim certification or compliance without exact scope and inspectable evidence."
+  ],
+  "machine_owned_continuation": {
+    "owner": "StegVerse-Labs/StegVerse-Healer repository validation and release gates",
+    "release_condition": "Security baseline policy is merged, referenced by the canonical continuation path, and enforced by repository-specific release gates.",
+    "next_action": "Validate and merge the remediation/security consolidation pull request, then propagate the policy only through repository-owned handoffs and release gates."
+  },
+  "authority_boundaries": {
+    "provider_execution_authorized": false,
+    "deployment_authorized": false,
+    "custody_authorized": false,
+    "publication_authorized": false,
+    "certification_asserted": false
+  },
+  "archive_dependency": false,
+  "canonical_continuation": "StegVerse-Labs/StegVerse-Healer/docs/SECURITY_BASELINE.md"
+}
