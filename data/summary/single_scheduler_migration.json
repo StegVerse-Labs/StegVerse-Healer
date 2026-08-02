@@ -48,6 +48,27 @@
       ]
     },
     {
+      "repo": "StegVerse-Labs/Continuity",
+      "state": "GUARDIAN_LOCAL_SCHEDULE_REMOVED_CENTRAL_CADENCE_CONFIGURED_RUNTIME_VALIDATION_PENDING",
+      "retained_workflows": [
+        {
+          "path": ".github/workflows/continuity.yml",
+          "triggers": ["workflow_dispatch", "push"],
+          "run_hours_utc": [0, 6, 12, 18],
+          "healer_inputs": {},
+          "target_commit": "282f09fd4abb41afa88a209bfbc248a369e15cbe",
+          "handoff_commit": "7b190c04786240d951afbf3ca536e8a991a3c61c",
+          "repairs": [
+            "remove downstream cron",
+            "repair OIDC token extraction",
+            "repair TV access-token output",
+            "fail closed on required configuration and missing tokens",
+            "add concurrency and summary boundary"
+          ]
+        }
+      ]
+    },
+    {
       "repo": "StegVerse-Labs/Site",
       "state": "CENTRAL_CADENCE_CONFIGURED_LOCAL_SCHEDULE_REMOVAL_PENDING",
       "retained_workflows": [
@@ -65,16 +86,19 @@
   "healer_commits": {
     "cadence_dispatcher": "e9cc1ca67ad525425cc2f135da67c8a151ff00d8",
     "dispatch_mode_workflow": "78d729b3e5b8022b91ab00014aaaa9bcc8958808",
-    "cadence_registry": "ca9329470ecd63836ed045bdb65ce117c890b67e"
+    "cadence_registry": "ca9329470ecd63836ed045bdb65ce117c890b67e",
+    "continuity_registry": "0c57885b5268776a1f746f751eb960528bc90d06"
   },
   "pending_validation": [
     "HEALER_GH_TOKEN permits Actions dispatch and Contents read",
     "controlled Healer dispatch of SCW workflows succeeds",
     "controlled Healer dispatch of TV Self-Heal succeeds",
+    "controlled Healer dispatch of Continuity Guardian succeeds",
+    "Continuity OIDC and TV exchange steps complete without exposing protected values",
     "scheduled mode honors run_hours_utc while manual mode bypasses cadence",
-    "SCW and TV contain zero unauthorized schedule triggers",
+    "SCW, TV, and Continuity contain zero unauthorized schedule triggers",
     "Site local schedule is removed after exact-content update",
-    "quiet_enforcer produces a zero-violation result for migrated targets"
+    "quiet_enforcer produces a persisted zero-violation result for migrated targets"
   ],
   "next_target": "StegVerse-Labs/Site"
 }
