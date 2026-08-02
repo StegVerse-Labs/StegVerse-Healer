@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stegverse.org/schemas/session_execution_inventory.schema.json",
+  "title": "StegVerse Session Execution Inventory",
+  "type": "object",
+  "required": [
+    "schema",
+    "session_goal_id",
+    "canonical_continuation",
+    "session_state",
+    "claims",
+    "inventory",
+    "archival"
+  ],
+  "properties": {
+    "schema": {"const": "stegverse.session-execution-inventory.v1"},
+    "session_goal_id": {"type": "string", "minLength": 1},
+    "canonical_continuation": {"type": "string", "minLength": 1},
+    "session_state": {
+      "enum": [
+        "ACTIVE_UNIQUE_WORK_REMAINS",
+        "ACTIVE_DISTINCT_SUPPORT_ROLE",
+        "BLOCKED_RETAIN_TEMPORARILY",
+        "MERGED_INTO_CANONICAL_WORKSTREAM",
+        "COMPLETE_ARCHIVE"
+      ]
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "state", "owner", "location", "release_condition"],
+        "properties": {
+          "task_id": {"type": "string"},
+          "state": {
+            "enum": [
+              "UNCLAIMED",
+              "CLAIMED_FOR_IMPLEMENTATION",
+              "CLAIMED_FOR_VALIDATION",
+              "CLAIMED_FOR_INTEGRATION",
+              "MACHINE_OWNED",
+              "BLOCKED",
+              "COMPLETE",
+              "SUPERSEDED",
+              "MERGED_INTO_CANONICAL_WORKSTREAM"
+            ]
+          },
+          "owner": {"type": "string"},
+          "location": {"type": "string"},
+          "release_condition": {"type": "string"}
+        }
+      }
+    },
+    "inventory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "task_id",
+          "originating_goal",
+          "destination",
+          "branch",
+          "location",
+          "owner",
+          "claim_state",
+          "completion_state",
+          "validation_state",
+          "integration_state",
+          "archival_dependency",
+          "evidence",
+          "next_action"
+        ]
+      }
+    },
+    "archival": {
+      "type": "object",
+      "required": ["unique_context_transferred", "session_claim_released", "archive_ready", "canonical_location"]
+    }
+  }
+}
