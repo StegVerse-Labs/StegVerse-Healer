@@ -60,15 +60,13 @@
     },
     {
       "repo": "StegVerse-Labs/Continuity",
-      "workflow": "ingestion-orchestrator.yml",
+      "workflow": "continuity.yml",
       "ref": "main",
-      "enabled": false,
-      "aliases": ["continuity"],
-      "inputs": {
-        "master_override": "false",
-        "task": "all"
-      },
-      "status": "disabled-until-entrypoint-installed"
+      "enabled": true,
+      "aliases": ["continuity", "continuity-guardian"],
+      "run_hours_utc": [0, 6, 12, 18],
+      "inputs": {},
+      "status": "verified-existing-entrypoint-healer-six-hour-cadence-pending-runtime-validation"
     }
   ]
 }
