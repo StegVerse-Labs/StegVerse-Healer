@@ -1,0 +1,43 @@
+name: Validate Session Consolidation
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: ["main"]
+    paths:
+      - "data/session_consolidation/**"
+      - "schemas/session_execution_inventory.schema.json"
+      - "scripts/validate_session_execution_inventory.py"
+      - "docs/HEALER_MIRROR_HANDOFF.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-session-consolidation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate JSON syntax
+        run: |
+          python -m json.tool schemas/session_execution_inventory.schema.json >/dev/null
+          python -m json.tool data/session_consolidation/single_scheduler_session_inventory.json >/dev/null
+      - name: Validate execution inventory contract
+        run: python scripts/validate_session_execution_inventory.py
+      - name: Upload canonical consolidation record
+        uses: actions/upload-artifact@v4
+        with:
+          name: single-scheduler-session-consolidation-${{ github.run_id }}
+          path: |
+            data/session_consolidation/single_scheduler_session_inventory.json
+            schemas/session_execution_inventory.schema.json
+          if-no-files-found: error
+          retention-days: 90
