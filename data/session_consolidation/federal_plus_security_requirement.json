@@ -5,9 +5,17 @@
   "canonical_owner": "StegVerse-Labs/StegVerse-Healer",
   "canonical_policy": "docs/SECURITY_BASELINE.md",
   "claim_state": "MERGED_INTO_CANONICAL_WORKSTREAM",
-  "implementation_state": "POLICY_INSTALLED",
-  "validation_state": "REPOSITORY_VALIDATION_PENDING",
+  "implementation_state": "POLICY_INSTALLED_AND_MERGED",
+  "validation_state": "REPOSITORY_CHECKS_PASSED",
   "integration_state": "APPLIED_TO_STEGDEPLOY_RELAY_CONTROLS",
+  "merge_evidence": {
+    "pull_request": 3,
+    "merge_commit": "5454bbeb3b46756d483193034bae97869c56c91f",
+    "checks": {
+      "Forward PR to StegVerse AI Bridge": "success",
+      "Test Readiness": "success"
+    }
+  },
   "requirements": [
     "Select and record the applicable federal baseline per system and deployment.",
     "Treat the applicable baseline as a floor, not a ceiling.",
@@ -17,8 +25,14 @@
   ],
   "machine_owned_continuation": {
     "owner": "StegVerse-Labs/StegVerse-Healer repository validation and release gates",
-    "release_condition": "Security baseline policy is merged, referenced by the canonical continuation path, and enforced by repository-specific release gates.",
-    "next_action": "Validate and merge the remediation/security consolidation pull request, then propagate the policy only through repository-owned handoffs and release gates."
+    "release_condition": "Repository-specific release gates reference and enforce the federal-plus policy with exact framework, scope, evidence, and reassessment conditions.",
+    "next_action": "Propagate the policy only through repository-owned handoffs and release gates when those repositories admit the work."
+  },
+  "current_runtime_blocker": {
+    "owner": "StegVerse-Labs/StegVerse-Healer/.github/workflows/stegdeploy-publication-relay.yml and repository administrator for token scope",
+    "state": "BLOCKED",
+    "evidence": "data/summary/stegdeploy_publication_dispatch.json",
+    "release_condition": "HEALER_GH_TOKEN can dispatch StegVerse-org/LLM-adapter/.github/workflows/stegdeploy-image.yml and the source retains a valid v2 PUBLISHED receipt with consumer_pull_verified=true."
   },
   "authority_boundaries": {
     "provider_execution_authorized": false,
@@ -28,5 +42,6 @@
     "certification_asserted": false
   },
   "archive_dependency": false,
-  "canonical_continuation": "StegVerse-Labs/StegVerse-Healer/docs/SECURITY_BASELINE.md"
+  "archive_ready": true,
+  "canonical_continuation": "StegVerse-Labs/StegVerse-Healer/docs/SECURITY_BASELINE.md; docs/HEALER_MIRROR_HANDOFF.md; data/summary/stegdeploy_publication_dispatch.json"
 }
