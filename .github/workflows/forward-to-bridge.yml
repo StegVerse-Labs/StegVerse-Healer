@@ -1,35 +1,21 @@
-# .github/workflows/forward-to-bridge.yml
-name: Forward PR to StegVerse AI Bridge
+name: AI Bridge Forwarding Legacy Boundary
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize]
+  workflow_dispatch: {}
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-  forward:
+  superseded:
     runs-on: ubuntu-latest
     steps:
-      - name: Forward PR when bridge credentials permit
-        env:
-          GH_TOKEN: ${{ secrets.GH_STEGVERSE_AI_TOKEN }}
-          TARGET_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+      - name: Record retired forwarding path
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "Bridge forwarding BLOCKED: GH_STEGVERSE_AI_TOKEN is unavailable."
-            echo "No review, merge, release, or execution authority is implied."
-            exit 0
-          fi
-          if gh api repos/StegVerse/hybrid-collab-bridge/dispatches \
-            -X POST \
-            -F event_type="stegverse-ai-review" \
-            -F client_payload="{\"target_repo\":\"${TARGET_REPO}\",\"pr_number\":${PR_NUMBER}}"; then
-            echo "Bridge forwarding DISPATCHED."
-          else
-            echo "Bridge forwarding BLOCKED: configured token could not dispatch to the bridge."
-            echo "The optional review relay failure does not grant or revoke merge authority."
-            exit 0
-          fi
+          set -euo pipefail
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          test -z "${GH_STEGVERSE_AI_TOKEN:-}"
+          echo "STATE=SUPERSEDED"
+          echo "GitHub repository_dispatch forwarding has been retired."
+          echo "Any future AI-review bridge must be admitted as a TV/TVC-governed sovereign local handler or distinct bounded transport."
+          echo "GitHub token production authority: NONE"
