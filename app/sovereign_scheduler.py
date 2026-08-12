@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -73,12 +74,14 @@ def _run(command: list[str], cwd: Path, env_extra: dict[str, str] | None = None,
     if env_extra:
         env.update(env_extra)
     proc = subprocess.run(command, cwd=cwd, env=env, text=True, capture_output=True, check=False, timeout=timeout)
-    return {
-        "command": command,
-        "returncode": proc.returncode,
-        "stdout_tail": proc.stdout[-4000:],
-        "stderr_tail": proc.stderr[-4000:],
-    }
+    return {"command": command, "returncode": proc.returncode, "stdout_tail": proc.stdout[-4000:], "stderr_tail": proc.stderr[-4000:]}
+
+
+def _json_tail(result: dict[str, Any]) -> dict[str, Any] | None:
+    try:
+        return json.loads(str(result.get("stdout_tail", "")).strip().splitlines()[-1])
+    except Exception:
+        return None
 
 
 def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_json: str) -> dict[str, Any]:
@@ -93,34 +96,24 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
 
     if repo == "StegVerse-Labs/SCW" and workflow == "scw_orchestrator.yml":
         inputs = target.get("inputs", {}) if isinstance(target.get("inputs"), dict) else {}
-        result = _run(
-            [sys.executable, "-m", "scw.scw_core"],
-            root,
-            {
-                "SCW_CMD": str(inputs.get("cmd", "org-scan")),
-                "SCW_ORGS": str(inputs.get("orgs", "StegVerse-Labs")),
-                "SCW_ROOT": str(root),
-                "STEGVERSE_REPO_ROOTS_JSON": all_roots_json,
-            },
-        )
-        state = "COMPLETE" if result["returncode"] == 0 else "BLOCKED"
-        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_SCW", "execution": result}
+        result = _run([sys.executable, "-m", "scw.scw_core"], root, {
+            "SCW_CMD": str(inputs.get("cmd", "org-scan")),
+            "SCW_ORGS": str(inputs.get("orgs", "StegVerse-Labs")),
+            "SCW_ROOT": str(root),
+            "STEGVERSE_REPO_ROOTS_JSON": all_roots_json,
+        })
+        return {**base, "state": "COMPLETE" if result["returncode"] == 0 else "BLOCKED", "outcome": "SOVEREIGN_LOCAL_SCW", "execution": result}
 
     if repo == "StegVerse-Labs/SCW" and workflow == "uptime.yml":
         first = _run([sys.executable, "scripts/status/uptime_probe.py"], root, timeout=60)
         if first["returncode"] != 0:
             return {**base, "state": "FAILED", "outcome": "SCW_UPTIME_PROBE_FAILED", "execution": [first]}
         second = _run(["bash", "scripts/status/publish_status.sh"], root, timeout=60)
-        state = "COMPLETE" if second["returncode"] == 0 else "FAILED"
-        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_SCW_UPTIME", "execution": [first, second]}
+        return {**base, "state": "COMPLETE" if second["returncode"] == 0 else "FAILED", "outcome": "SOVEREIGN_LOCAL_SCW_UPTIME", "execution": [first, second]}
 
     if repo == "StegVerse-Labs/Site" and workflow == "site-task-runner.yml":
-        commands = [
-            [sys.executable, "scripts/site_handoff_orchestrator.py"],
-            [sys.executable, "scripts/check_ecosystem_heartbeat_orchestration.py"],
-        ]
         results = []
-        for command in commands:
+        for command in ([sys.executable, "scripts/site_handoff_orchestrator.py"], [sys.executable, "scripts/check_ecosystem_heartbeat_orchestration.py"]):
             result = _run(command, root)
             results.append(result)
             if result["returncode"] != 0:
@@ -128,25 +121,37 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
         return {**base, "state": "COMPLETE", "outcome": "SOVEREIGN_LOCAL_SITE_ORCHESTRATION", "execution": results}
 
     if repo == "StegVerse-Labs/TV" and workflow == "tv_self_heal.yml":
-        return {
-            **base,
-            "state": "BLOCKED",
-            "outcome": "TV_TVC_MUTATION_EXECUTOR_REQUIRED",
-            "release_condition": "A TV/TVC-governed bounded local mutation executor applies or rejects the YAML repair set and emits a no-secret receipt.",
-        }
+        return {**base, "state": "BLOCKED", "outcome": "TV_TVC_MUTATION_EXECUTOR_REQUIRED", "release_condition": "A TV/TVC-governed bounded local mutation executor applies or rejects the YAML repair set and emits a no-secret receipt."}
 
     if repo == "StegVerse-Labs/Continuity" and workflow == "continuity.yml":
-        result = _run(
-            [sys.executable, "scripts/guardian.py"],
-            root,
-            {
+        result = _run([sys.executable, "scripts/guardian.py"], root, {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json, "GUARDIAN_DAYS_NO_ACK": "3"}, timeout=90)
+        return {**base, "state": "COMPLETE" if result["returncode"] == 0 else "BLOCKED", "outcome": "SOVEREIGN_LOCAL_CONTINUITY_GUARDIAN", "execution": result}
+
+    if repo == "StegVerse-Labs/StegVerse-Healer" and workflow == "quiet_enforcer.yml":
+        with tempfile.TemporaryDirectory(prefix="stegverse-quiet-") as temp_dir:
+            receipt = Path(temp_dir) / "quiet.json"
+            result = _run([sys.executable, "app/audit_schedules.py"], root, {
+                "TARGETS_FILE": str(root / "data/orchestrator_targets.json"),
+                "QUIET_RECEIPT": str(receipt),
                 "STEGVERSE_REPO_ROOTS_JSON": all_roots_json,
-                "GUARDIAN_DAYS_NO_ACK": "3",
-            },
-            timeout=90,
-        )
-        state = "COMPLETE" if result["returncode"] == 0 else "BLOCKED"
-        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_CONTINUITY_GUARDIAN", "execution": result}
+            }, timeout=90)
+            payload = json.loads(receipt.read_text(encoding="utf-8")) if receipt.is_file() else None
+        state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") == "COMPLETE" else "BLOCKED"
+        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_QUIET_ENFORCER", "receipt": payload, "execution": result}
+
+    if repo == "StegVerse-Labs/StegVerse-Healer" and workflow == "stegdeploy-publication-relay.yml":
+        with tempfile.TemporaryDirectory(prefix="stegverse-relay-") as temp_dir:
+            state_path = Path(temp_dir) / "relay.json"
+            intake_path = Path(temp_dir) / "intake.json"
+            result = _run([sys.executable, "app/relay_stegdeploy_publication.py"], root, {
+                "STEGVERSE_REPO_ROOTS_JSON": all_roots_json,
+                "HEALER_RELAY_STATE": str(state_path),
+                "STEGDEPLOY_RUNTIME_INTAKE_RECEIPT": str(intake_path),
+                "HEALER_LAST_PUBLICATION_RECEIPT_SHA256": os.getenv("HEALER_LAST_PUBLICATION_RECEIPT_SHA256", ""),
+            }, timeout=210)
+            payload = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else _json_tail(result)
+        state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") in {"COMPLETE", "NOOP_ALREADY_VERIFIED"} else "BLOCKED"
+        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_STEGDEPLOY_RELAY", "receipt": payload, "execution": result}
 
     return {**base, "state": "REVIEW_REQUIRED", "outcome": "NO_SOVEREIGN_HANDLER_BOUND"}
 
@@ -162,7 +167,6 @@ def build_and_execute(config_path: Path) -> dict[str, Any]:
     scope = (os.getenv("RUN_SCOPE") or "all").strip().lower()
     mode = (os.getenv("DISPATCH_MODE") or "schedule").strip().lower()
     now = _now()
-
     selected = []
     for target in targets:
         if not isinstance(target, dict) or not target.get("enabled", True):
@@ -173,16 +177,11 @@ def build_and_execute(config_path: Path) -> dict[str, Any]:
             continue
         if _due(target, now, mode):
             selected.append(target)
-
     outcomes = [_execute_target(target, roots, roots_json) for target in selected]
     terminal = "COMPLETE"
-    if any(item["state"] == "FAILED" for item in outcomes):
-        terminal = "FAILED"
-    elif any(item["state"] == "BLOCKED" for item in outcomes):
-        terminal = "BLOCKED"
-    elif any(item["state"] == "REVIEW_REQUIRED" for item in outcomes):
-        terminal = "REVIEW_REQUIRED"
-
+    if any(item["state"] == "FAILED" for item in outcomes): terminal = "FAILED"
+    elif any(item["state"] == "BLOCKED" for item in outcomes): terminal = "BLOCKED"
+    elif any(item["state"] == "REVIEW_REQUIRED" for item in outcomes): terminal = "REVIEW_REQUIRED"
     return {
         "schema": "stegverse.healer.sovereign_scheduler_receipt/v0.1",
         "state": terminal,
@@ -202,13 +201,7 @@ def main() -> int:
     try:
         receipt = build_and_execute(config_path)
     except Exception as exc:
-        receipt = {
-            "schema": "stegverse.healer.sovereign_scheduler_receipt/v0.1",
-            "state": "FAILED",
-            "credential_authority": "TV/TVC",
-            "github_token_required": False,
-            "error": str(exc),
-        }
+        receipt = {"schema": "stegverse.healer.sovereign_scheduler_receipt/v0.1", "state": "FAILED", "credential_authority": "TV/TVC", "github_token_required": False, "error": str(exc)}
     print(json.dumps(receipt, sort_keys=True))
     return 0 if receipt["state"] == "COMPLETE" else 3
 
