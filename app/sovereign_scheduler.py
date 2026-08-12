@@ -121,7 +121,19 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
         return {**base, "state": "COMPLETE", "outcome": "SOVEREIGN_LOCAL_SITE_ORCHESTRATION", "execution": results}
 
     if repo == "StegVerse-Labs/TV" and workflow == "tv_self_heal.yml":
-        return {**base, "state": "BLOCKED", "outcome": "TV_TVC_MUTATION_EXECUTOR_REQUIRED", "release_condition": "A TV/TVC-governed bounded local mutation executor applies or rejects the YAML repair set and emits a no-secret receipt."}
+        tvc_root = roots.get("StegVerse-Labs/TVC")
+        if tvc_root is None:
+            return {**base, "state": "BLOCKED", "outcome": "TVC_LOCAL_REPOSITORY_NOT_MATERIALIZED"}
+        with tempfile.TemporaryDirectory(prefix="stegverse-tv-heal-") as temp_dir:
+            receipt_path = Path(temp_dir) / "tv-self-heal.json"
+            result = _run([sys.executable, "scripts/sovereign_self_heal.py"], root, {
+                "STEGVERSE_TV_ROOT": str(root),
+                "STEGVERSE_TVC_ROOT": str(tvc_root),
+                "TV_SELF_HEAL_RECEIPT": str(receipt_path),
+            }, timeout=180)
+            payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else _json_tail(result)
+        state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") == "COMPLETE" else "BLOCKED"
+        return {**base, "state": state, "outcome": "TVC_GRANTED_LOCAL_TV_SELF_HEAL", "receipt": payload, "execution": result}
 
     if repo == "StegVerse-Labs/Continuity" and workflow == "continuity.yml":
         result = _run([sys.executable, "scripts/guardian.py"], root, {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json, "GUARDIAN_DAYS_NO_ACK": "3"}, timeout=90)
