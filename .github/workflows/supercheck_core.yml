@@ -1,91 +1,35 @@
-name: SuperCheck Core
+name: SuperCheck Core Legacy Boundary
 
 on:
   workflow_call:
     inputs:
       paths:
-        description: Space-separated paths/globs to scan and fix.
         required: false
         type: string
-        default: ".github/workflows/**/*.yml .github/workflows/**/*.yaml tv_manifest.yml roles_templates/**/*.yml schema/**/*.yml"
+        default: ""
       direct_commit:
-        description: Commit fixes directly to the caller branch.
         required: false
         type: boolean
         default: false
-    secrets:
-      HEALER_PAT:
-        required: false
+  workflow_dispatch: {}
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
-  heal:
+  superseded:
     runs-on: ubuntu-latest
-    env:
-      HEALER_PAT: ${{ secrets.HEALER_PAT }}
     steps:
-      - name: Checkout caller repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Run YAML corrector
-        uses: StegVerse-Labs/StegVerse-Healer/actions/yaml-corrector@main
-        with:
-          paths: ${{ inputs.paths }}
-
-      - name: Detect changes
-        id: changes
-        shell: bash
+      - name: Fail closed on legacy hosted mutation request
         run: |
-          count="$(git status --porcelain | wc -l | tr -d ' ')"
-          echo "count=$count" >> "$GITHUB_OUTPUT"
-          git status --porcelain
-
-      - name: Commit directly when requested
-        if: steps.changes.outputs.count != '0' && inputs.direct_commit == true
-        shell: bash
-        run: |
-          git config user.name "steg-healer-bot"
-          git config user.email "steg-healer-bot@users.noreply.github.com"
-          git add -A
-          git commit -m "Healer: auto-correct repo consistency issues"
-          git push
-
-      - name: Create PR when HEALER_PAT is available
-        if: steps.changes.outputs.count != '0' && inputs.direct_commit == false && env.HEALER_PAT != ''
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.HEALER_PAT }}
-          commit-message: "Healer: auto-correct repo consistency issues"
-          title: "Healer: auto-correct repo consistency issues"
-          body: |
-            Automated consistency corrections from StegVerse-Healer.
-
-            Review data/summary/heal_report.json for detected problems and applied fixes.
-          branch: auto-heal/${{ github.run_id }}
-          delete-branch: true
-
-      - name: Push repair branch when no PAT is available
-        if: steps.changes.outputs.count != '0' && inputs.direct_commit == false && env.HEALER_PAT == ''
-        shell: bash
-        run: |
-          branch="auto-heal/${GITHUB_RUN_ID}"
-          git config user.name "steg-healer-bot"
-          git config user.email "steg-healer-bot@users.noreply.github.com"
-          git checkout -B "$branch"
-          git add -A
-          git commit -m "Healer: auto-correct repo consistency issues"
-          git push -u origin "$branch"
-          echo "::notice::Repair branch pushed: $branch. Add HEALER_PAT later to open PRs automatically."
-
-      - name: Upload heal report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: heal_report
-          path: data/summary/heal_report.json
-          if-no-files-found: warn
+          set -euo pipefail
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          test -z "${HEALER_PAT:-}"
+          test -z "${HEALER_GH_TOKEN:-}"
+          echo "STATE=SUPERSEDED"
+          echo "PAT/GitHub-push/PR repair authority has been retired."
+          echo "Canonical bounded repair example: StegVerse-Labs/TV/scripts/sovereign_self_heal.py"
+          echo "Admission authority: StegVerse-Labs/TVC execution-grant policy"
+          echo "Production carrier: single StegVerse resident heartbeat"
+          echo "GitHub token production authority: NONE"
+          exit 3
