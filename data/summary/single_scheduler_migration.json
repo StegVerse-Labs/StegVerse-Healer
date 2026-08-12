@@ -1,129 +1,94 @@
 {
-  "schema": "stegverse.healer.single-scheduler-migration.v3",
+  "schema": "stegverse.healer.single-scheduler-migration.v4",
   "manager": "StegVerse-Labs/StegVerse-Healer",
-  "state": "MULTI_TARGET_IMPLEMENTED_PENDING_HOSTED_VALIDATION",
+  "state": "SOVEREIGN_SOURCE_COMPLETE_LIVE_CARRIER_MACHINE_OWNED",
   "authority": {
-    "sole_scheduler": "StegVerse-Labs/StegVerse-Healer",
-    "downstream_schedules_permitted": false,
-    "mutation_authorized": false,
-    "manual_dispatch_bypasses_cadence": true
+    "production_clock": "StegVerse-Labs/.github resident sovereign heartbeat",
+    "scheduler_policy_owner": "StegVerse-Labs/StegVerse-Healer",
+    "credential_and_admission_authority": "TV/TVC",
+    "github_token_production_authority": "NONE",
+    "github_actions_production_role": "NONE",
+    "downstream_github_schedules_permitted": false,
+    "arbitrary_target_commands_permitted": false
   },
   "targets": [
     {
       "repo": "StegVerse-Labs/SCW",
-      "state": "LOCAL_SCHEDULES_REMOVED_CENTRAL_CADENCE_CONFIGURED",
-      "retained_workflows": [
-        {
-          "path": ".github/workflows/scw_orchestrator.yml",
-          "trigger": "workflow_dispatch",
-          "run_hours_utc": [0, 6, 12, 18],
-          "healer_inputs": {
-            "cmd": "org-scan",
-            "orgs": "StegVerse-Labs",
-            "dry_run": "true"
-          },
-          "target_commit": "caeaff52297070bdfcd55ec69b7abba7d2048e62"
-        },
-        {
-          "path": ".github/workflows/uptime.yml",
-          "trigger": "workflow_dispatch",
-          "cadence": "hourly",
-          "healer_inputs": {},
-          "target_commit": "e39e70f0caa2439a805444b72555a2654df4d04e"
-        }
-      ]
+      "entrypoints": ["scw_orchestrator.yml", "uptime.yml"],
+      "state": "SOVEREIGN_LOCAL_HANDLERS_BOUND",
+      "production_transport": "materialized repository + fixed handler",
+      "credential_requirement": "NONE"
     },
     {
       "repo": "StegVerse-Labs/TV",
-      "state": "SELF_HEAL_LOCAL_SCHEDULE_REMOVED_CENTRAL_CADENCE_CONFIGURED",
-      "retained_workflows": [
-        {
-          "path": ".github/workflows/tv_self_heal.yml",
-          "triggers": ["workflow_dispatch", "push"],
-          "run_hours_utc": [6],
-          "healer_inputs": {},
-          "target_commit": "9db4f33ad0e6545dcbeb7da407c71707a41fb33c",
-          "delegates_to": "StegVerse-Labs/StegVerse-Healer/.github/workflows/supercheck_core.yml@main"
-        }
-      ]
+      "entrypoints": ["tv_self_heal.yml"],
+      "state": "SOVEREIGN_LOCAL_HANDLER_BOUND_TVC_GRANT_REQUIRED",
+      "production_transport": "materialized repository + fixed handler",
+      "authority": "TVC exact-scope execution grant",
+      "credential_requirement": "NO_GITHUB_TOKEN"
     },
     {
       "repo": "StegVerse-Labs/Continuity",
-      "state": "GUARDIAN_LOCAL_SCHEDULE_REMOVED_CENTRAL_CADENCE_CONFIGURED_RUNTIME_VALIDATION_PENDING",
-      "retained_workflows": [
-        {
-          "path": ".github/workflows/continuity.yml",
-          "triggers": ["workflow_dispatch", "push"],
-          "run_hours_utc": [0, 6, 12, 18],
-          "healer_inputs": {},
-          "target_commit": "282f09fd4abb41afa88a209bfbc248a369e15cbe",
-          "handoff_commit": "7b190c04786240d951afbf3ca536e8a991a3c61c",
-          "repairs": [
-            "remove downstream cron",
-            "repair OIDC token extraction",
-            "repair TV access-token output",
-            "fail closed on required configuration and missing tokens",
-            "add concurrency and summary boundary"
-          ]
-        }
-      ]
-    },
-    {
-      "repo": "StegVerse-Labs/CosDen",
-      "state": "AUDIT_ONLY_CANONICALIZED_IN_STEGDB_HOSTED_AUDIT_PENDING",
-      "dispatch_required": false,
-      "audit_only": true,
-      "canonical_owner": "StegVerse-Labs/StegDB",
-      "canonical_path": "canonical/cosden",
-      "handoff_commit": "b90916883e4a25a260184eebb542e2472389fedd",
-      "registry_commit": "072e5aca80406e44bdbea6f8b1c81c690eaf9848",
-      "release_condition": "quiet_enforcer_latest.json records an exact CosDen workflow inventory with zero unauthorized schedules or a deterministic non-COMPLETE state"
+      "entrypoints": ["continuity.yml"],
+      "state": "SOVEREIGN_LOCAL_GUARDIAN_BOUND",
+      "production_transport": "materialized repository + local acknowledgement receipt + TV/TVC governed hooks",
+      "credential_requirement": "NO_GITHUB_TOKEN"
     },
     {
       "repo": "StegVerse-Labs/Site",
-      "state": "CENTRAL_CADENCE_CONFIGURED_LOCAL_SCHEDULE_REMOVAL_BLOCKED_BY_SITE_ORCHESTRATOR_ADMISSION",
-      "retained_workflows": [
-        {
-          "path": ".github/workflows/site-task-runner.yml",
-          "triggers": ["workflow_dispatch", "workflow_run", "schedule"],
-          "run_hours_utc": [0, 6, 12, 18],
-          "healer_inputs": {
-            "task": "all-local"
-          }
-        }
-      ],
-      "blocker": "data/site-orchestration-state.json reports active OBSERVED_BLOCKED sequence, external tasks disallowed, and no admitted scheduler-migration task",
-      "release_condition": "Site repository orchestrator admits the scheduler migration or the active sequence reaches its terminal idle state"
+      "entrypoints": ["site-task-runner.yml"],
+      "state": "SOVEREIGN_LOCAL_HANDLER_BOUND",
+      "production_transport": "materialized repository + fixed local orchestration commands",
+      "credential_requirement": "NONE"
+    },
+    {
+      "repo": "StegVerse-Labs/StegVerse-Healer",
+      "entrypoints": ["quiet_enforcer.yml", "stegdeploy-publication-relay.yml"],
+      "state": "SOVEREIGN_LOCAL_HANDLERS_BOUND",
+      "production_transport": "materialized repositories + fixed handlers",
+      "credential_requirement": "NONE_FOR_GITHUB",
+      "stegdeploy_release_condition": "exact published image digest must already exist in the local Docker image store"
+    },
+    {
+      "repo": "StegVerse-Labs/CosDen",
+      "state": "AUDIT_ONLY_CANONICALIZED_IN_STEGDB",
+      "dispatch_required": false,
+      "canonical_owner": "StegVerse-Labs/StegDB",
+      "canonical_path": "canonical/cosden"
     }
   ],
-  "healer_commits": {
-    "cadence_dispatcher": "e9cc1ca67ad525425cc2f135da67c8a151ff00d8",
-    "dispatch_mode_workflow": "78d729b3e5b8022b91ab00014aaaa9bcc8958808",
-    "cadence_registry": "ca9329470ecd63836ed045bdb65ce117c890b67e",
-    "continuity_registry": "0c57885b5268776a1f746f751eb960528bc90d06",
-    "quiet_enforcer_script": "e00757db076257e2c6e5258e7c17d7b0c45c955f",
-    "quiet_enforcer_workflow": "0ef344f703589c3fddf14539562688433dc8740a",
-    "cosden_audit_registry": "072e5aca80406e44bdbea6f8b1c81c690eaf9848"
+  "heartbeat_binding": {
+    "handoff": "StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json",
+    "authorization": "StegVerse-Labs/.github/authorizations/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json",
+    "worker": "StegVerse-Labs/.github/workers/healer_sovereign_scheduler_worker.py",
+    "registry_fragment": "StegVerse-Labs/.github/control/worker-registry.d/healer-sovereign-scheduler-001.json",
+    "process_adapter": "process:healer-sovereign-scheduler-v1",
+    "claim_state": "MACHINE_OWNED",
+    "manual_session_execution_allowed": false
   },
-  "receipt_automation": {
-    "workflow": ".github/workflows/quiet_enforcer.yml",
-    "script": "app/audit_schedules.py",
-    "latest_state": "data/summary/quiet_enforcer_latest.json",
-    "artifact_retention_days": 90,
-    "states": ["COMPLETE", "BLOCKED", "RETRY", "REVIEW_REQUIRED", "FAILED"],
-    "duplicate_prevention": "stable projections preserve the prior observation when no material state changes",
-    "fail_closed": true
-  },
-  "pending_validation": [
-    "HEALER_GH_TOKEN permits Actions dispatch and Contents read",
-    "quiet_enforcer hosted run produces data/summary/quiet_enforcer_latest.json",
-    "controlled Healer dispatch of SCW workflows succeeds",
-    "controlled Healer dispatch of TV Self-Heal succeeds",
-    "controlled Healer dispatch of Continuity Guardian succeeds",
-    "Continuity OIDC and TV exchange steps complete without exposing protected values",
-    "scheduled mode honors run_hours_utc while manual mode bypasses cadence",
-    "SCW, TV, Continuity, and CosDen audit records contain zero unauthorized schedule triggers",
-    "Site repository orchestration admits and completes local schedule removal"
+  "retired_hosted_paths": [
+    "healer_scheduler.yml production scheduling/dispatch",
+    "quiet_enforcer.yml production audit mutation",
+    "quiet-enforcer.yml duplicate token-bearing audit",
+    "stegdeploy-publication-relay.yml production GitHub relay",
+    "supercheck_core.yml GitHub mutation/PR path",
+    "forward-to-bridge.yml token-bearing repository dispatch",
+    "sync-to-canonical.yml scheduled generic GitHub sync",
+    "SCW hosted execution entrypoints",
+    "Continuity hosted production guardian",
+    "TV hosted self-heal transport",
+    "core-node GHCR/GitHub-dispatch runtime intake"
   ],
-  "next_executable_task": "Run or observe StegVerse-Healer Quiet Enforcer; if blocked, retain the exact token/access state. Site mutation remains deferred until its repository orchestrator admits the task."
+  "validation": {
+    "source_installation": "COMPLETE",
+    "authority_binding": "COMPLETE",
+    "hosted_source_validation": "NON_AUTHORIZING",
+    "previous_run_id": 31624805596,
+    "previous_run_result": "FAILED_ON_SUPERSEDED_HANDOFF_VALUE_AFTER_NO_TOKEN_CHECKS_PASSED",
+    "successor_run": "NOT_YET_OBSERVED",
+    "resident_runtime_execution": "ACTIVE_MACHINE_WORK_NOT_YET_OBSERVED"
+  },
+  "superseded_generic_stegdb_sync": "data/session_consolidation/stegdb-healer-canonical-import.json",
+  "next_executable_task": "Resident sovereign heartbeat executes SHWP-HEALER-SOVEREIGN-SCHEDULER-001 under its current admitted claim/fence and persists the no-token scheduler receipt. A chat session must not compete with that runtime claim.",
+  "archive_effect": "The remaining activation work is durably machine-owned; no chat-only implementation requirement remains in this migration record."
 }
