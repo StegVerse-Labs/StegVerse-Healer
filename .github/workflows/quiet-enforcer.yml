@@ -1,57 +1,22 @@
-name: Quiet Enforcer (No Zombie Schedules)
+name: Quiet Enforcer Legacy Redirect
 
 on:
-  schedule:
-    - cron: "23 3 * * *"  # daily 03:23
   workflow_dispatch: {}
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-  audit:
+  superseded:
     runs-on: ubuntu-latest
     steps:
-      - name: Audit repos for forbidden schedules
-        env:
-          GH_TOKEN: ${{ secrets.HEALER_GH_TOKEN }}
+      - name: Record canonical successor
         run: |
           set -euo pipefail
-
-          # Edit this list as needed
-          REPOS=(
-            "StegVerse-Labs/Site"
-            "StegVerse-Labs/SCW"
-            "StegVerse-Labs/TV"
-            "StegVerse-Labs/CosDen"
-            "StegVerse-Labs/Continuity"
-          )
-
-          echo "Scanning for forbidden 'schedule:' blocks outside StegVerse-Healer..."
-
-          for repo in "${REPOS[@]}"; do
-            echo "---- $repo ----"
-            # List workflow files via GitHub Contents API
-            files=$(curl -sS -H "Authorization: Bearer ${GH_TOKEN}" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${repo}/contents/.github/workflows" | \
-              python -c "import sys, json; d=json.load(sys.stdin); print('\n'.join([x['name'] for x in d if x.get('name','').endswith('.yml') or x.get('name','').endswith('.yaml')]))" || true)
-
-            if [ -z "${files}" ]; then
-              echo "No workflows found or no access."
-              continue
-            fi
-
-            while IFS= read -r f; do
-              raw=$(curl -sS -H "Authorization: Bearer ${GH_TOKEN}" \
-                -H "Accept: application/vnd.github.raw" \
-                "https://api.github.com/repos/${repo}/contents/.github/workflows/${f}" || true)
-
-              # Allowed: the orchestrator may exist, but it MUST NOT have schedule (Healer is the only clock).
-              if echo "$raw" | grep -qE '^\s*schedule\s*:'; then
-                echo "FOUND schedule in ${repo}/.github/workflows/${f}"
-              fi
-            done <<< "${files}"
-          done
-
-          echo "Audit complete."
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          test -z "${HEALER_GH_TOKEN:-}"
+          echo "STATE=SUPERSEDED"
+          echo "Canonical validation surface: .github/workflows/quiet_enforcer.yml"
+          echo "Canonical production implementation: app/audit_schedules.py"
+          echo "Production carrier: single StegVerse resident heartbeat via app/sovereign_scheduler.py"
+          echo "GitHub token production authority: NONE"
