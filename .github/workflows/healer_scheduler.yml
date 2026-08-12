@@ -8,8 +8,7 @@ on:
         required: false
         default: "all"
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: healer-scheduler-contract-validation
@@ -20,9 +19,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - name: Anonymous public checkout without GitHub token
+        run: |
+          set -euo pipefail
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          git config --global --unset-all http.https://github.com/.extraheader || true
+          git init .
+          git remote add origin https://github.com/StegVerse-Labs/StegVerse-Healer.git
+          env -u GITHUB_TOKEN -u GH_TOKEN git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout --detach FETCH_HEAD
 
       - name: Validate scheduler source
         run: |
