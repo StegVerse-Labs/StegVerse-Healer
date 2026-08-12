@@ -77,20 +77,19 @@
     "2def997a49f77d707aa62ed5b97e333fd0a303b0",
     "67366a29437ed213aa763307acc596ccb52cf8b2",
     "4ee44bbb996e2ca4a27ec7c072a68e6adb7911d9",
-    "e718664136579fb339940ee282f8e56fdc4a5225"
+    "e718664136579fb339940ee282f8e56fdc4a5225",
+    "74cd3e720d47223aeda87f30fe6cfc0e1af2fe1b"
   ],
   "validation_state": {
     "source_and_policy": "IMPLEMENTED",
     "previous_heartbeat_validation_run": 31624805596,
     "previous_heartbeat_validation_result": "FAILED_ON_OLDER_HANDOFF_SUCCESSOR_POLICY_ONLY",
-    "previous_run_passed_before_failure": [
-      "anonymous_no-token checkout",
-      "GitHub credential environment assertions",
-      "Python compilation",
-      "canonical JSON parse"
-    ],
     "current_handoff_correction": "INSTALLED_ON_MAIN",
-    "successor_hosted_validation": "NOT_YET_DIRECTLY_OBSERVED",
+    "successor_hosted_validation": "PASS",
+    "successor_validation_run": 31630077076,
+    "successor_validation_job": 94226281567,
+    "successor_validated_head": "a2502806bfb5853aa3c87295e1dcd5f09a41b982",
+    "successor_validation_receipt": "data/session_consolidation/healer-successor-validation-2026-08-12.json",
     "live_resident_execution": "MACHINE_OWNED_NOT_YET_OBSERVED"
   },
   "canonical_machine_continuation": {
