@@ -1,143 +1,177 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import base64
 import json
 import os
+import subprocess
 import sys
-import urllib.error
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-API = "https://api.github.com"
 SOURCE_REPO = "StegVerse-org/LLM-adapter"
-SOURCE_PATH = "receipts/stegdeploy-image-publication.json"
-SOURCE_WORKFLOW = "stegdeploy-image.yml"
 TARGET_REPO = "StegVerse-org/core-node-runtime-demo"
-EVENT_TYPE = "stegdeploy-image-published"
-STATE_PATH = Path("data/summary/stegdeploy_publication_dispatch.json")
+SOURCE_PATH = "receipts/stegdeploy-image-publication.json"
+VALID_SOURCE_SCHEMA = "stegdeploy.image-publication.v2"
+FORBIDDEN_CREDENTIALS = ("HEALER_GH_TOKEN", "GITHUB_TOKEN", "GH_TOKEN", "HEALER_PAT", "GH_STEGVERSE_AI_TOKEN")
 
 
-def request_json(url: str, token: str, *, method: str = "GET", payload: dict[str, Any] | None = None) -> dict[str, Any]:
-    data = None if payload is None else json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, method=method, headers={
-        "Authorization": f"Bearer {token}",
-        "Accept": "application/vnd.github+json",
-        "Content-Type": "application/json",
-        "User-Agent": "StegVerse-Healer",
-        "X-GitHub-Api-Version": "2022-11-28",
-    })
-    try:
-        with urllib.request.urlopen(req) as response:
-            raw = response.read()
-            return json.loads(raw.decode("utf-8")) if raw else {}
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"GitHub API request failed ({exc.code}): {detail}") from exc
+def load_roots() -> dict[str, Path]:
+    raw = os.getenv("STEGVERSE_REPO_ROOTS_JSON", "").strip()
+    if not raw:
+        raise ValueError("STEGVERSE_REPO_ROOTS_JSON is required")
+    parsed = json.loads(raw)
+    if not isinstance(parsed, dict):
+        raise ValueError("STEGVERSE_REPO_ROOTS_JSON must be an object")
+    roots: dict[str, Path] = {}
+    for repo, value in parsed.items():
+        if isinstance(repo, str) and isinstance(value, str):
+            path = Path(value).expanduser().resolve()
+            if path.is_dir():
+                roots[repo] = path
+    return roots
 
 
-def load_source_receipt(token: str) -> dict[str, Any]:
-    encoded = request_json(f"{API}/repos/{SOURCE_REPO}/contents/{SOURCE_PATH}?ref=main", token)
-    content = encoded.get("content")
-    if encoded.get("encoding") != "base64" or not isinstance(content, str):
-        raise RuntimeError("source publication receipt was not returned as base64 content")
-    return json.loads(base64.b64decode(content).decode("utf-8"))
+def load_receipt(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("source receipt must be an object")
+    return value
 
 
-def validate_receipt(receipt: dict[str, Any]) -> list[str]:
+def validate_source(receipt: dict[str, Any]) -> list[str]:
     blockers: list[str] = []
-    if receipt.get("schema") != "stegdeploy.image-publication.v2": blockers.append("source receipt is not v2")
-    if receipt.get("state") != "PUBLISHED": blockers.append("source receipt is not PUBLISHED")
+    if receipt.get("repository") != SOURCE_REPO:
+        blockers.append("source_repository_identity_mismatch")
+    if receipt.get("schema") != VALID_SOURCE_SCHEMA:
+        blockers.append("source_receipt_not_v2")
+    if receipt.get("state") != "PUBLISHED":
+        blockers.append("source_receipt_not_published")
     digest = receipt.get("digest")
-    if not isinstance(digest, str) or not digest.startswith("sha256:"): blockers.append("source digest is not sha256-addressed")
-    if receipt.get("consumer_pull_verified") is not True: blockers.append("source consumer pull is not verified")
-    if receipt.get("repository") != SOURCE_REPO: blockers.append("source repository identity mismatch")
-    if not isinstance(receipt.get("receipt_sha256"), str): blockers.append("source receipt hash missing")
+    if not isinstance(digest, str) or not digest.startswith("sha256:"):
+        blockers.append("source_digest_not_sha256")
+    if receipt.get("consumer_pull_verified") is not True:
+        blockers.append("historical_consumer_pull_not_verified")
+    if not isinstance(receipt.get("receipt_sha256"), str):
+        blockers.append("source_receipt_hash_missing")
     return blockers
 
 
-def load_previous_state() -> dict[str, Any]:
-    if not STATE_PATH.exists(): return {}
-    try:
-        value = json.loads(STATE_PATH.read_text(encoding="utf-8"))
-        return value if isinstance(value, dict) else {}
-    except Exception:
-        return {}
-
-
-def dispatch_publication_workflow(token: str) -> None:
-    request_json(f"{API}/repos/{SOURCE_REPO}/actions/workflows/{SOURCE_WORKFLOW}/dispatches", token, method="POST", payload={"ref": "main"})
-
-
-def write_state(*, state: str, blockers: list[str], receipt: dict[str, Any] | None, dispatched: bool, remediation_dispatched: bool = False) -> None:
-    previous = load_previous_state()
-    source_commit = receipt.get("source_commit") if receipt else None
-    body = {
-        "schema": "stegverse.healer.stegdeploy_publication_dispatch.v2",
-        "state": state,
-        "source_repository": SOURCE_REPO,
-        "source_path": SOURCE_PATH,
-        "source_workflow": SOURCE_WORKFLOW,
-        "target_repository": TARGET_REPO,
-        "event_type": EVENT_TYPE,
-        "observed_source_commit": source_commit,
-        "observed_digest": receipt.get("digest") if receipt else None,
-        "observed_receipt_sha256": receipt.get("receipt_sha256") if receipt else None,
-        "last_dispatched_receipt_sha256": receipt.get("receipt_sha256") if dispatched and receipt else previous.get("last_dispatched_receipt_sha256"),
-        "last_remediation_source_commit": source_commit if remediation_dispatched else previous.get("last_remediation_source_commit"),
-        "blockers": blockers,
-        "manual_user_action_required": False,
-        "provider_execution_authorized": False,
-        "custody_authorized": False,
-        "deployment_authorized": False,
-        "publication_authorized": False,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }
-    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATE_PATH.write_text(json.dumps(body, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+def write_state(path: Path | None, body: dict[str, Any]) -> None:
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(body, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def main() -> int:
-    token = os.environ.get("HEALER_GH_TOKEN", "").strip()
-    if not token:
-        write_state(state="BLOCKED", blockers=["HEALER_GH_TOKEN unavailable"], receipt=None, dispatched=False)
+    forbidden = [name for name in FORBIDDEN_CREDENTIALS if os.getenv(name)]
+    if forbidden:
+        print("Forbidden GitHub credential environment: " + ",".join(sorted(forbidden)), file=sys.stderr)
         return 2
-    receipt = load_source_receipt(token)
-    blockers = validate_receipt(receipt)
-    if blockers:
-        previous = load_previous_state()
-        source_commit = receipt.get("source_commit")
-        stale_contract = receipt.get("schema") != "stegdeploy.image-publication.v2"
-        already_requested = bool(source_commit) and previous.get("last_remediation_source_commit") == source_commit
-        if stale_contract and not already_requested:
+
+    state_raw = os.getenv("HEALER_RELAY_STATE", "").strip()
+    state_path = Path(state_raw).resolve() if state_raw else None
+    try:
+        roots = load_roots()
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    source_root = roots.get(SOURCE_REPO)
+    target_root = roots.get(TARGET_REPO)
+    blockers: list[str] = []
+    if source_root is None:
+        blockers.append("source_repository_not_materialized")
+    if target_root is None:
+        blockers.append("target_repository_not_materialized")
+
+    source: dict[str, Any] | None = None
+    source_path = source_root / SOURCE_PATH if source_root else None
+    if source_path and source_path.is_file():
+        try:
+            source = load_receipt(source_path)
+            blockers.extend(validate_source(source))
+        except Exception as exc:
+            blockers.append(f"source_receipt_invalid:{exc}")
+    elif source_root is not None:
+        blockers.append("source_publication_receipt_not_materialized")
+
+    previous_hash = os.getenv("HEALER_LAST_PUBLICATION_RECEIPT_SHA256", "").strip()
+    source_hash = str(source.get("receipt_sha256")) if source else ""
+    if not blockers and source_hash and previous_hash == source_hash:
+        body = {
+            "schema": "stegverse.healer.stegdeploy_publication_relay.v3",
+            "state": "NOOP_ALREADY_VERIFIED",
+            "source_repository": SOURCE_REPO,
+            "target_repository": TARGET_REPO,
+            "source_receipt_sha256": source_hash,
+            "credential_authority": "TV/TVC",
+            "github_token_required": False,
+            "github_api_used": False,
+            "github_dispatch_used": False,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "blockers": [],
+        }
+        write_state(state_path, body)
+        print(json.dumps(body, sort_keys=True))
+        return 0
+
+    intake: dict[str, Any] | None = None
+    if not blockers and source_path is not None and target_root is not None:
+        script = target_root / "tools" / "stegdeploy_runtime_intake_local.py"
+        if not script.is_file():
+            blockers.append("target_local_intake_not_materialized")
+        else:
+            output_path = Path(os.getenv("STEGDEPLOY_RUNTIME_INTAKE_RECEIPT", "/tmp/stegdeploy-runtime-intake.latest.json")).resolve()
+            env = {
+                "PATH": os.environ.get("PATH", ""),
+                "PYTHONPATH": os.environ.get("PYTHONPATH", ""),
+                "LANG": os.environ.get("LANG", "C.UTF-8"),
+                "LC_ALL": os.environ.get("LC_ALL", "C.UTF-8"),
+                "STEGDEPLOY_PUBLICATION_RECEIPT": str(source_path),
+                "STEGDEPLOY_RUNTIME_INTAKE_RECEIPT": str(output_path),
+            }
+            proc = subprocess.run(
+                [sys.executable, str(script)],
+                cwd=target_root,
+                env=env,
+                text=True,
+                capture_output=True,
+                timeout=180,
+                check=False,
+            )
             try:
-                dispatch_publication_workflow(token)
-            except Exception as exc:
-                blockers = [*blockers, f"publication remediation dispatch failed: {exc}"]
-                write_state(state="BLOCKED", blockers=blockers, receipt=receipt, dispatched=False)
-                return 1
-            write_state(state="REMEDIATION_DISPATCHED", blockers=blockers, receipt=receipt, dispatched=False, remediation_dispatched=True)
-            return 0
-        write_state(state="BLOCKED_REMEDIATION_PENDING" if stale_contract and already_requested else "BLOCKED", blockers=blockers, receipt=receipt, dispatched=False)
-        return 0
-    receipt_hash = receipt["receipt_sha256"]
-    if load_previous_state().get("last_dispatched_receipt_sha256") == receipt_hash:
-        write_state(state="NOOP_ALREADY_DISPATCHED", blockers=[], receipt=receipt, dispatched=False)
-        return 0
-    payload = {"event_type": EVENT_TYPE, "client_payload": {
-        "repository": SOURCE_REPO,
-        "schema": receipt["schema"],
-        "state": receipt["state"],
-        "digest": receipt["digest"],
-        "consumer_pull_verified": receipt["consumer_pull_verified"],
-        "receipt_sha256": receipt_hash,
-        "source_commit": receipt.get("source_commit"),
-    }}
-    request_json(f"{API}/repos/{TARGET_REPO}/dispatches", token, method="POST", payload=payload)
-    write_state(state="DISPATCHED", blockers=[], receipt=receipt, dispatched=True)
-    return 0
+                intake = json.loads(proc.stdout.strip().splitlines()[-1])
+            except Exception:
+                intake = {"state": "FAILED", "stdout_tail": proc.stdout[-2000:], "stderr_tail": proc.stderr[-2000:]}
+            if proc.returncode != 0 or intake.get("state") != "COMPATIBLE":
+                blockers.extend(str(value) for value in intake.get("blockers", []) if value)
+                if not blockers:
+                    blockers.append("target_local_intake_not_compatible")
+
+    state = "COMPLETE" if not blockers and intake and intake.get("state") == "COMPATIBLE" else "BLOCKED"
+    body = {
+        "schema": "stegverse.healer.stegdeploy_publication_relay.v3",
+        "state": state,
+        "source_repository": SOURCE_REPO,
+        "source_path": SOURCE_PATH,
+        "target_repository": TARGET_REPO,
+        "source_receipt_sha256": source_hash or None,
+        "source_digest": source.get("digest") if source else None,
+        "target_intake": intake,
+        "credential_authority": "TV/TVC",
+        "github_token_required": False,
+        "github_api_used": False,
+        "github_dispatch_used": False,
+        "remote_registry_pull_requested_by_relay": False,
+        "blockers": sorted(set(blockers)),
+        "next_executable_action": None if state == "COMPLETE" else "MATERIALIZE_REQUIRED_LOCAL_SOURCE_TARGET_AND_EXACT_IMAGE_THEN_RETRY",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    write_state(state_path, body)
+    print(json.dumps(body, sort_keys=True))
+    return 0 if state == "COMPLETE" else 3
 
 
 if __name__ == "__main__":
