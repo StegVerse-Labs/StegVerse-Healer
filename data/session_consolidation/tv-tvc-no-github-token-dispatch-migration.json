@@ -1,0 +1,50 @@
+{
+  "schema": "stegverse.session-adjacent-task/v1",
+  "task_id": "HEALER-TV-TVC-NO-GITHUB-TOKEN-DISPATCH-001",
+  "originating_goal": "No GitHub tokens are used as production/control-plane authority; credential and admission semantics are managed by TV/TVC.",
+  "repository": "StegVerse-Labs/StegVerse-Healer",
+  "branch": "main",
+  "canonical_handoff": "docs/HEALER_MIRROR_HANDOFF.md",
+  "state": "CLAIMED_FOR_INTEGRATION",
+  "owner": "StegVerse-Labs/StegVerse-Healer + StegVerse-Labs/TV + StegVerse-Labs/TVC",
+  "claim_created_at": "2026-08-12T11:41:00-05:00",
+  "claim_release_condition": "All production cross-repository scheduler, quiet-enforcer and publication-remediation paths no longer require HEALER_GH_TOKEN, GITHUB_TOKEN, GH_TOKEN, PAT or equivalent GitHub credential authority; TV/TVC-governed admission is installed and validated with inspectable no-secret receipts.",
+  "collision_boundaries": [
+    "Do not create a second credential authority.",
+    "Do not use GitHub Actions credentials as production authority.",
+    "Do not change downstream repository business logic while replacing the dispatch authority boundary.",
+    "Do not claim dispatch success until an actual downstream run is observed."
+  ],
+  "current_conflict": {
+    "healer_handoff": "docs/HEALER_MIRROR_HANDOFF.md",
+    "legacy_credential": "HEALER_GH_TOKEN",
+    "observed_failure": "stegdeploy publication remediation recorded HTTP 403 for insufficient token scope",
+    "current_authority_rule": "TV/TVC",
+    "github_token_production_authority": "NONE"
+  },
+  "required_surfaces": [
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/healer_scheduler.yml",
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/quiet_enforcer.yml",
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/stegdeploy-publication-relay.yml",
+    "StegVerse-Labs/StegVerse-Healer/app/dispatch_orchestrators.py",
+    "StegVerse-Labs/StegVerse-Healer/app/audit_schedules.py",
+    "StegVerse-Labs/StegVerse-Healer/app/relay_stegdeploy_publication.py",
+    "StegVerse-Labs/TV credential packaging/admission contract",
+    "StegVerse-Labs/TVC infrastructure credential/admission contract"
+  ],
+  "validation_requirements": [
+    "No production path requires HEALER_GH_TOKEN, GITHUB_TOKEN, GH_TOKEN or PAT.",
+    "TV/TVC admission fails closed when authority evidence is unavailable.",
+    "No secret value is persisted in receipts.",
+    "Scheduler dispatch produces an inspectable downstream run only after admitted authority.",
+    "Quiet-enforcer and publication relay preserve deterministic duplicate suppression and fail-closed outcomes."
+  ],
+  "next_executable_action": "Inspect the named Healer workflows/scripts and TV/TVC infrastructure credential contracts; replace the legacy token-bearing dispatch boundary with the smallest existing TV/TVC-governed admission/execution mechanism rather than inventing a new credential system.",
+  "archive_dependency": true,
+  "propagation_after_release": [
+    "StegVerse-Labs/Site",
+    "GCAT-BCAT-Engine/Publisher",
+    "StegVerse-Labs/admissibility-wiki",
+    "StegVerse-Labs/stegguardian-wiki"
+  ]
+}
