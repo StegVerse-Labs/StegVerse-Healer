@@ -5,43 +5,105 @@
   "repository": "StegVerse-Labs/StegVerse-Healer",
   "branch": "main",
   "canonical_handoff": "docs/HEALER_MIRROR_HANDOFF.md",
-  "state": "CLAIMED_FOR_INTEGRATION",
-  "owner": "StegVerse-Labs/StegVerse-Healer + StegVerse-Labs/TV + StegVerse-Labs/TVC",
+  "state": "MERGED_INTO_CANONICAL_WORKSTREAM",
+  "owner": "resident sovereign heartbeat + StegVerse-Labs/StegVerse-Healer + StegVerse-Labs/TV + StegVerse-Labs/TVC",
   "claim_created_at": "2026-08-12T11:41:00-05:00",
-  "claim_release_condition": "All production cross-repository scheduler, quiet-enforcer and publication-remediation paths no longer require HEALER_GH_TOKEN, GITHUB_TOKEN, GH_TOKEN, PAT or equivalent GitHub credential authority; TV/TVC-governed admission is installed and validated with inspectable no-secret receipts.",
+  "claim_release_condition": "RELEASED_FOR_CHAT_SESSION: source implementation and authority migration are installed; remaining live carrier execution is machine-owned by the canonical resident heartbeat.",
   "collision_boundaries": [
     "Do not create a second credential authority.",
     "Do not use GitHub Actions credentials as production authority.",
-    "Do not change downstream repository business logic while replacing the dispatch authority boundary.",
-    "Do not claim dispatch success until an actual downstream run is observed."
+    "Do not restore GitHub workflow dispatch, Contents API, repository_dispatch, GHCR login, branch push, PR creation, or GitHub-hosted schedules as production transport.",
+    "Do not claim live activation until resident-heartbeat execution evidence exists.",
+    "Do not compete with the active resident-heartbeat runtime/activation worker."
   ],
-  "current_conflict": {
-    "healer_handoff": "docs/HEALER_MIRROR_HANDOFF.md",
-    "legacy_credential": "HEALER_GH_TOKEN",
-    "observed_failure": "stegdeploy publication remediation recorded HTTP 403 for insufficient token scope",
-    "current_authority_rule": "TV/TVC",
-    "github_token_production_authority": "NONE"
+  "authority": {
+    "credential_authority": "TV/TVC",
+    "github_token_production_authority": "NONE",
+    "github_actions_production_role": "NONE",
+    "production_clock": "single resident StegVerse heartbeat",
+    "hosted_validation_authority_effect": "NONE"
   },
-  "required_surfaces": [
-    "StegVerse-Labs/StegVerse-Healer/.github/workflows/healer_scheduler.yml",
-    "StegVerse-Labs/StegVerse-Healer/.github/workflows/quiet_enforcer.yml",
-    "StegVerse-Labs/StegVerse-Healer/.github/workflows/stegdeploy-publication-relay.yml",
+  "installed_surfaces": [
+    "StegVerse-Labs/StegVerse-Healer/app/sovereign_scheduler.py",
     "StegVerse-Labs/StegVerse-Healer/app/dispatch_orchestrators.py",
     "StegVerse-Labs/StegVerse-Healer/app/audit_schedules.py",
     "StegVerse-Labs/StegVerse-Healer/app/relay_stegdeploy_publication.py",
-    "StegVerse-Labs/TV credential packaging/admission contract",
-    "StegVerse-Labs/TVC infrastructure credential/admission contract"
+    "StegVerse-Labs/StegVerse-Healer/data/orchestrator_targets.json",
+    "StegVerse-Labs/SCW/scw/local_health.py",
+    "StegVerse-Labs/SCW/scw/scw_core.py",
+    "StegVerse-Labs/Continuity/scripts/guardian.py",
+    "StegVerse-Labs/TV/scripts/sovereign_self_heal.py",
+    "StegVerse-Labs/TVC/policies/local_repository_mutation/tv_self_heal.v1.json",
+    "StegVerse-org/core-node-runtime-demo/tools/stegdeploy_runtime_intake_local.py",
+    "StegVerse-Labs/.github/workers/healer_sovereign_scheduler_worker.py",
+    "StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json",
+    "StegVerse-Labs/.github/authorizations/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json",
+    "StegVerse-Labs/.github/control/worker-registry.d/healer-sovereign-scheduler-001.json",
+    "StegVerse-Labs/.github/control/process-worker-adapters.json"
   ],
-  "validation_requirements": [
-    "No production path requires HEALER_GH_TOKEN, GITHUB_TOKEN, GH_TOKEN or PAT.",
-    "TV/TVC admission fails closed when authority evidence is unavailable.",
-    "No secret value is persisted in receipts.",
-    "Scheduler dispatch produces an inspectable downstream run only after admitted authority.",
-    "Quiet-enforcer and publication relay preserve deterministic duplicate suppression and fail-closed outcomes."
+  "retired_or_superseded_surfaces": [
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/healer_scheduler.yml as production scheduler",
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/quiet_enforcer.yml as production scheduler/mutator",
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/quiet-enforcer.yml duplicate scheduler",
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/stegdeploy-publication-relay.yml as production relay",
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/supercheck_core.yml as GitHub mutation path",
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/forward-to-bridge.yml as token-bearing repository dispatch",
+    "StegVerse-Labs/StegVerse-Healer/.github/workflows/sync-to-canonical.yml generic hosted canonical sync",
+    "StegVerse-Labs/SCW/.github/workflows/scw_orchestrator.yml as production executor",
+    "StegVerse-Labs/SCW/.github/workflows/uptime.yml as production executor",
+    "StegVerse-Labs/Continuity/.github/workflows/continuity.yml as production guardian",
+    "StegVerse-Labs/TV/.github/workflows/tv_self_heal.yml as production self-heal transport",
+    "StegVerse-org/core-node-runtime-demo/.github/workflows/stegdeploy-runtime-intake.yml as GHCR/GitHub production intake"
   ],
-  "next_executable_action": "Inspect the named Healer workflows/scripts and TV/TVC infrastructure credential contracts; replace the legacy token-bearing dispatch boundary with the smallest existing TV/TVC-governed admission/execution mechanism rather than inventing a new credential system.",
-  "archive_dependency": true,
-  "propagation_after_release": [
+  "evidence_commits": [
+    "d972f0c92c7f492bcf420c96056f68ff4c47f65d",
+    "06c14cbf9e9f9491532776bd241930e07083c725",
+    "b3df5feed791c18747f06e1d1a786cbc52d4c4ea",
+    "0b07675ec2095ea3286f0fdff6553b7a55d9c37a",
+    "f91169917d8d2626f05b9c1b59b79df66875ef90",
+    "2b2020538aa06a275229b94b0e25c1123297155d",
+    "79f307d56127fb8490a78536c5be31452ee0b858",
+    "84d173ba4dd61efc66504e46895e8218add35b43",
+    "70cfd3f987783ad4c34c31b76509471c39663970",
+    "95a596df289695b7dbb09807c59fa1812d0e1511",
+    "4bc4f7f89dc91712d337dbecab472584294d4b26",
+    "95860c2b0a366dd17e1b98cf5b5a987ad7c49974",
+    "c0de3b8d057eb884aa9ed7cf09d301e761eef7a4",
+    "5cd027b05e31720ee3213dd5fcb860b897c7deda",
+    "f9bac0a7c0f05d9bb73a6d2783320854979a4bca",
+    "9811fec37599cf0b5a3f1f38f863fa34f31dc9cd",
+    "6a0f081f356d24a7b5d88b945cb6d75188ea098c",
+    "3a36738524e1a045d584a3a7a4231b82563b32f1",
+    "2def997a49f77d707aa62ed5b97e333fd0a303b0",
+    "67366a29437ed213aa763307acc596ccb52cf8b2",
+    "4ee44bbb996e2ca4a27ec7c072a68e6adb7911d9",
+    "e718664136579fb339940ee282f8e56fdc4a5225"
+  ],
+  "validation_state": {
+    "source_and_policy": "IMPLEMENTED",
+    "previous_heartbeat_validation_run": 31624805596,
+    "previous_heartbeat_validation_result": "FAILED_ON_OLDER_HANDOFF_SUCCESSOR_POLICY_ONLY",
+    "previous_run_passed_before_failure": [
+      "anonymous_no-token checkout",
+      "GitHub credential environment assertions",
+      "Python compilation",
+      "canonical JSON parse"
+    ],
+    "current_handoff_correction": "INSTALLED_ON_MAIN",
+    "successor_hosted_validation": "NOT_YET_DIRECTLY_OBSERVED",
+    "live_resident_execution": "MACHINE_OWNED_NOT_YET_OBSERVED"
+  },
+  "canonical_machine_continuation": {
+    "organization_handoff": "StegVerse-Labs/.github/docs/ORG_MIRROR_HANDOFF.md",
+    "worker_handoff": "StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json",
+    "worker_registry_fragment": "StegVerse-Labs/.github/control/worker-registry.d/healer-sovereign-scheduler-001.json",
+    "runtime_activation_handoff": "StegVerse-Labs/.github/handoffs/SHWP-DURABLE-RUNTIME-ACTIVATION.json",
+    "execution_owner": "resident sovereign heartbeat",
+    "next_executable_action": "Resident carrier admits and executes the Healer sovereign scheduler under the current heartbeat claim/fence; persist its no-token receipt and continue fail-closed target reconciliation.",
+    "manual_session_execution_allowed": false
+  },
+  "archive_dependency": false,
+  "propagation_after_activation": [
     "StegVerse-Labs/Site",
     "GCAT-BCAT-Engine/Publisher",
     "StegVerse-Labs/admissibility-wiki",
