@@ -136,12 +136,17 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
         }
 
     if repo == "StegVerse-Labs/Continuity" and workflow == "continuity.yml":
-        return {
-            **base,
-            "state": "BLOCKED",
-            "outcome": "CONTINUITY_NO_TOKEN_GUARDIAN_ADAPTER_REQUIRED",
-            "release_condition": "Continuity guardian no longer resolves repositories or acknowledgement state through GitHub credentials/API and is admitted as a fixed heartbeat process adapter.",
-        }
+        result = _run(
+            [sys.executable, "scripts/guardian.py"],
+            root,
+            {
+                "STEGVERSE_REPO_ROOTS_JSON": all_roots_json,
+                "GUARDIAN_DAYS_NO_ACK": "3",
+            },
+            timeout=90,
+        )
+        state = "COMPLETE" if result["returncode"] == 0 else "BLOCKED"
+        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_CONTINUITY_GUARDIAN", "execution": result}
 
     return {**base, "state": "REVIEW_REQUIRED", "outcome": "NO_SOVEREIGN_HANDLER_BOUND"}
 
