@@ -1,113 +1,64 @@
-name: Quiet Enforcer (Detect Zombie Schedules)
+name: Quiet Enforcer Contract Validation
 
 on:
-  schedule:
-    - cron: "23 3 * * *"
   workflow_dispatch: {}
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
-  group: healer-quiet-enforcer
+  group: healer-quiet-enforcer-contract-validation
   cancel-in-progress: true
 
 jobs:
-  audit:
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Anonymous public checkout without GitHub token
+        run: |
+          set -euo pipefail
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          git config --global --unset-all http.https://github.com/.extraheader || true
+          git init .
+          git remote add origin https://github.com/StegVerse-Labs/StegVerse-Healer.git
+          env -u GITHUB_TOKEN -u GH_TOKEN git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout --detach FETCH_HEAD
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Validate audit implementation
+      - name: Validate local audit implementation
         run: |
           python -m json.tool data/orchestrator_targets.json >/dev/null
           python -m py_compile app/audit_schedules.py
 
-      - name: Audit managed repositories
-        id: audit
-        continue-on-error: true
+      - name: Assert GitHub credential variables are absent
+        run: |
+          set -euo pipefail
+          test -z "${HEALER_GH_TOKEN:-}"
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          test -z "${HEALER_PAT:-}"
+          test -z "${GH_STEGVERSE_AI_TOKEN:-}"
+
+      - name: Validate fail-closed local-root requirement
         env:
-          HEALER_GH_TOKEN: ${{ secrets.HEALER_GH_TOKEN }}
           TARGETS_FILE: data/orchestrator_targets.json
-          QUIET_RECEIPT: data/summary/quiet_enforcer_latest.json
-        run: python app/audit_schedules.py
+          QUIET_RECEIPT: /tmp/quiet_enforcer_latest.json
+        run: |
+          set +e
+          python app/audit_schedules.py >/tmp/quiet.out 2>/tmp/quiet.err
+          rc=$?
+          set -e
+          cat /tmp/quiet.err
+          test "$rc" -ne 0
+          grep -q "STEGVERSE_REPO_ROOTS_JSON is required" /tmp/quiet.err
+          echo HEALER_QUIET_ENFORCER_FAIL_CLOSED=PASS
 
-      - name: Validate receipt vocabulary and structure
+      - name: Record authority boundary
         if: always()
         run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          path = Path("data/summary/quiet_enforcer_latest.json")
-          if not path.exists():
-              raise SystemExit("quiet_enforcer_latest.json was not produced")
-          receipt = json.loads(path.read_text(encoding="utf-8"))
-          valid = {"COMPLETE", "BLOCKED", "RETRY", "REVIEW_REQUIRED", "FAILED"}
-          if receipt.get("schema") != "stegverse.healer.quiet-enforcer-receipt.v1":
-              raise SystemExit("unexpected receipt schema")
-          if receipt.get("state") not in valid:
-              raise SystemExit("invalid receipt state")
-          if not isinstance(receipt.get("repositories"), list):
-              raise SystemExit("repositories must be a list")
-          if not receipt.get("next_executable_task"):
-              raise SystemExit("next_executable_task is required")
-          print(json.dumps(receipt, indent=2, sort_keys=True))
-          PY
-
-      - name: Commit changed audit state
-        if: always()
-        run: |
-          git config user.name "StegVerse-Healer"
-          git config user.email "healer@users.noreply.github.com"
-          git add data/summary/quiet_enforcer_latest.json
-          if git diff --cached --quiet; then
-            echo "No material quiet-enforcer state change."
-          else
-            git commit -m "healer: update quiet-enforcer state"
-            git pull --rebase
-            git push
-          fi
-
-      - name: Upload inspectable receipt
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: quiet-enforcer-receipt-${{ github.run_id }}-${{ github.run_attempt }}
-          path: data/summary/quiet_enforcer_latest.json
-          if-no-files-found: error
-          retention-days: 90
-
-      - name: Write job summary
-        if: always()
-        run: |
-          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
-          import json
-          from pathlib import Path
-          receipt = json.loads(Path("data/summary/quiet_enforcer_latest.json").read_text())
-          print("## Quiet Enforcer")
-          print(f"State: {receipt['state']}")
-          print(f"Repositories: {receipt['summary']['repository_count']}")
-          print(f"Violations: {receipt['summary']['violation_count']}")
-          print(f"Blocked: {receipt['summary']['blocked_count']}")
-          print(f"Retry: {receipt['summary']['retry_count']}")
-          print(f"Review required: {receipt['summary']['review_required_count']}")
-          print(f"Next task: {receipt['next_executable_task']}")
-          PY
-
-      - name: Enforce fail-closed result
-        if: always()
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          state = json.loads(Path("data/summary/quiet_enforcer_latest.json").read_text())["state"]
-          if state != "COMPLETE":
-              raise SystemExit(f"quiet enforcer state is {state}")
-          PY
+          echo "## Quiet Enforcer contract" >> "$GITHUB_STEP_SUMMARY"
+          echo "Hosted schedule: NONE" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub API audit: RETIRED" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub token production authority: NONE" >> "$GITHUB_STEP_SUMMARY"
+          echo "Production audit source: locally materialized repositories" >> "$GITHUB_STEP_SUMMARY"
+          echo "Production carrier: single StegVerse resident heartbeat" >> "$GITHUB_STEP_SUMMARY"
