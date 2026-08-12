@@ -1,12 +1,10 @@
-name: Healer Scheduler (Single Clock)
+name: Healer Scheduler Contract Validation
 
 on:
-  schedule:
-    - cron: "7 * * * *"
   workflow_dispatch:
     inputs:
       run_scope:
-        description: "all or a configured repository/workflow alias"
+        description: "Optional configured repository/workflow alias for contract validation"
         required: false
         default: "all"
 
@@ -14,25 +12,61 @@ permissions:
   contents: read
 
 concurrency:
-  group: healer-scheduler
+  group: healer-scheduler-contract-validation
   cancel-in-progress: true
 
 jobs:
-  dispatch:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      - name: Validate scheduler configuration
+      - name: Validate scheduler source
         run: |
           python -m json.tool data/orchestrator_targets.json >/dev/null
-          python -m py_compile app/dispatch_orchestrators.py
+          python -m py_compile app/dispatch_orchestrators.py app/sovereign_scheduler.py
 
-      - name: Dispatch downstream orchestrators
+      - name: Assert production credential variables are absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "${HEALER_GH_TOKEN:-}"
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          test -z "${HEALER_PAT:-}"
+          test -z "${GH_STEGVERSE_AI_TOKEN:-}"
+
+      - name: Validate fail-closed behavior without sovereign repository roots
         env:
-          HEALER_GH_TOKEN: ${{ secrets.HEALER_GH_TOKEN }}
           RUN_SCOPE: ${{ github.event.inputs.run_scope || 'all' }}
-          DISPATCH_MODE: ${{ github.event_name }}
+          DISPATCH_MODE: manual
           TARGETS_FILE: data/orchestrator_targets.json
-        run: python app/dispatch_orchestrators.py
+        run: |
+          set +e
+          output="$(python app/dispatch_orchestrators.py)"
+          rc=$?
+          set -e
+          echo "$output"
+          test "$rc" -ne 0
+          python - "$output" <<'PY'
+          import json, sys
+          payload = json.loads(sys.argv[1])
+          assert payload['state'] == 'FAILED'
+          assert payload['credential_authority'] == 'TV/TVC'
+          assert payload['github_token_required'] is False
+          assert 'STEGVERSE_REPO_ROOTS_JSON' in payload['error']
+          print('HEALER_SOVEREIGN_SCHEDULER_FAIL_CLOSED=PASS')
+          PY
+
+      - name: Record authority boundary
+        if: always()
+        run: |
+          echo "## Healer scheduler contract" >> "$GITHUB_STEP_SUMMARY"
+          echo "Hosted schedule: NONE" >> "$GITHUB_STEP_SUMMARY"
+          echo "Hosted production dispatch: NONE" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub token production authority: NONE" >> "$GITHUB_STEP_SUMMARY"
+          echo "Credential/admission authority: TV/TVC" >> "$GITHUB_STEP_SUMMARY"
+          echo "Production scheduler/execution carrier: single StegVerse resident heartbeat" >> "$GITHUB_STEP_SUMMARY"
