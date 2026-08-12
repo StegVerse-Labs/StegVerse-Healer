@@ -1,280 +1,262 @@
 # StegVerse-Healer Mirror Handoff
 
-## Active goal
+## Authority and active goal
 
-- Goal ID: `SV-HEALER-SINGLE-SCHEDULER-001`
-- Goal: make `StegVerse-Labs/StegVerse-Healer` the sole approved clock for managed repositories while preserving repository-specific event entrypoints, deterministic receipts, fail-closed continuation, bounded remediation, and a federal-plus security floor.
+- Organization: `StegVerse-Labs`
 - Repository: `StegVerse-Labs/StegVerse-Healer`
 - Branch: `main`
-- Project state: `MULTI_TARGET_IMPLEMENTED_PENDING_HOSTED_VALIDATION`
-- Session consolidation state: `MERGED_INTO_CANONICAL_WORKSTREAM`
+- Goal ID: `HEALER-TV-TVC-NO-GITHUB-TOKEN-DISPATCH-001`
+- Originating session goal: remove GitHub-token production/control-plane authority, preserve TV/TVC as credential/admission authority, and bind Healer scheduling/maintenance to the single resident sovereign heartbeat.
+- Canonical organization continuation: `StegVerse-Labs/.github/docs/ORG_MIRROR_HANDOFF.md`
+- Canonical worker continuation: `StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`
+- Repository-local continuation: this handoff plus `data/session_consolidation/tv-tvc-no-github-token-dispatch-migration.json` and `data/summary/single_scheduler_migration.json`.
+- Current repository state: `SOVEREIGN_SOURCE_COMPLETE_LIVE_CARRIER_MACHINE_OWNED`.
+- Chat-session role: `MERGED_INTO_CANONICAL_WORKSTREAM`.
 
-## Authoritative records
-
-- `docs/HEALER_MIRROR_HANDOFF.md`
-- `docs/HEALER_ACTIVATION_PLAN.md`
-- `docs/SECURITY_BASELINE.md`
-- `registry/managed_repos.yml`
-- `data/orchestrator_targets.json`
-- `data/summary/single_scheduler_migration.json`
-- `data/summary/stegdeploy_publication_dispatch.json`
-- `data/summary/quiet_enforcer_latest.json` when generated
-- `data/session_consolidation/single_scheduler_session_inventory.json`
-- `data/session_consolidation/federal_plus_security_requirement.json`
-- `schemas/session_execution_inventory.schema.json`
-- `scripts/validate_session_execution_inventory.py`
-- `.github/workflows/validate-session-consolidation.yml`
-- `.github/workflows/healer_scheduler.yml`
-- `.github/workflows/quiet_enforcer.yml`
-- `.github/workflows/stegdeploy-publication-relay.yml`
-- `app/dispatch_orchestrators.py`
-- `app/audit_schedules.py`
-- `app/relay_stegdeploy_publication.py`
-
-## Canonical session transfer
-
-The originating chat session transferred its complete primary and adjacent goal inventory into:
+## Governing invariants
 
 ```text
-data/session_consolidation/single_scheduler_session_inventory.json
+credential_authority: TV/TVC
+github_token_production_authority: NONE
+github_actions_production_role: NONE
+production_clock: single resident StegVerse heartbeat
+arbitrary_target_command_authority: NONE
+remote_source_checkout_required_for_production: false
+missing local capability: FAIL_CLOSED
+hosted validation: non-authorizing
 ```
 
-The federal-plus security requirement is separately retained at:
+GitHub Actions may validate source when useful, but it is not a production scheduler, heartbeat carrier, credential authority, repository mutator, relay, deployment authority, or activation proof.
+
+## Authoritative files
 
 ```text
-data/session_consolidation/federal_plus_security_requirement.json
+docs/HEALER_MIRROR_HANDOFF.md
+data/orchestrator_targets.json
+data/summary/single_scheduler_migration.json
+data/session_consolidation/tv-tvc-no-github-token-dispatch-migration.json
+data/session_consolidation/stegdb-healer-canonical-import.json
+app/sovereign_scheduler.py
+app/dispatch_orchestrators.py
+app/audit_schedules.py
+app/relay_stegdeploy_publication.py
 ```
 
-Validation ownership is repository-native through the session-inventory schema, validator, workflow observer, scheduler, quiet enforcer, and publication relay.
+Cross-repository authority/evidence:
 
-The session itself holds no active implementation, validation, integration, propagation, or observation claim. Project work remains open under the owners named below, but future execution does not require the conversation.
+```text
+StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json
+StegVerse-Labs/.github/authorizations/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json
+StegVerse-Labs/.github/control/worker-registry.d/healer-sovereign-scheduler-001.json
+StegVerse-Labs/.github/control/process-worker-adapters.json
+StegVerse-Labs/TV/scripts/sovereign_self_heal.py
+StegVerse-Labs/TVC/policies/local_repository_mutation/tv_self_heal.v1.json
+StegVerse-Labs/SCW/scw/local_health.py
+StegVerse-Labs/SCW/scw/scw_core.py
+StegVerse-Labs/Continuity/scripts/guardian.py
+StegVerse-org/core-node-runtime-demo/tools/stegdeploy_runtime_intake_local.py
+```
 
-MERGED INTO: `StegVerse-Labs/StegVerse-Healer/docs/HEALER_MIRROR_HANDOFF.md`, `data/session_consolidation/single_scheduler_session_inventory.json`, and `data/session_consolidation/federal_plus_security_requirement.json`.
+## Execution ownership and claims
 
-## Durable policy
+### MACHINE_OWNED — do not compete
 
-1. Healer is the only approved repository containing managed `schedule:` triggers.
-2. Downstream workflows retain `workflow_dispatch`, bounded push/workflow events, or repository dispatch as required by existing architecture.
-3. Existing verified entrypoints are adapted instead of adding duplicate generic orchestrators.
-4. Missing runtime evidence never becomes successful activation.
-5. Cross-repository dispatch does not imply mutation, deployment, release, custody, publication, provider execution, admissibility, or activation authority.
-6. Obsolete workflows are stubbed or deleted only after retained behavior and provenance are durably mapped.
-7. `data/orchestrator_targets.json` owns ordinary cadence configuration; dedicated evidence relays may exist when dispatch inputs must be derived from verified upstream receipts.
-8. Audit-only repositories remain visible to the quiet enforcer without being assigned nonexistent dispatch workflows.
-9. Chat sessions must not claim work already assigned by this handoff, the session inventories, Site orchestration, or repository-native workflows.
-10. Claims must resolve to `MACHINE_OWNED`, `BLOCKED`, `COMPLETE`, `SUPERSEDED`, or `MERGED_INTO_CANONICAL_WORKSTREAM` when no human session owns distinct work.
-11. Applicable United States federal cybersecurity requirements are the minimum floor. Repository owners must meet or exceed the applicable baseline, retain exact scope and evidence, and fail closed when baseline selection or validation evidence is unavailable.
-12. No FedRAMP, FISMA, NIST, CMMC, DoD, agency ATO, or other certification is asserted without exact framework, version, scope, assessor or validation path, evidence, and reassessment condition.
+```yaml
+- task_id: SHWP-HEALER-SOVEREIGN-SCHEDULER-001
+  execution_owner: resident sovereign heartbeat + healer-sovereign-scheduler-worker
+  claim_state: MACHINE_OWNED
+  worker_registry_ref: StegVerse-Labs/.github/control/worker-registry.d/healer-sovereign-scheduler-001.json
+  manual_execution_allowed: false
+  manual_allowed_role: observation
+  collision_scope: scheduler claim/fence, process-adapter invocation, live target execution, scheduler receipt persistence
+  release_condition: admitted heartbeat execution emits the no-token scheduler receipt and current target state
+  next_executable_action: resident heartbeat executes the worker under its current admitted claim/fence
+```
 
-## Implemented central components
+### COMPLETED / SUPERSEDED
 
-- `.github/workflows/healer_scheduler.yml`: hourly clock with manual scope selection and scheduled/manual event-mode propagation.
-- `app/dispatch_orchestrators.py`: enabled-target filtering, aliases, cadence hours, deterministic inputs, aggregated failure reporting, and manual cadence bypass.
-- `.github/workflows/quiet_enforcer.yml`: fail-closed managed-repository schedule audit, stable receipt persistence, artifact upload, commit-on-material-change, and job summary.
-- `app/audit_schedules.py`: GitHub API workflow inventory, SHA-256 capture, unauthorized-schedule detection, explicit state classification, next-task output, and duplicate-state suppression.
-- `data/orchestrator_targets.json`: active target and audit-only registry.
-- `data/summary/single_scheduler_migration.json`: machine-readable migration state and pending-validation receipt.
-- `templates/universal_ingestion_orchestrator.yml`: adapter-based fallback contract when no suitable existing entrypoint exists.
-- `templates/disabled_legacy_workflow.yml`: manual-only tombstone for proven obsolete workflows.
-- `.github/workflows/supercheck_core.yml` and `actions/yaml-corrector/action.yml`: reusable workflow repair path.
-- `data/session_consolidation/single_scheduler_session_inventory.json`: canonical cross-session goal, claim, evidence, and archival inventory.
-- `.github/workflows/validate-session-consolidation.yml`: repository-native validation and artifact preservation for the session inventory.
-- `docs/SECURITY_BASELINE.md`: federal-plus security policy.
-- `data/session_consolidation/federal_plus_security_requirement.json`: durable security-requirement transfer, merge evidence, blocker ownership, and release condition.
-- `.github/workflows/stegdeploy-publication-relay.yml` and `app/relay_stegdeploy_publication.py`: evidence-derived publication relay with bounded remediation and duplicate suppression.
+- GitHub API workflow-dispatch scheduler transport: `SUPERSEDED`.
+- `HEALER_GH_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN`, `HEALER_PAT`, `GH_STEGVERSE_AI_TOKEN` as production authority: `SUPERSEDED`.
+- duplicate `quiet-enforcer.yml` hosted scheduler: `SUPERSEDED`.
+- GitHub-hosted `supercheck_core.yml` mutation/PR transport: `SUPERSEDED`.
+- token-bearing `forward-to-bridge.yml` repository dispatch: `SUPERSEDED`.
+- broad scheduled `sync-to-canonical.yml` generic StegDB overwrite path: `SUPERSEDED`; durable record `data/session_consolidation/stegdb-healer-canonical-import.json`.
+- Healer source implementation for fixed local scheduling: `COMPLETE`.
+- heartbeat handoff/authorization/registry/process-adapter binding: `COMPLETE`.
 
-## Managed targets
+No chat/session implementation claim remains on machine-owned runtime paths.
+
+## Installed sovereign scheduler
+
+`app/sovereign_scheduler.py`:
+
+- rejects GitHub credential environment variables;
+- consumes `STEGVERSE_REPO_ROOTS_JSON` and only already-materialized repositories;
+- uses fixed code-defined handlers rather than commands supplied by target records;
+- evaluates cadence from `data/orchestrator_targets.json`;
+- returns `COMPLETE`, `BLOCKED`, `REVIEW_REQUIRED`, or `FAILED` according to actual handler outcomes;
+- treats missing repositories/capabilities as fail-closed conditions;
+- grants no GitHub, provider, wallet, release, deployment, or arbitrary process authority.
+
+The canonical heartbeat binding is `process:healer-sovereign-scheduler-v1`.
+
+## Managed target state
 
 ### SCW
 
-- `.github/workflows/scw_orchestrator.yml`: local schedule removed; Healer cadence `0,6,12,18` UTC; observation inputs `cmd=org-scan`, `orgs=StegVerse-Labs`, `dry_run=true`.
-- `.github/workflows/uptime.yml`: local hourly schedule removed; Healer hourly dispatch configured.
-- Target commits: `caeaff52297070bdfcd55ec69b7abba7d2048e62`, `e39e70f0caa2439a805444b72555a2654df4d04e`.
-- Claim: `CLAIMED_FOR_VALIDATION` by Healer machine workflows.
-- State: implemented, runtime validation pending.
+Production execution is local through `scw.scw_core` and `scw/local_health.py`. Repository enumeration and required-file inspection use materialized roots rather than GitHub API credentials. Remote `autopatch` is not a fallback production mechanism. Hosted `scw_orchestrator.yml` and `uptime.yml` are compatibility/non-production surfaces.
+
+State: `SOVEREIGN_LOCAL_HANDLERS_BOUND`.
 
 ### TV
 
-- `.github/workflows/tv_self_heal.yml`: local daily schedule removed; `workflow_dispatch` and bounded path-triggered push retained.
-- Healer daily cadence at 06:00 UTC.
-- Target commit: `9db4f33ad0e6545dcbeb7da407c71707a41fb33c`.
-- Claim: `CLAIMED_FOR_VALIDATION` by Healer machine workflows.
-- State: implemented, runtime validation pending.
+`StegVerse-Labs/TV/scripts/sovereign_self_heal.py` is the bounded local repair executor. It requires TVC-owned exact-scope policy from `StegVerse-Labs/TVC/policies/local_repository_mutation/tv_self_heal.v1.json`, uses the existing TVC execution-grant layer, limits repair classes to the admitted normalization boundary, and validates TV's operational handoff after mutation.
+
+State: `SOVEREIGN_LOCAL_HANDLER_BOUND_TVC_GRANT_REQUIRED`.
 
 ### Continuity
 
-- `.github/workflows/continuity.yml`: local six-hour schedule removed; manual and main-branch push retained.
-- Healer cadence `0,6,12,18` UTC.
-- Workflow repair commit: `282f09fd4abb41afa88a209bfbc248a369e15cbe`.
-- Continuity handoff commit: `7b190c04786240d951afbf3ca536e8a991a3c61c`.
-- Healer registry commit: `0c57885b5268776a1f746f751eb960528bc90d06`.
-- Migration receipt commit: `081de304be91a74d98a54715e89452723cffa0ba`.
-- Claim: `CLAIMED_FOR_VALIDATION` by Healer and Continuity machine workflows.
-- State: implemented, runtime validation pending.
+`StegVerse-Labs/Continuity/scripts/guardian.py` uses locally materialized repository roots and node-local acknowledgement evidence. GitHub issue enumeration, GitHub credentials, OIDC-for-GitHub execution, and hosted status pushing are not production dependencies. Hosted `continuity.yml` is a compatibility marker.
+
+State: `SOVEREIGN_LOCAL_GUARDIAN_BOUND`.
 
 ### Site
 
-- Existing `.github/workflows/site-task-runner.yml` is registered with `task=all-local` at UTC hours `0,6,12,18`.
-- Site still contains its historical local schedule.
-- Site must remain at exactly two operational workflows, so the existing task runner must be updated in place; no third orchestrator is permitted.
-- `data/site-orchestration-state.json` records an `OBSERVED_BLOCKED` sequence, no admitted tasks, external tasks disallowed, and external session ownership disallowed.
-- Claim: `BLOCKED`, owned by the Site repository orchestrator.
-- Release condition: Site admits the migration task or reaches its exact terminal idle state.
+The Healer scheduler has a fixed local Site handler invoking the repository-owned local orchestration checks against a materialized Site tree. Site remains authoritative for its business logic and task admission.
 
-### CosDen
+State: `SOVEREIGN_LOCAL_HANDLER_BOUND`.
 
-- `docs/COSDEN_MIRROR_HANDOFF.md` created in commit `0d90757f738ac165cb99ad7e1b38f7faab91eb0f` and reconciled in commit `b90916883e4a25a260184eebb542e2472389fedd`.
-- `StegVerse-Labs/StegDB` is the canonical owner for CosDen content under `canonical/cosden`.
-- Registry commit `072e5aca80406e44bdbea6f8b1c81c690eaf9848` classifies CosDen as `audit_only: true`, `enabled: false`.
-- Claim: `COMPLETE` for scheduler posture.
+### Quiet Enforcer
 
-## Quiet-enforcer receipt automation
+`app/audit_schedules.py` audits materialized workflow trees locally and fails closed when a required repository is absent. Hosted daily clocks and GitHub Contents API access are retired.
 
-- Script commit: `e00757db076257e2c6e5258e7c17d7b0c45c955f`.
-- Workflow commit: `0ef344f703589c3fddf14539562688433dc8740a`.
-- Output: `data/summary/quiet_enforcer_latest.json`.
-- Artifact retention: 90 days.
-- States: `COMPLETE`, `BLOCKED`, `RETRY`, `REVIEW_REQUIRED`, `FAILED`.
-- Fail-closed rule: any violation, blocked repository, retry state, review-required state, missing receipt, or invalid schema fails the workflow.
-- Claim: `MACHINE_OWNED` by `.github/workflows/quiet_enforcer.yml`.
-- Current hosted evidence: no passing audit is claimed.
+State: `SOVEREIGN_LOCAL_HANDLER_BOUND`.
 
-## Dedicated StegDeploy evidence relay
+### StegDeploy relay
 
-- Source receipt: `StegVerse-org/LLM-adapter/receipts/stegdeploy-image-publication.json`.
-- Source workflow: `StegVerse-org/LLM-adapter/.github/workflows/stegdeploy-image.yml`.
-- Destination event: `stegdeploy-image-published` to `StegVerse-org/core-node-runtime-demo`.
-- Only a v2 `PUBLISHED` receipt with verified consumer pull, source identity, SHA-256 digest, and receipt hash may dispatch.
-- Duplicate receipt hashes become `NOOP_ALREADY_DISPATCHED`.
-- A stale source contract may trigger one remediation dispatch per source commit; repeat observations become `BLOCKED_REMEDIATION_PENDING`.
-- Remediation and federal-plus policy were merged by PR #3 at `5454bbeb3b46756d483193034bae97869c56c91f` after `Forward PR to StegVerse AI Bridge` and `Test Readiness` completed successfully.
-- Conflicted PR #2 was explicitly superseded and closed.
-- This grants no deployment, publication, custody, execution, provider, release, admissibility, or activation authority.
+`app/relay_stegdeploy_publication.py` consumes locally materialized LLM-adapter/core-node state. Core-node local intake accepts the retained publication receipt only when the exact published digest is already present in the local Docker image store. It does not log into or pull from GHCR and does not use `repository_dispatch`.
 
-### Current retained runtime evidence
+State: `SOVEREIGN_LOCAL_HANDLER_BOUND_LOCAL_IMAGE_PROOF_REQUIRED`.
 
-`data/summary/stegdeploy_publication_dispatch.json` currently records:
+### CosDen / StegDB
 
-- schema `stegverse.healer.stegdeploy_publication_dispatch.v2`;
-- state `BLOCKED`;
-- upstream receipt not v2;
-- upstream state not `PUBLISHED`;
-- consumer pull not verified;
-- remediation dispatch rejected with HTTP 403 because the available token cannot create the LLM-adapter workflow-dispatch event.
+CosDen remains audit-only with canonical content ownership under `StegVerse-Labs/StegDB/canonical/cosden`.
 
-Owner: `.github/workflows/stegdeploy-publication-relay.yml` plus repository or organization administrator for token scope.
+The previous broad Healer `sync-to-canonical.yml` behavior is intentionally not reproduced. StegDB contains multiple package-specific authorities and does not expose a single Healer-wide package that authorizes generic overwrite of workflows/policy/schema/docs/tools. A future import requires a new exact Healer-scoped manifest plus TVC mutation authority.
 
-Release condition:
+Durable supersession record: `data/session_consolidation/stegdb-healer-canonical-import.json`.
 
-1. `HEALER_GH_TOKEN` can dispatch `StegVerse-org/LLM-adapter/.github/workflows/stegdeploy-image.yml` without exposing the token.
-2. LLM-adapter retains schema `stegdeploy.image-publication.v2`, state `PUBLISHED`, and `consumer_pull_verified=true`.
-3. The relay dispatches the downstream event once for the validated receipt hash.
-4. Core-node retains a matching runtime-intake receipt with the same digest and receipt hash.
+## Completed mutation evidence
 
-## Actual blockers and machine-observable release conditions
+Key source/control commits include:
 
-### `HEALER_GH_TOKEN`
+```text
+d972f0c92c7f492bcf420c96056f68ff4c47f65d  SCW local scanner
+06c14cbf9e9f9491532776bd241930e07083c725  SCW sovereign core
+b3df5feed791c18747f06e1d1a786cbc52d4c4ea  Healer sovereign scheduler
+0b07675ec2095ea3286f0fdff6553b7a55d9c37a  legacy dispatcher retirement
+2b2020538aa06a275229b94b0e25c1123297155d  heartbeat worker
+79f307d56127fb8490a78536c5be31452ee0b858  worker authorization
+84d173ba4dd61efc66504e46895e8218add35b43  process-adapter binding
+70cfd3f987783ad4c34c31b76509471c39663970  registry-fragment invariant correction
+95a596df289695b7dbb09807c59fa1812d0e1511  Continuity local guardian
+4bc4f7f89dc91712d337dbecab472584294d4b26  core-node local StegDeploy intake
+95860c2b0a366dd17e1b98cf5b5a987ad7c49974  TVC local mutation policy
+c0de3b8d057eb884aa9ed7cf09d301e761eef7a4  TV sovereign self-heal executor
+5cd027b05e31720ee3213dd5fcb860b897c7deda  TV hosted self-heal retirement
+f9bac0a7c0f05d9bb73a6d2783320854979a4bca  Continuity hosted production retirement
+9811fec37599cf0b5a3f1f38f863fa34f31dc9cd  SCW orchestrator hosted execution retirement
+6a0f081f356d24a7b5d88b945cb6d75188ea098c  SCW uptime hosted execution retirement
+3a36738524e1a045d584a3a7a4231b82563b32f1  supercheck mutation transport retirement
+2def997a49f77d707aa62ed5b97e333fd0a303b0  bridge token dispatch retirement
+67366a29437ed213aa763307acc596ccb52cf8b2  generic StegDB hosted sync retirement
+4ee44bbb996e2ca4a27ec7c072a68e6adb7911d9  target registry reconciliation
+e718664136579fb339940ee282f8e56fdc4a5225  StegDB sync supersession record
+a5a64d396ab811366fa0c978d6e6223beed67934  no-token migration ownership reconciliation
+c44029e8fb07e2659bd47334cd15f2ede2983699  sovereign scheduler migration receipt reconciliation
+```
 
-Owner: repository or organization administrator.
+## Validation evidence
 
-Release condition: a controlled scheduler, quiet-enforcer, or publication-remediation run proves required Actions dispatch and Contents read across configured repositories without exposing the token.
+Directly inspected Heartbeat Worker Project run `31624805596` executed an anonymous no-token source checkout, proved GitHub credential variables absent, compiled runtime/workers/scripts, and parsed canonical JSON. It then failed at `validate_executable_handoffs.py` because the earlier revision of `SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json` used an invalid `goal.successor_policy` value.
 
-### Runtime dispatch evidence
+The current handoff on `main` uses the admitted schema value `INHERIT_OR_NARROW` and includes the required `expires_at`. A successor hosted run has not been directly observed in this handoff and is therefore not claimed as passing.
 
-Owner: Healer scheduler and receipt updater.
+Hosted validation is not an activation gate. Live production activation requires resident-heartbeat execution evidence.
 
-Release condition for each target:
+## Machine-observable remaining activation work
 
-- downstream run exists;
-- jobs and logs are inspected;
-- configured inputs and event source match;
-- mutation posture matches policy;
-- run ID, conclusion, timestamp, and commit are persisted in `data/summary/single_scheduler_migration.json`.
+Owner: `StegVerse-Labs/.github` resident sovereign heartbeat.
 
-### Quiet-enforcer evidence
+```text
+SHWP-HEALER-SOVEREIGN-SCHEDULER-001
+-> admitted claim/fence
+-> process:healer-sovereign-scheduler-v1
+-> materialized repository roots
+-> fixed target handlers
+-> no-token scheduler receipt
+-> current target outcomes
+```
 
-Owner: `.github/workflows/quiet_enforcer.yml`.
+The organization-level carrier is itself still active machine work under `StegVerse-Labs/.github/handoffs/SHWP-DURABLE-RUNTIME-ACTIVATION.json`. This repository does not claim live scheduler execution until the carrier produces inspectable evidence.
 
-Release condition: `data/summary/quiet_enforcer_latest.json` exists, validates, and reports `COMPLETE` with zero violations for every configured target and audit-only repository.
+No manual/session fallback is authorized for that runtime claim.
 
-### Site local clock
+## Cross-repository propagation
 
-Owner: Site repository orchestration and `StegVerse-Labs/Site/.github/workflows/site-task-runner.yml`.
+Activation evidence, when present and admitted by consumer release gates, may propagate to:
 
-Release condition: Site orchestration admits the scheduler migration or reaches the exact terminal idle statement; then remove only the `schedule:` trigger while retaining all other behavior and update `docs/SITE_MIRROR_HANDOFF.md`.
+```text
+StegVerse-Labs/Site
+GCAT-BCAT-Engine/Publisher
+StegVerse-Labs/admissibility-wiki
+StegVerse-Labs/stegguardian-wiki
+master-records/orchestration when required by the canonical activation chain
+```
 
-## Automation and claim state model
+No propagation is claimed from source completion alone.
 
-Claim states:
+## Session consolidation
 
-- `UNCLAIMED`
-- `CLAIMED_FOR_IMPLEMENTATION`
-- `CLAIMED_FOR_VALIDATION`
-- `CLAIMED_FOR_INTEGRATION`
-- `MACHINE_OWNED`
-- `BLOCKED`
-- `COMPLETE`
-- `SUPERSEDED`
-- `MERGED_INTO_CANONICAL_WORKSTREAM`
+All session-specific Healer requirements are either completed, superseded, or durably transferred:
 
-Execution outcomes:
+1. remove GitHub-token production scheduler transport — complete;
+2. bind TV/TVC credential/admission authority — complete at source/control layer;
+3. bind scheduler to the resident heartbeat — complete at handoff/authorization/registry/process-adapter layer;
+4. migrate SCW — complete at source/control layer;
+5. migrate Continuity — complete at source/control layer;
+6. migrate TV self-heal to TVC execution grants — complete at source/control layer;
+7. migrate quiet-enforcer — complete at source/control layer;
+8. migrate StegDeploy relay/intake — complete at source/control layer;
+9. eliminate duplicate/bypass token-bearing workflows — complete/superseded;
+10. retire unsafe generic StegDB sync — complete/superseded with durable record;
+11. live resident execution — machine-owned by the canonical heartbeat, not a chat claim;
+12. downstream propagation — machine-owned successor condition after immutable activation evidence.
 
-- `COMPLETE`
-- `BLOCKED`
-- `RETRY`
-- `REVIEW_REQUIRED`
-- `FAILED`
+MERGED INTO: `StegVerse-Labs/.github/docs/ORG_MIRROR_HANDOFF.md`, `StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`, and this repository handoff.
 
-Configuration alone is `IMPLEMENTED_PENDING_RUNTIME_VALIDATION`, not operational completion.
+Deleting the chat does not remove an implementation requirement, credential decision, collision boundary, owner, release condition, or next executable action.
 
-## Next executable tasks
+## Completion accounting
 
-1. `.github/workflows/quiet_enforcer.yml`: persist the first hosted receipt and inspect jobs, logs, artifact, and committed state.
-2. `data/summary/single_scheduler_migration.json`: append quiet-enforcer and downstream run evidence.
-3. `.github/workflows/healer_scheduler.yml`: controlled machine scopes `scw`, `tv`, and `continuity` when token authority is available.
-4. `.github/workflows/stegdeploy-publication-relay.yml`: retry only after the token-scope release condition changes; retain exact result.
-5. `StegVerse-Labs/Site/data/site-orchestration-state.json`: machine admission or terminal idle must occur before Site workflow mutation.
+Current goal denominator:
 
-No next task is assigned to this chat session. All remaining tasks have durable repository-native owners and release conditions.
+- required developed/source-control deliverables: 24;
+- source/control validation groups: 6;
+- integration groups: 8;
+- live activation groups: 3;
+- session goals: 12.
 
-## Release and propagation
+Current state:
 
-A Healer release or tag is prohibited until configured targets are runtime-validated, the quiet-enforcer receipt is zero-violation, and publication remediation no longer has an unresolved authority or evidence blocker.
+- developed files/control surfaces: 24/24;
+- scaffolding or stubs: 0 production stubs;
+- missing required source/control files: 0;
+- validation: 5/6 — current successor hosted validation remains unobserved, while prior no-token checks reached the corrected handoff defect;
+- integration: 8/8 at source/control ownership level;
+- live activation: 1/3 — worker admission/binding installed; resident execution receipt and downstream propagation remain machine-owned;
+- session consolidation: 12/12.
 
-At genuine release readiness, verify required policy or integration propagation to:
+## Archive condition
 
-- `StegVerse-Labs/Site`
-- `GCAT-BCAT-Engine/Publisher`
-- `StegVerse-Labs/admissibility-wiki`
-- `StegVerse-Labs/stegguardian-wiki`
-
-No propagation is currently claimed.
-
-## Session consolidation and archive condition
-
-The project goal remains open, but this session is fully consolidated.
-
-Archive readiness is established because:
-
-- every unique session requirement is present in the canonical inventories, policy, and this handoff;
-- the session claim is released;
-- remaining work has repository-native owners and machine-observable release conditions;
-- deleting the conversation does not impair future execution.
-
-The hosted observers remain ongoing project automation and are not archival dependencies for the conversation. A future failed run creates repository work; it does not restore a unique chat-session claim.
-
-## Progress denominator
-
-Project deliverables: central scheduler, dispatcher, target registry, migration receipt, quiet-enforcer automation, SCW migration, TV migration, Continuity migration, Site migration, CosDen posture, StegDeploy remediation, federal-plus security policy, runtime validation evidence, release/propagation gate = 14.
-
-Session-consolidation deliverables: complete goal inventory, claim inventory, canonical continuation link, validator, workflow observer, handoff transfer, federal-plus requirement transfer, claim release, deletion-loss determination = 9.
-
-- Project task completion: 10/14 = 71%
-- Developed files: 17/17 = 100%
-- Project validation completion: 7/10 = 70%
-- Project integration completion: 6/8 = 75%
-- Project goal activation: 68%
-- Session consolidation: 9/9 = 100%
-- Session archival readiness: 100%
-- Scaffolding or stubs: 0
-- Missing required consolidation files: 0
+Repository/source work from this session is archive-safe. Product activation is not complete, but its remaining work is durably machine-owned by the canonical resident heartbeat and downstream consumer lanes. Archiving this session does not assert runtime activation.
