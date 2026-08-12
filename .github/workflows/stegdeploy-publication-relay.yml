@@ -1,57 +1,60 @@
-name: StegDeploy Publication Relay
+name: StegDeploy Publication Relay Contract Validation
 
 on:
-  schedule:
-    - cron: "37 * * * *"
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: {}
 
 concurrency:
-  group: stegdeploy-publication-relay
-  cancel-in-progress: false
+  group: stegdeploy-publication-relay-contract-validation
+  cancel-in-progress: true
 
 jobs:
-  relay:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: true
+      - name: Anonymous public checkout without GitHub token
+        run: |
+          set -euo pipefail
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          git config --global --unset-all http.https://github.com/.extraheader || true
+          git init .
+          git remote add origin https://github.com/StegVerse-Labs/StegVerse-Healer.git
+          env -u GITHUB_TOKEN -u GH_TOKEN git fetch --depth=1 origin "${GITHUB_SHA}"
+          git checkout --detach FETCH_HEAD
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Validate relay implementation
+      - name: Compile sovereign relay
         run: python -m py_compile app/relay_stegdeploy_publication.py
 
-      - name: Relay new verified publication evidence
-        env:
-          HEALER_GH_TOKEN: ${{ secrets.HEALER_GH_TOKEN }}
-        run: python app/relay_stegdeploy_publication.py
+      - name: Assert GitHub credential variables are absent
+        run: |
+          set -euo pipefail
+          test -z "${HEALER_GH_TOKEN:-}"
+          test -z "${GITHUB_TOKEN:-}"
+          test -z "${GH_TOKEN:-}"
+          test -z "${HEALER_PAT:-}"
+          test -z "${GH_STEGVERSE_AI_TOKEN:-}"
 
-      - name: Retain relay state
+      - name: Validate fail-closed local-root requirement
+        run: |
+          set +e
+          output="$(python app/relay_stegdeploy_publication.py 2>&1)"
+          rc=$?
+          set -e
+          echo "$output"
+          test "$rc" -ne 0
+          echo "$output" | grep -q 'STEGVERSE_REPO_ROOTS_JSON is required'
+          echo HEALER_STEGDEPLOY_LOCAL_RELAY_FAIL_CLOSED=PASS
+
+      - name: Record authority boundary
         if: always()
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/summary/stegdeploy_publication_dispatch.json
-          if git diff --cached --quiet; then
-            echo "StegDeploy relay state unchanged."
-          else
-            git commit -m "chore: retain StegDeploy publication relay state [skip ci]"
-            git pull --rebase
-            git push
-          fi
-
-      - name: Upload relay state
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: stegdeploy-publication-relay-${{ github.run_id }}-${{ github.run_attempt }}
-          path: data/summary/stegdeploy_publication_dispatch.json
-          if-no-files-found: error
-          retention-days: 90
+          echo "## StegDeploy sovereign relay contract" >> "$GITHUB_STEP_SUMMARY"
+          echo "Hosted schedule: NONE" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub API/repository_dispatch production role: RETIRED" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub token production authority: NONE" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source: locally materialized LLM-adapter publication receipt" >> "$GITHUB_STEP_SUMMARY"
+          echo "Target: locally materialized core-node sovereign intake" >> "$GITHUB_STEP_SUMMARY"
+          echo "Production carrier: single StegVerse resident heartbeat" >> "$GITHUB_STEP_SUMMARY"
