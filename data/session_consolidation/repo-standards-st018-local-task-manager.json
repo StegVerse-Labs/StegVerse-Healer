@@ -1,0 +1,25 @@
+{
+  "schema":"stegverse.healer.session_consolidation.v1",
+  "goal_id":"HEALER-RSTD-ST018-LOCAL-TASK-MANAGER-001",
+  "originating_goal":"Remove NON-TV/TVC GitHub-token dependence from recurring repo-standards ST-018 execution by binding its existing local task manager to the sovereign Healer scheduler.",
+  "repository":"StegVerse-Labs/StegVerse-Healer",
+  "canonical_issue":"StegVerse-Labs/StegVerse-Healer#11",
+  "canonical_repo_standards_owner":"StegVerse-Labs/repo-standards#28",
+  "scheduler_owner":"SHWP-HEALER-SOVEREIGN-SCHEDULER-001",
+  "credential_authority":"TV/TVC",
+  "non_tv_tvc_secret_or_token_allowed":false,
+  "github_actions_production_role":"NONE",
+  "state":"IMPLEMENTED_PENDING_VALIDATION",
+  "installed_surfaces":[
+    "data/orchestrator_targets.json::StegVerse-Labs/repo-standards/st018-local-task-manager",
+    "app/sovereign_scheduler.py::_execute_target",
+    "tests/test_repo_standards_st018_task_manager.py"
+  ],
+  "local_dependency":"STEGVERSE_REPO_ROOTS_JSON::StegVerse-Labs/repo-standards",
+  "fixed_command":"python tools/run_st018_task_manager.py",
+  "fail_closed_conditions":["LOCAL_REPOSITORY_NOT_MATERIALIZED","RSTD_ST018_TASK_MANAGER_MISSING","RSTD_ST018_TASK_REGISTRY_MISSING","RSTD_ST018_TASK_MANAGER_FAILED"],
+  "validation_required":["Healer deterministic tests PASS","credential refusal PASS","Test Readiness PASS","exact source integration evidence"],
+  "live_activation_boundary":"Ordinary scheduler execution remains MACHINE_OWNED and requires receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json; source/CI does not prove activation.",
+  "authority_effect":"NONE",
+  "release_condition":"Deterministic source validation succeeds and issue #11 plus HEALER_MIRROR_HANDOFF record the integration as source-released."
+}
