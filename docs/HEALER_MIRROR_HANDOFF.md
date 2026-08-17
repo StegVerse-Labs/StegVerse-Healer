@@ -22,27 +22,69 @@ Canonical organization/runtime continuations are `StegVerse-Labs/.github/docs/OR
 
 - `HEALER-G18-PRE-CARRIER-ASSIST-001`: PR #5 merge `571b6a86737173a89235110294025f9808695531`.
 - `HEALER-SITE-MARKETPLACE-COINBASE-LOCAL-OBSERVER-001`: PR #7 merge `ecf96188348c097dfdea3ce55c47db9dff6e84ef`.
-- `HEALER-SITE-MARKETPLACE-PROJECTION-LOCAL-IMPORT-001`: COMPLETE_RELEASED for source/integration.
+- `HEALER-SITE-MARKETPLACE-PROJECTION-LOCAL-IMPORT-001`: source/integration COMPLETE_RELEASED; issue #8 closed.
+- `HEALER-RSTD-ST018-LOCAL-TASK-MANAGER-001`: source/integration COMPLETE_RELEASED; issue #11.
 
-Projection-import evidence:
+## Repo-standards ST-018 sovereign task-manager integration
+
+Purpose: execute the existing `StegVerse-Labs/repo-standards` ST-018 task registry through the already-established sovereign Healer scheduler instead of depending on GitHub-hosted token/artifact/issue-write mechanics.
+
+Installed surfaces:
 
 ```text
-Healer issue: #8
-Healer PR #9 merge: b280025ed0007d10fdbb377cdf77cfd74443565c
-Healer Test Readiness: 32045128811 SUCCESS
-fixed target: marketplace-coinbase-local-projection-import
-Site PR #352 head: 1706f22da79fd8e8c90cbad4d9ff5f088410142d
-Site PR #352 merge: 218fee91a7d2214fec328f74247e079292c45ce0
-Site Bootstrap: 32050796944 SUCCESS
-Site Handoff: 32050796941 SUCCESS
-Ecosystem Heartbeat: 32050797014 SUCCESS
-StegFin projection: 32050785197 SUCCESS
+data/orchestrator_targets.json::StegVerse-Labs/repo-standards/st018-local-task-manager
+app/sovereign_scheduler.py::_execute_target
+tests/test_repo_standards_st018_task_manager.py
+data/session_consolidation/repo-standards-st018-local-task-manager.json
 ```
 
-The fixed target uses already-materialized Site and `GCAT-BCAT-Engine/Publisher` roots through `STEGVERSE_REPO_ROOTS_JSON`. Site now consumes Publisher evidence locally, has no `raw.githubusercontent.com` acquisition path, refuses GitHub/project credential environments, and fails closed when local evidence is absent. No second scheduler/heartbeat or GitHub/PAT/provider/wallet credential path is introduced.
+Fixed execution contract:
+
+```text
+local dependency: STEGVERSE_REPO_ROOTS_JSON::StegVerse-Labs/repo-standards
+command: python tools/run_st018_task_manager.py
+schedule: 00/06/12/18 UTC through existing SHWP-HEALER-SOVEREIGN-SCHEDULER-001
+missing repository: BLOCKED
+missing task manager: BLOCKED
+missing task registry: BLOCKED
+non-PASS task report: BLOCKED
+github token required: false
+remote checkout required: false
+```
+
+Source commits:
+
+```text
+target binding: c042b8d8b70413bfd38273da80c326ee2ced557c
+scheduler handler: 8b8167ddb2bb6d7385d2f0056bcd975d4f4bb7a9
+deterministic tests: df6719e45abf8db9ff329d8a573389d69f51db37
+initial consolidation record: d6d60f7e661ea9a871bd0f8593327a08e019f005
+released consolidation record: 937b6ab2ef29d3b459f78fff67993a22ce21de14
+```
+
+Validation:
+
+```text
+Test Readiness 32053936357: SUCCESS
+repo-smoke: SUCCESS
+credential refusal: PASS
+anonymous exact-source validation fetch: PASS
+deterministic Healer tests: PASS
+Validate Session Consolidation 32053936480: SUCCESS
+```
+
+Canonical ST-018 semantics remain owned by `StegVerse-Labs/repo-standards#28`; Healer supplies only the bounded local execution carrier. No second scheduler or heartbeat was created.
+
+## Marketplace projection integration
+
+Healer PR #9 merge `b280025ed0007d10fdbb377cdf77cfd74443565c` binds fixed target `marketplace-coinbase-local-projection-import`. Site PR #352 merged `218fee91a7d2214fec328f74247e079292c45ce0`; Site consumes local Publisher evidence only, refuses credential-bearing environments, and fails closed when local evidence is absent.
 
 ## Activation boundary
 
-Source/CI integration is complete, but ordinary live Healer execution remains `MACHINE_OWNED`. Activation requires `receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`. No source merge, CI run, chat session, GitHub Action, or Render path substitutes for that receipt.
+Source/CI integration is complete, but ordinary live Healer execution remains `MACHINE_OWNED`. Activation requires `receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`. No source merge, CI run, chat session, GitHub Action, publication, or deployment substitutes for that receipt.
 
-The Marketplace projection-import integration is archive-safe as a chat-owned implementation task. Broader Site #268 cleanup and machine-owned runtime activation continue through their canonical owners.
+TV/TVC remains credential authority. No NON-TV/TVC secret/token, provider credential, wallet authority, publication authority, release authority, custody authority, or financial authority is introduced. USER_ONLY remains the sole StegFin signing/broadcast authority. Do not use Render.
+
+## Continuation
+
+The repo-standards ST-018 carrier is archive-safe as a chat-owned source implementation. Future ST-018 task semantics belong to `StegVerse-Labs/repo-standards#28`; ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268.
