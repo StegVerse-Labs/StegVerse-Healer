@@ -92,6 +92,16 @@ def _json_tail(result: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
 
+def _site_projection_importer_is_local_only(script: Path) -> bool:
+    try:
+        source = script.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    required = ("STEGVERSE_REPO_ROOTS_JSON", "GCAT-BCAT-Engine/Publisher")
+    forbidden = ("raw.githubusercontent.com", "urllib", "request.urlopen", "http://", "https://")
+    return all(marker in source for marker in required) and not any(marker in source for marker in forbidden)
+
+
 def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_json: str) -> dict[str, Any]:
     repo = str(target.get("repo", ""))
     workflow = str(target.get("workflow", ""))
@@ -144,6 +154,8 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
         script = root / "scripts" / "import_marketplace_coinbase_accessibility.py"
         if not script.is_file():
             return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_PROJECTION_IMPORTER_MISSING"}
+        if not _site_projection_importer_is_local_only(script):
+            return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_PROJECTION_LOCAL_CAPABILITY_NOT_INSTALLED"}
         if roots.get("GCAT-BCAT-Engine/Publisher") is None:
             return {**base, "state": "BLOCKED", "outcome": "PUBLISHER_LOCAL_REPOSITORY_NOT_MATERIALIZED"}
         result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json}, timeout=90)
