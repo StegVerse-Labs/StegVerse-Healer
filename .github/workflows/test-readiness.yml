@@ -5,21 +5,50 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   repo-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: Refuse credential-bearing environment
+        shell: bash --noprofile --norc -e -o pipefail {0}
+        run: |
+          set -euo pipefail
+          for name in GITHUB_TOKEN GH_TOKEN GITHUB_PAT HEALER_GH_TOKEN HEALER_PAT GH_STEGVERSE_AI_TOKEN STEGVERSE_CROSS_REPO_READ_TOKEN MARKETPLACE_COINBASE_EVIDENCE_TOKEN ACTIONS_ID_TOKEN_REQUEST_TOKEN; do
+            if [ -n "${!name:-}" ]; then
+              echo "forbidden credential environment variable present: ${name}" >&2
+              exit 1
+            fi
+          done
+          echo 'HEALER_VALIDATION_CREDENTIAL_AUTHORITY=TV_TVC'
+          echo 'HEALER_VALIDATION_GITHUB_TOKEN_AUTHORITY=NONE'
+      - name: Fetch exact Healer source anonymously
+        shell: bash --noprofile --norc -e -o pipefail {0}
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          SOURCE_SHA="${PR_HEAD_SHA:-${GITHUB_SHA}}"
+          test -n "${SOURCE_SHA}"
+          curl --fail --silent --show-error --location \
+            "https://codeload.github.com/StegVerse-Labs/StegVerse-Healer/tar.gz/${SOURCE_SHA}" \
+            --output /tmp/healer-source.tar.gz
+          mkdir -p /tmp/healer-source
+          tar -xzf /tmp/healer-source.tar.gz --strip-components=1 -C /tmp/healer-source
+          cp -a /tmp/healer-source/. .
+      - name: Verify preinstalled Python
+        run: |
+          python3 --version
+          python3 - <<'PY'
+          import sys
+          assert sys.version_info >= (3, 11), sys.version
+          print('HEALER_VALIDATION_PYTHON=PASS')
+          PY
       - name: Baseline repository smoke test
         run: |
-          python - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
           import json
           import sys
@@ -53,11 +82,10 @@ jobs:
           print('TEST READINESS PASSED')
           PY
       - name: Run deterministic Healer tests
-        env:
-          GITHUB_TOKEN: ""
-          GH_TOKEN: ""
-          HEALER_GH_TOKEN: ""
-          HEALER_PAT: ""
-          GH_STEGVERSE_AI_TOKEN: ""
         run: |
-          python -m unittest discover -s tests -p 'test_*.py' -v
+          python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Confirm validation-only authority boundary
+        run: |
+          echo 'HEALER_VALIDATION_ONLY=TRUE'
+          echo 'HEALER_RUNTIME_EXECUTION_AUTHORITY=NONE'
+          echo 'HEALER_GITHUB_TOKEN_AUTHORITY=NONE'
