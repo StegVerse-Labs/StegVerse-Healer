@@ -32,6 +32,16 @@
       "status": "sovereign-local-hourly-projection-import-no-github-token-no-remote-fetch"
     },
     {
+      "repo": "StegVerse-Labs/repo-standards",
+      "workflow": "st018-local-task-manager",
+      "ref": "main",
+      "enabled": true,
+      "aliases": ["repo-standards", "st018-local", "st018-task-manager"],
+      "run_hours_utc": [0, 6, 12, 18],
+      "inputs": {},
+      "status": "sovereign-local-st018-task-manager-no-github-token-no-remote-checkout"
+    },
+    {
       "repo": "StegVerse-Labs/SCW",
       "workflow": "scw_orchestrator.yml",
       "ref": "main",
