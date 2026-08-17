@@ -27,17 +27,19 @@ jobs:
       - name: Fetch exact Healer source anonymously
         shell: bash --noprofile --norc -e -o pipefail {0}
         env:
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          SOURCE_SHA="${PR_HEAD_SHA:-${GITHUB_SHA}}"
-          test -n "${SOURCE_SHA}"
-          curl --fail --silent --show-error --location \
-            "https://codeload.github.com/StegVerse-Labs/StegVerse-Healer/tar.gz/${SOURCE_SHA}" \
-            --output /tmp/healer-source.tar.gz
-          mkdir -p /tmp/healer-source
-          tar -xzf /tmp/healer-source.tar.gz --strip-components=1 -C /tmp/healer-source
-          cp -a /tmp/healer-source/. .
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            SOURCE_REF="refs/pull/${PR_NUMBER}/merge"
+          else
+            SOURCE_REF="${GITHUB_SHA}"
+          fi
+          git -c credential.helper= -c http.extraheader= fetch --no-tags --depth=50 origin "${SOURCE_REF}"
+          git checkout --detach FETCH_HEAD
+          test -z "$(git config --local --get-regexp 'extraheader|credential' || true)"
       - name: Verify preinstalled Python
         run: |
           python3 --version
