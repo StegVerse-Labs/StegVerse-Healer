@@ -160,6 +160,45 @@ python app/pre_carrier_assist.py
 
 Hosted runs are source/test evidence only. They do not prove HB30, independent WorkerCoordinator observation, ordinary Healer scheduler activation, provider execution, wallet readiness, signing, broadcast, or trade settlement.
 
+## Active Site Marketplace Coinbase local-observer integration
+
+Owner issue: `StegVerse-Labs/StegVerse-Healer#6`.
+
+Implementation PR: `StegVerse-Labs/StegVerse-Healer#7` on `feat/site-marketplace-coinbase-local-observer-6`.
+
+Claim record: `data/session_consolidation/site-marketplace-coinbase-local-observer.json`.
+
+Purpose: preserve the nonterminal Site#131 Marketplace–Coinbase observation semantics while retiring the GitHub-hosted Site controller/token/writeback path. The work reuses the existing `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; it does not create another scheduler or heartbeat.
+
+Installed source behavior:
+
+- `data/orchestrator_targets.json` binds `StegVerse-Labs/Site` target `marketplace-coinbase-local-observer` to the existing sovereign scheduler;
+- `app/sovereign_scheduler.py` executes only the already-materialized Site `scripts/advance_marketplace_coinbase_activation.py` and passes local repository roots;
+- missing Site repository/script fails closed;
+- GitHub/Marketplace evidence token variables are forbidden;
+- no GitHub API, PAT, provider, wallet, Marketplace, Coinbase live/financial, publication, release or execution authority is granted;
+- Site PR #329 owns removal of `.github/workflows/advance-marketplace-coinbase-activation.yml` and conversion of the Site observer to local-repository evidence only.
+
+Validation evidence before this handoff update:
+
+```text
+PR #7 earlier source test: 32042403535 SUCCESS, 10 deterministic tests PASS
+credential audit of that run: actions/checkout and actions/setup-python still consumed GitHub-managed token transport
+credential-clean validation correction: ad98b4cf17ee70f6419be0f596937c525c523e5b
+credential-clean Test Readiness: 32044366801 SUCCESS
+job: 95429088491 SUCCESS
+credential refusal: PASS
+anonymous exact-ref fetch without credential helper/extraheader: PASS
+preinstalled Python: PASS
+baseline smoke: PASS
+deterministic Healer tests: PASS
+validation-only authority boundary: PASS
+```
+
+The `Test Readiness` workflow now has `permissions: {}`, no `actions/checkout`, no `actions/setup-python`, no artifact upload, no repository writeback, and no credential-bearing environment. Hosted validation remains non-authorizing.
+
+Release condition for this integration: exact-head validation after this handoff update must pass; PR #7 may then merge as source integration, while the claim remains active until companion Site PR #329 is independently validated/merged and continuation semantics are preserved. Ordinary Healer scheduler activation still requires the canonical admitted post-carrier worker receipt and is not inferred from CI or merge.
+
 ## Machine-observable incomplete work
 
 ### Heartbeat activation
@@ -199,7 +238,9 @@ No propagation is inferred from source completion. After immutable activation ev
 
 The unique Healer pre-carrier requirement is fully durable and transferred. The source is merged, tests are green, issue #4 is closed, claim state is `COMPLETE_RELEASED`, and `.github#65` contains the G18 consumption contract.
 
-MERGED INTO:
+The Site Marketplace Coinbase observer migration is active and durable in Healer issue #6, PR #7, the claim record, and Site PR #329. It remains a distinct support responsibility until Healer exact-head validation/merge and companion Site validation/merge complete.
+
+MERGED INTO for the released pre-carrier work:
 
 ```text
 StegVerse-Labs/StegVerse-Healer/docs/HEALER_MIRROR_HANDOFF.md
@@ -227,6 +268,8 @@ Current state:
 - live activation: 0/2 — intentionally machine-owned by G18 and independent WorkerCoordinator;
 - session consolidation for this Healer goal: 1/1.
 
+For `HEALER-SITE-MARKETPLACE-COINBASE-LOCAL-OBSERVER-001`, source/control surfaces are implemented; exact-head validation after the handoff update, merge, companion Site validation/merge, and claim release remain.
+
 ## Archive condition
 
-The Healer pre-carrier implementation itself is source/archive-safe and no longer chat-owned. The broader originating session is not product-activation complete while HB30+, independent WorkerCoordinator observation, sovereign inference, and StegFin `WALLET_HANDOFF_READY` remain unobserved. Do not interpret release of this Healer claim as completion of those machine-owned goals.
+The Healer pre-carrier implementation itself is source/archive-safe and no longer chat-owned. The broader originating session is not archive-ready while the active Site Marketplace Coinbase observer migration remains unmerged/unreleased and while Site workflow/token minimization continues. Live HB30+, independent WorkerCoordinator observation, sovereign inference and downstream product activation remain separately machine-owned and are not inferred from source/CI state.
