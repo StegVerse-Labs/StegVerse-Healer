@@ -155,6 +155,21 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
         state = "COMPLETE" if projected_state in {"PAPER_ACCESSIBLE", "PENDING_UPSTREAM"} else "BLOCKED"
         return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_SITE_MARKETPLACE_PROJECTION_IMPORT", "execution": result, "receipt": payload}
 
+    if repo == "StegVerse-Labs/repo-standards" and workflow == "st018-local-task-manager":
+        script = root / "tools" / "run_st018_task_manager.py"
+        registry = root / "orchestration" / "st018-task-registry.json"
+        if not script.is_file():
+            return {**base, "state": "BLOCKED", "outcome": "RSTD_ST018_TASK_MANAGER_MISSING"}
+        if not registry.is_file():
+            return {**base, "state": "BLOCKED", "outcome": "RSTD_ST018_TASK_REGISTRY_MISSING"}
+        result = _run([sys.executable, str(script.relative_to(root))], root, timeout=240)
+        report_path = root / "reports" / "st018-task-execution.report.json"
+        payload = json.loads(report_path.read_text(encoding="utf-8")) if report_path.is_file() else None
+        if result["returncode"] != 0 or not payload:
+            return {**base, "state": "BLOCKED", "outcome": "RSTD_ST018_TASK_MANAGER_FAILED", "execution": result, "receipt": payload}
+        state = "COMPLETE" if payload.get("status") == "PASS" else "BLOCKED"
+        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_RSTD_ST018_TASK_MANAGER", "execution": result, "receipt": payload}
+
     if repo == "StegVerse-Labs/TV" and workflow == "tv_self_heal.yml":
         tvc_root = roots.get("StegVerse-Labs/TVC")
         if tvc_root is None:
