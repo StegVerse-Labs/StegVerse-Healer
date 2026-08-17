@@ -1,0 +1,35 @@
+{
+  "schema": "stegverse.session-work-claim/v1",
+  "task_id": "HEALER-G18-PRE-CARRIER-ASSIST-001",
+  "originating_goal": "Assist the canonical sovereign heartbeat worker without creating a second heartbeat/scheduler and without using NON-TV/TVC secrets or tokens.",
+  "repository": "StegVerse-Labs/StegVerse-Healer",
+  "branch": "feat/g18-pre-carrier-healer-assist",
+  "issue": "StegVerse-Labs/StegVerse-Healer#4",
+  "claimant": "current-session-healer-pre-carrier-integration-lane",
+  "role": "CLAIMED_FOR_IMPLEMENTATION",
+  "claim_created_at": "2026-08-17T14:39:58Z",
+  "release_condition": "Source and deterministic tests merge, Test Readiness passes on the implementation head, the Healer mirror handoff and .github G18 continuation record the assist path, and no live HB30 or G18 claim/fence mutation is performed by this lane.",
+  "surfaces": [
+    "app/pre_carrier_assist.py",
+    "tests/test_pre_carrier_assist.py",
+    ".github/workflows/test-readiness.yml",
+    "docs/HEALER_MIRROR_HANDOFF.md",
+    "data/session_consolidation/g18-pre-carrier-assist.json"
+  ],
+  "collision_boundaries": [
+    "Do not mutate control/heartbeat-state.json or synthesize HB30.",
+    "Do not mutate control/heartbeat-carrier-runtime-state.json, worker runtime state, G18 claim/fence/lease, or worker registry authority.",
+    "Do not create a second heartbeat, scheduler, or transition owner.",
+    "Do not consume or forward GitHub, provider, wallet, or other NON-TV/TVC credentials/tokens.",
+    "Do not sign or broadcast wallet transactions."
+  ],
+  "expected_evidence": [
+    "pre-carrier assist returns READY_FOR_G18_TRANSITION only when immutable HB29 and the canonical v12/G18 contract are locally coherent",
+    "contract/source drift returns BLOCKED or REVIEW_REQUIRED with exact next action",
+    "credential-bearing environments fail closed",
+    "tests prove no HB30 synthesis and no legacy HB29 mutation"
+  ],
+  "canonical_runtime_owner": "StegVerse-Labs/.github/handoffs/SHWP-DURABLE-RUNTIME-ACTIVATION.json#G18",
+  "next_task_after_release": "G18 consumes the Healer pre-carrier receipt/diagnosis as bounded readiness evidence and remains the sole executor of scripts/advance_heartbeat_transition.py.",
+  "state": "CLAIMED_FOR_IMPLEMENTATION"
+}
