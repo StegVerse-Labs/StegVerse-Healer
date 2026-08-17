@@ -5,12 +5,31 @@
   "repository": "StegVerse-Labs/StegVerse-Healer",
   "branch": "feat/site-marketplace-coinbase-local-observer-6",
   "issue": "StegVerse-Labs/StegVerse-Healer#6",
+  "pull_request": "StegVerse-Labs/StegVerse-Healer#7",
   "site_issue": "StegVerse-Labs/Site#131",
   "site_cleanup_pr": "StegVerse-Labs/Site#329",
   "claimant": "current-session-healer-marketplace-observer-integration-lane",
-  "role": "CLAIMED_FOR_IMPLEMENTATION",
+  "role": "RELEASED_INTEGRATION",
   "claim_created_at": "2026-08-17T15:24:44Z",
-  "release_condition": "Fixed local handler, target registry, deterministic tests, and Healer mirror handoff merge; Test Readiness passes; Site PR #329 independently validates removal of the hosted token/writeback controller against the merged Healer continuation contract.",
+  "claim_released_at": "2026-08-17T16:10:00Z",
+  "release_condition": "Fixed local handler, target registry, deterministic tests, and Healer mirror handoff merge; credential-clean Test Readiness passes; Site PR #329 independently validates and merges removal of the hosted token/writeback controller against the merged Healer continuation contract.",
+  "release_evidence": {
+    "healer_pr": 7,
+    "healer_final_head": "547d44555be78e610fd4623ca30786fc02188221",
+    "healer_merge_commit": "ecf96188348c097dfdea3ce55c47db9dff6e84ef",
+    "healer_test_readiness_run": 32044423476,
+    "healer_test_job": 95429249175,
+    "site_pr": 329,
+    "site_final_head": "caf9b6dae32f09b7475a0dbe61cbc5e7e873c089",
+    "site_merge_commit": "72ca1b9377a918983d5bcb329fa4c13ab0294cc8",
+    "site_bootstrap_run": 32044523223,
+    "site_handoff_run": 32044523168,
+    "site_heartbeat_run": 32044523264,
+    "site_stegfin_projection_run": 32044523162,
+    "site_claim_release_commit": "c00ac1906dc6bcfd5195e07dc7916e3cc2d760bc",
+    "site_actions_handoff_release_commit": "c0c87e2004e41acb22afe7fddaec61947d451df4",
+    "site_marketplace_handoff_release_commit": "60b7cd74be751df8b11e7b5bbc940dc4fd0319a9"
+  },
   "surfaces": [
     "app/sovereign_scheduler.py",
     "data/orchestrator_targets.json",
@@ -27,5 +46,9 @@
     "Hosted validation is source evidence only and does not prove ordinary Healer scheduler activation."
   ],
   "canonical_scheduler_owner": "StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json",
-  "state": "CLAIMED_FOR_IMPLEMENTATION"
+  "authority_effect": false,
+  "runtime_activation_effect": false,
+  "financial_authority_effect": false,
+  "next_task_after_release": "Site#268 continues with the next unclaimed token-bearing or redundant workflow family; ordinary Healer runtime activation remains machine-owned by SHWP-HEALER-SOVEREIGN-SCHEDULER-001.",
+  "state": "COMPLETE_RELEASED"
 }
