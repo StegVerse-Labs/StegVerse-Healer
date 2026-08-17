@@ -9,17 +9,18 @@
   "credential_authority":"TV/TVC",
   "non_tv_tvc_secret_or_token_allowed":false,
   "github_actions_production_role":"NONE",
-  "state":"IMPLEMENTED_PENDING_VALIDATION",
+  "state":"COMPLETE_RELEASED_SOURCE_INTEGRATION",
   "installed_surfaces":[
     "data/orchestrator_targets.json::StegVerse-Labs/repo-standards/st018-local-task-manager",
     "app/sovereign_scheduler.py::_execute_target",
     "tests/test_repo_standards_st018_task_manager.py"
   ],
+  "source_commits":{"target_binding":"c042b8d8b70413bfd38273da80c326ee2ced557c","scheduler_handler":"8b8167ddb2bb6d7385d2f0056bcd975d4f4bb7a9","deterministic_tests":"df6719e45abf8db9ff329d8a573389d69f51db37","consolidation_record":"d6d60f7e661ea9a871bd0f8593327a08e019f005"},
   "local_dependency":"STEGVERSE_REPO_ROOTS_JSON::StegVerse-Labs/repo-standards",
   "fixed_command":"python tools/run_st018_task_manager.py",
   "fail_closed_conditions":["LOCAL_REPOSITORY_NOT_MATERIALIZED","RSTD_ST018_TASK_MANAGER_MISSING","RSTD_ST018_TASK_REGISTRY_MISSING","RSTD_ST018_TASK_MANAGER_FAILED"],
-  "validation_required":["Healer deterministic tests PASS","credential refusal PASS","Test Readiness PASS","exact source integration evidence"],
+  "validation":{"test_readiness_run":32053936357,"test_readiness":"SUCCESS","session_consolidation_run":32053936480,"session_consolidation":"SUCCESS","credential_refusal":"PASS","anonymous_exact_source_fetch":"PASS","deterministic_healer_tests":"PASS"},
   "live_activation_boundary":"Ordinary scheduler execution remains MACHINE_OWNED and requires receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json; source/CI does not prove activation.",
   "authority_effect":"NONE",
-  "release_condition":"Deterministic source validation succeeds and issue #11 plus HEALER_MIRROR_HANDOFF record the integration as source-released."
+  "next_owner":"StegVerse-Labs/repo-standards#28 for ST-018 task semantics; SHWP-HEALER-SOVEREIGN-SCHEDULER-001 for ordinary execution activation."
 }
