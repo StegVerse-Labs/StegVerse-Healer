@@ -1,0 +1,31 @@
+{
+  "schema": "stegverse.session-work-claim/v1",
+  "task_id": "HEALER-SITE-MARKETPLACE-COINBASE-LOCAL-OBSERVER-001",
+  "originating_goal": "Move the nonterminal Site#131 Marketplace-Coinbase observation loop from a GitHub-token/writeback controller to the existing sovereign Healer scheduler without creating a second scheduler or authority path.",
+  "repository": "StegVerse-Labs/StegVerse-Healer",
+  "branch": "feat/site-marketplace-coinbase-local-observer-6",
+  "issue": "StegVerse-Labs/StegVerse-Healer#6",
+  "site_issue": "StegVerse-Labs/Site#131",
+  "site_cleanup_pr": "StegVerse-Labs/Site#329",
+  "claimant": "current-session-healer-marketplace-observer-integration-lane",
+  "role": "CLAIMED_FOR_IMPLEMENTATION",
+  "claim_created_at": "2026-08-17T15:24:44Z",
+  "release_condition": "Fixed local handler, target registry, deterministic tests, and Healer mirror handoff merge; Test Readiness passes; Site PR #329 independently validates removal of the hosted token/writeback controller against the merged Healer continuation contract.",
+  "surfaces": [
+    "app/sovereign_scheduler.py",
+    "data/orchestrator_targets.json",
+    "tests/test_site_marketplace_coinbase_observer.py",
+    "docs/HEALER_MIRROR_HANDOFF.md",
+    "data/session_consolidation/site-marketplace-coinbase-local-observer.json"
+  ],
+  "collision_boundaries": [
+    "Reuse SHWP-HEALER-SOVEREIGN-SCHEDULER-001; do not create a second scheduler or heartbeat.",
+    "Operate only on already-materialized local repositories supplied by STEGVERSE_REPO_ROOTS_JSON.",
+    "Do not use GitHub API/token/PAT, remote checkout, provider, wallet, or other NON-TV/TVC credentials.",
+    "Do not grant Marketplace, Coinbase, Publisher, crypto-bot, Site publication/release/execution/live/financial authority.",
+    "Do not modify StegFin signing/broadcast authority; USER_ONLY remains sole signer/broadcaster.",
+    "Hosted validation is source evidence only and does not prove ordinary Healer scheduler activation."
+  ],
+  "canonical_scheduler_owner": "StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json",
+  "state": "CLAIMED_FOR_IMPLEMENTATION"
+}
