@@ -44,12 +44,6 @@ jobs:
               except Exception as exc:
                   failures.append(f'invalid JSON: {path}: {exc}')
 
-          tests = root / 'tests'
-          if tests.exists():
-              print(f'tests directory detected: {tests}')
-          else:
-              print('no tests directory detected; baseline smoke gate only')
-
           if failures:
               print('TEST READINESS FAILED')
               for failure in failures:
@@ -58,3 +52,12 @@ jobs:
 
           print('TEST READINESS PASSED')
           PY
+      - name: Run deterministic Healer tests
+        env:
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+          HEALER_GH_TOKEN: ""
+          HEALER_PAT: ""
+          GH_STEGVERSE_AI_TOKEN: ""
+        run: |
+          python -m unittest discover -s tests -p 'test_*.py' -v
