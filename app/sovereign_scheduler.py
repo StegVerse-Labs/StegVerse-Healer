@@ -9,7 +9,15 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-FORBIDDEN_CREDENTIALS = ("HEALER_GH_TOKEN", "GITHUB_TOKEN", "GH_TOKEN", "HEALER_PAT", "GH_STEGVERSE_AI_TOKEN")
+FORBIDDEN_CREDENTIALS = (
+    "HEALER_GH_TOKEN",
+    "GITHUB_TOKEN",
+    "GH_TOKEN",
+    "HEALER_PAT",
+    "GH_STEGVERSE_AI_TOKEN",
+    "MARKETPLACE_COINBASE_EVIDENCE_TOKEN",
+    "STEGVERSE_CROSS_REPO_READ_TOKEN",
+)
 
 
 def _forbid_github_credentials() -> None:
@@ -119,6 +127,23 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
             if result["returncode"] != 0:
                 return {**base, "state": "BLOCKED", "outcome": "SITE_LOCAL_ORCHESTRATION_BLOCKED", "execution": results}
         return {**base, "state": "COMPLETE", "outcome": "SOVEREIGN_LOCAL_SITE_ORCHESTRATION", "execution": results}
+
+    if repo == "StegVerse-Labs/Site" and workflow == "marketplace-coinbase-local-observer":
+        script = root / "scripts" / "advance_marketplace_coinbase_activation.py"
+        if not script.is_file():
+            return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_OBSERVER_MISSING"}
+        result = _run(
+            [sys.executable, str(script.relative_to(root))],
+            root,
+            {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json},
+            timeout=90,
+        )
+        payload = _json_tail(result)
+        if result["returncode"] != 0 or not payload:
+            return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_OBSERVER_FAILED", "execution": result, "receipt": payload}
+        observed_state = str(payload.get("state", ""))
+        state = "COMPLETE" if observed_state in {"COMPLETE", "ACTIVE_STEGVERSE_CONTINUATION"} else "BLOCKED"
+        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_SITE_MARKETPLACE_OBSERVATION", "execution": result, "receipt": payload}
 
     if repo == "StegVerse-Labs/TV" and workflow == "tv_self_heal.yml":
         tvc_root = roots.get("StegVerse-Labs/TVC")
