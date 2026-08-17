@@ -132,18 +132,28 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
         script = root / "scripts" / "advance_marketplace_coinbase_activation.py"
         if not script.is_file():
             return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_OBSERVER_MISSING"}
-        result = _run(
-            [sys.executable, str(script.relative_to(root))],
-            root,
-            {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json},
-            timeout=90,
-        )
+        result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json}, timeout=90)
         payload = _json_tail(result)
         if result["returncode"] != 0 or not payload:
             return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_OBSERVER_FAILED", "execution": result, "receipt": payload}
         observed_state = str(payload.get("state", ""))
         state = "COMPLETE" if observed_state in {"COMPLETE", "ACTIVE_STEGVERSE_CONTINUATION"} else "BLOCKED"
         return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_SITE_MARKETPLACE_OBSERVATION", "execution": result, "receipt": payload}
+
+    if repo == "StegVerse-Labs/Site" and workflow == "marketplace-coinbase-local-projection-import":
+        script = root / "scripts" / "import_marketplace_coinbase_accessibility.py"
+        if not script.is_file():
+            return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_PROJECTION_IMPORTER_MISSING"}
+        if roots.get("GCAT-BCAT-Engine/Publisher") is None:
+            return {**base, "state": "BLOCKED", "outcome": "PUBLISHER_LOCAL_REPOSITORY_NOT_MATERIALIZED"}
+        result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json}, timeout=90)
+        status_path = root / "data" / "marketplace-coinbase-accessibility-status.json"
+        payload = json.loads(status_path.read_text(encoding="utf-8")) if status_path.is_file() else None
+        if result["returncode"] != 0 or not payload:
+            return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_PROJECTION_IMPORT_FAILED", "execution": result, "receipt": payload}
+        projected_state = str(payload.get("state", ""))
+        state = "COMPLETE" if projected_state in {"PAPER_ACCESSIBLE", "PENDING_UPSTREAM"} else "BLOCKED"
+        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_SITE_MARKETPLACE_PROJECTION_IMPORT", "execution": result, "receipt": payload}
 
     if repo == "StegVerse-Labs/TV" and workflow == "tv_self_heal.yml":
         tvc_root = roots.get("StegVerse-Labs/TVC")
