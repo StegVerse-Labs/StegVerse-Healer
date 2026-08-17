@@ -155,6 +155,35 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
         state = "COMPLETE" if projected_state in {"PAPER_ACCESSIBLE", "PENDING_UPSTREAM"} else "BLOCKED"
         return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_SITE_MARKETPLACE_PROJECTION_IMPORT", "execution": result, "receipt": payload}
 
+    if repo == "StegVerse-Labs/Site" and workflow == "child-safety-public-deployment-observer":
+        script = root / "scripts" / "check_child_safety_public_deployment.py"
+        if not script.is_file():
+            return {**base, "state": "BLOCKED", "outcome": "SITE_CHILD_SAFETY_OBSERVER_MISSING"}
+        with tempfile.TemporaryDirectory(prefix="stegverse-child-safety-") as temp_dir:
+            receipt_path = Path(temp_dir) / "child-safety-public-deployment.report.json"
+            result = _run(
+                [sys.executable, str(script.relative_to(root))],
+                root,
+                {"STEGVERSE_CHILD_SAFETY_REPORT": str(receipt_path)},
+                timeout=60,
+            )
+            payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else None
+        if result["returncode"] != 0 or not payload:
+            return {**base, "state": "BLOCKED", "outcome": "SITE_CHILD_SAFETY_PUBLIC_ROUTE_BLOCKED", "execution": result, "receipt": payload}
+        complete = (
+            payload.get("state") == "VERIFIED_PUBLICLY_REACHABLE"
+            and payload.get("authority_effect") is False
+            and payload.get("github_token_required") is False
+            and payload.get("artifact_custody_required") is False
+        )
+        return {
+            **base,
+            "state": "COMPLETE" if complete else "BLOCKED",
+            "outcome": "SOVEREIGN_LOCAL_SITE_CHILD_SAFETY_PUBLIC_OBSERVATION",
+            "execution": result,
+            "receipt": payload,
+        }
+
     if repo == "StegVerse-Labs/repo-standards" and workflow == "st018-local-task-manager":
         script = root / "tools" / "run_st018_task_manager.py"
         registry = root / "orchestration" / "st018-task-registry.json"
