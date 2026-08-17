@@ -8,6 +8,7 @@ from pathlib import Path
 from app import sovereign_scheduler
 
 ROOT = Path(__file__).resolve().parents[1]
+LOCAL_CAPABILITY_MARKERS = "# STEGVERSE_REPO_ROOTS_JSON\n# GCAT-BCAT-Engine/Publisher\n"
 
 
 class TestSiteMarketplaceProjectionImport(unittest.TestCase):
@@ -28,31 +29,45 @@ class TestSiteMarketplaceProjectionImport(unittest.TestCase):
             publisher = Path(temp_dir) / "Publisher"
             site.mkdir()
             publisher.mkdir()
-            roots = {
-                "StegVerse-Labs/Site": site,
-                "GCAT-BCAT-Engine/Publisher": publisher,
-            }
+            roots = {"StegVerse-Labs/Site": site, "GCAT-BCAT-Engine/Publisher": publisher}
             roots_json = json.dumps({key: str(value) for key, value in roots.items()})
             result = sovereign_scheduler._execute_target(
-                {"repo": "StegVerse-Labs/Site", "workflow": "marketplace-coinbase-local-projection-import"},
-                roots,
-                roots_json,
+                {"repo": "StegVerse-Labs/Site", "workflow": "marketplace-coinbase-local-projection-import"}, roots, roots_json
             )
             self.assertEqual(result["state"], "BLOCKED")
             self.assertEqual(result["outcome"], "SITE_MARKETPLACE_PROJECTION_IMPORTER_MISSING")
 
-    def test_missing_publisher_repo_fails_closed(self):
+    def test_legacy_remote_site_importer_fails_closed_before_execution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            site = Path(temp_dir) / "Site"
+            publisher = Path(temp_dir) / "Publisher"
+            scripts = site / "scripts"
+            scripts.mkdir(parents=True)
+            publisher.mkdir()
+            (scripts / "import_marketplace_coinbase_accessibility.py").write_text(
+                "from urllib import request\nSOURCE='https://raw.githubusercontent.com/example/repo/main/state.json'\n",
+                encoding="utf-8",
+            )
+            roots = {"StegVerse-Labs/Site": site, "GCAT-BCAT-Engine/Publisher": publisher}
+            roots_json = json.dumps({key: str(value) for key, value in roots.items()})
+            result = sovereign_scheduler._execute_target(
+                {"repo": "StegVerse-Labs/Site", "workflow": "marketplace-coinbase-local-projection-import"}, roots, roots_json
+            )
+            self.assertEqual(result["state"], "BLOCKED")
+            self.assertEqual(result["outcome"], "SITE_MARKETPLACE_PROJECTION_LOCAL_CAPABILITY_NOT_INSTALLED")
+
+    def test_missing_publisher_repo_fails_closed_after_capability_check(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             site = Path(temp_dir) / "Site"
             scripts = site / "scripts"
             scripts.mkdir(parents=True)
-            (scripts / "import_marketplace_coinbase_accessibility.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
+            (scripts / "import_marketplace_coinbase_accessibility.py").write_text(
+                LOCAL_CAPABILITY_MARKERS + "raise SystemExit(0)\n", encoding="utf-8"
+            )
             roots = {"StegVerse-Labs/Site": site}
             roots_json = json.dumps({key: str(value) for key, value in roots.items()})
             result = sovereign_scheduler._execute_target(
-                {"repo": "StegVerse-Labs/Site", "workflow": "marketplace-coinbase-local-projection-import"},
-                roots,
-                roots_json,
+                {"repo": "StegVerse-Labs/Site", "workflow": "marketplace-coinbase-local-projection-import"}, roots, roots_json
             )
             self.assertEqual(result["state"], "BLOCKED")
             self.assertEqual(result["outcome"], "PUBLISHER_LOCAL_REPOSITORY_NOT_MATERIALIZED")
@@ -68,20 +83,16 @@ class TestSiteMarketplaceProjectionImport(unittest.TestCase):
             publisher.mkdir()
             importer = scripts / "import_marketplace_coinbase_accessibility.py"
             importer.write_text(
-                "import json\n"
-                "from pathlib import Path\n"
-                "Path('data/marketplace-coinbase-accessibility-status.json').write_text(json.dumps({'state':'PAPER_ACCESSIBLE'}))\n",
+                LOCAL_CAPABILITY_MARKERS
+                + "import json\n"
+                + "from pathlib import Path\n"
+                + "Path('data/marketplace-coinbase-accessibility-status.json').write_text(json.dumps({'state':'PAPER_ACCESSIBLE'}))\n",
                 encoding="utf-8",
             )
-            roots = {
-                "StegVerse-Labs/Site": site,
-                "GCAT-BCAT-Engine/Publisher": publisher,
-            }
+            roots = {"StegVerse-Labs/Site": site, "GCAT-BCAT-Engine/Publisher": publisher}
             roots_json = json.dumps({key: str(value) for key, value in roots.items()})
             result = sovereign_scheduler._execute_target(
-                {"repo": "StegVerse-Labs/Site", "workflow": "marketplace-coinbase-local-projection-import"},
-                roots,
-                roots_json,
+                {"repo": "StegVerse-Labs/Site", "workflow": "marketplace-coinbase-local-projection-import"}, roots, roots_json
             )
             self.assertEqual(result["state"], "COMPLETE")
             self.assertEqual(result["outcome"], "SOVEREIGN_LOCAL_SITE_MARKETPLACE_PROJECTION_IMPORT")
