@@ -24,6 +24,53 @@ Canonical organization/runtime continuations are `StegVerse-Labs/.github/docs/OR
 - `HEALER-SITE-MARKETPLACE-COINBASE-LOCAL-OBSERVER-001`: PR #7 merge `ecf96188348c097dfdea3ce55c47db9dff6e84ef`.
 - `HEALER-SITE-MARKETPLACE-PROJECTION-LOCAL-IMPORT-001`: source/integration COMPLETE_RELEASED; issue #8 closed.
 - `HEALER-RSTD-ST018-LOCAL-TASK-MANAGER-001`: source/integration COMPLETE_RELEASED; issue #11.
+- `HEALER-SITE-CHILD-SAFETY-PUBLIC-OBSERVER-001`: source/integration COMPLETE_RELEASED; issue #13 pending closeout record only.
+
+## Child-safety sovereign public-route observer
+
+Purpose: replace Site's hourly GitHub-hosted child-safety deployment observer with a fixed handler on the existing sovereign Healer scheduler while preserving public HTTPS/status/content verification.
+
+Installed surfaces:
+
+```text
+data/orchestrator_targets.json::StegVerse-Labs/Site/child-safety-public-deployment-observer
+app/sovereign_scheduler.py::_execute_target
+tests/test_site_child_safety_public_observer.py
+```
+
+Fixed execution contract:
+
+```text
+local dependency: STEGVERSE_REPO_ROOTS_JSON::StegVerse-Labs/Site
+command: python scripts/check_child_safety_public_deployment.py
+receipt env: STEGVERSE_CHILD_SAFETY_REPORT=<ephemeral/local path>
+schedule: hourly through existing SHWP-HEALER-SOVEREIGN-SCHEDULER-001
+missing Site root: BLOCKED
+missing observer script: BLOCKED
+nonzero observer result: BLOCKED
+non-VERIFIED_PUBLICLY_REACHABLE receipt: BLOCKED
+github_token_required: false
+artifact_custody_required: false
+remote checkout required: false
+```
+
+Source evidence:
+
+```text
+target binding: 81cb23510bc5cb1fc976b473a38e14113360a0f5
+scheduler handler: 8575b000e7584dbe2d629236859cf0f45e85145a
+deterministic tests: b17ad66c2f9c1425280b688efa579e2cdde5a8ba
+Test Readiness: 32059184264 SUCCESS
+repo-smoke job: 95476280369 SUCCESS
+credential refusal: PASS
+anonymous exact-source validation fetch: PASS
+deterministic Healer tests: PASS
+validation-only authority boundary: PASS
+```
+
+The handler accepts completion only when the Site observer reports `VERIFIED_PUBLICLY_REACHABLE`, `authority_effect=false`, `github_token_required=false`, and `artifact_custody_required=false`. It writes the public-route observation to an ephemeral/local receipt rather than GitHub artifact custody. No second scheduler or heartbeat was created.
+
+Canonical Site coordination is `StegVerse-Labs/Site#268` / `SITE-WORKFLOW-SURFACE-MINIMIZATION-268-B26-20260817`. Site may retire `.github/workflows/verify-child-safety-public-deployment.yml` only after preserving its local validator/task semantics and validating the resulting exact-current-main tranche.
 
 ## Repo-standards ST-018 sovereign task-manager integration
 
@@ -58,22 +105,10 @@ Source commits:
 target binding: c042b8d8b70413bfd38273da80c326ee2ced557c
 scheduler handler: 8b8167ddb2bb6d7385d2f0056bcd975d4f4bb7a9
 deterministic tests: df6719e45abf8db9ff329d8a573389d69f51db37
-initial consolidation record: d6d60f7e661ea9a871bd0f8593327a08e019f005
 released consolidation record: 937b6ab2ef29d3b459f78fff67993a22ce21de14
 ```
 
-Validation:
-
-```text
-Test Readiness 32053936357: SUCCESS
-repo-smoke: SUCCESS
-credential refusal: PASS
-anonymous exact-source validation fetch: PASS
-deterministic Healer tests: PASS
-Validate Session Consolidation 32053936480: SUCCESS
-```
-
-Canonical ST-018 semantics remain owned by `StegVerse-Labs/repo-standards#28`; Healer supplies only the bounded local execution carrier. No second scheduler or heartbeat was created.
+Canonical ST-018 semantics remain owned by `StegVerse-Labs/repo-standards#28`; Healer supplies only the bounded local execution carrier.
 
 ## Marketplace projection integration
 
@@ -87,4 +122,4 @@ TV/TVC remains credential authority. No NON-TV/TVC secret/token, provider creden
 
 ## Continuation
 
-The repo-standards ST-018 carrier is archive-safe as a chat-owned source implementation. Future ST-018 task semantics belong to `StegVerse-Labs/repo-standards#28`; ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268.
+Child-safety observer source continuation is now canonical in Healer #13 and Site #268/B26. Ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268. Future work must reuse these fixed handlers rather than create a second scheduler/heartbeat.
