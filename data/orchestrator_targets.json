@@ -52,6 +52,16 @@
       "status": "sovereign-local-hourly-public-route-observer-no-github-token-no-artifact-custody"
     },
     {
+      "repo": "StegVerse-Labs/Site",
+      "workflow": "stegfin-public-wallet-transport-observer",
+      "ref": "main",
+      "enabled": true,
+      "aliases": ["site-stegfin-publication", "stegfin-wallet-publication", "stegfin-public-wallet-transport"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+      "inputs": {},
+      "status": "sovereign-local-hourly-stegfin-publication-observer-no-github-token-no-artifact-custody-no-wallet-authority"
+    },
+    {
       "repo": "StegVerse-Labs/repo-standards",
       "workflow": "st018-local-task-manager",
       "ref": "main",
