@@ -172,26 +172,13 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
             result = _run([sys.executable, script], root, timeout=240)
             executions.append(result)
             if result["returncode"] != 0:
-                return {
-                    **base,
-                    "state": "BLOCKED",
-                    "outcome": "SITE_B27_VALIDATION_BLOCKED",
-                    "source_head": source_head,
-                    "failed_script": script,
-                    "execution": executions,
-                }
+                return {**base, "state": "BLOCKED", "outcome": "SITE_B27_VALIDATION_BLOCKED", "source_head": source_head, "failed_script": script, "execution": executions}
 
         thought_path = root / "thought-experiments-publication.report.json"
         inventory_path = root / "data" / "site-workflow-inventory.json"
         task_path = root / "data" / "tasks" / "SITE-ACTIONS-COST-CONTAINMENT-001-B27.json"
         if not thought_path.is_file() or not inventory_path.is_file() or not task_path.is_file():
-            return {
-                **base,
-                "state": "BLOCKED",
-                "outcome": "SITE_B27_REQUIRED_RECEIPT_MISSING",
-                "source_head": source_head,
-                "execution": executions,
-            }
+            return {**base, "state": "BLOCKED", "outcome": "SITE_B27_REQUIRED_RECEIPT_MISSING", "source_head": source_head, "execution": executions}
 
         thought = _load_json(thought_path)
         inventory = _load_json(inventory_path)
@@ -232,14 +219,7 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
             "placeholder_count": inventory.get("placeholder_count"),
             "validated_scripts": commands,
         }
-        return {
-            **base,
-            "state": "COMPLETE" if complete else "BLOCKED",
-            "outcome": "SOVEREIGN_LOCAL_SITE_B27_VALIDATION",
-            "source_head": source_head,
-            "execution": executions,
-            "receipt": receipt,
-        }
+        return {**base, "state": "COMPLETE" if complete else "BLOCKED", "outcome": "SOVEREIGN_LOCAL_SITE_B27_VALIDATION", "source_head": source_head, "execution": executions, "receipt": receipt}
 
     if repo == "StegVerse-Labs/Site" and workflow == "marketplace-coinbase-local-observer":
         script = root / "scripts" / "advance_marketplace_coinbase_activation.py"
@@ -274,12 +254,7 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
             return {**base, "state": "BLOCKED", "outcome": "SITE_CHILD_SAFETY_OBSERVER_MISSING"}
         with tempfile.TemporaryDirectory(prefix="stegverse-child-safety-") as temp_dir:
             receipt_path = Path(temp_dir) / "child-safety-public-deployment.report.json"
-            result = _run(
-                [sys.executable, str(script.relative_to(root))],
-                root,
-                {"STEGVERSE_CHILD_SAFETY_REPORT": str(receipt_path)},
-                timeout=60,
-            )
+            result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGVERSE_CHILD_SAFETY_REPORT": str(receipt_path)}, timeout=60)
             payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else None
         if result["returncode"] != 0 or not payload:
             return {**base, "state": "BLOCKED", "outcome": "SITE_CHILD_SAFETY_PUBLIC_ROUTE_BLOCKED", "execution": result, "receipt": payload}
@@ -289,10 +264,52 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
             and payload.get("github_token_required") is False
             and payload.get("artifact_custody_required") is False
         )
+        return {**base, "state": "COMPLETE" if complete else "BLOCKED", "outcome": "SOVEREIGN_LOCAL_SITE_CHILD_SAFETY_PUBLIC_OBSERVATION", "execution": result, "receipt": payload}
+
+    if repo == "StegVerse-Labs/Site" and workflow == "stegfin-public-wallet-transport-observer":
+        local_forbidden = (
+            "GITHUB_TOKEN",
+            "GH_TOKEN",
+            "GITHUB_PAT",
+            "TVC_EPHEMERAL_GITHUB_TOKEN",
+            "STEGVERSE_PROVIDER_TOKEN",
+            "STEGVERSE_MASTER_RECORDS_TOKEN",
+            "CLOUDFLARE_API_TOKEN",
+            "CLOUDFLARE_ACCOUNT_ID",
+            "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+        )
+        present = [name for name in local_forbidden if os.getenv(name)]
+        if present:
+            return {**base, "state": "BLOCKED", "outcome": "SITE_STEGFIN_PUBLICATION_FORBIDDEN_CREDENTIAL_ENV", "forbidden": sorted(present)}
+        script = root / "scripts" / "check_stegfin_public_wallet_transport.py"
+        if not script.is_file():
+            return {**base, "state": "BLOCKED", "outcome": "SITE_STEGFIN_PUBLICATION_OBSERVER_MISSING"}
+        with tempfile.TemporaryDirectory(prefix="stegverse-stegfin-publication-") as temp_dir:
+            receipt_path = Path(temp_dir) / "stegfin-public-wallet-transport.report.json"
+            result = _run(
+                [sys.executable, str(script.relative_to(root))],
+                root,
+                {"STEGFIN_PUBLICATION_REPORT": str(receipt_path)},
+                timeout=60,
+            )
+            payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else None
+        if result["returncode"] != 0 or not payload:
+            return {**base, "state": "BLOCKED", "outcome": "SITE_STEGFIN_PUBLICATION_OBSERVATION_BLOCKED", "execution": result, "receipt": payload}
+        complete = (
+            payload.get("state") == "VERIFIED_PUBLICATION"
+            and payload.get("publication_proven") is True
+            and payload.get("observed_ui_blob") == "114b3c39052d5b1622407080407259a0040a1369"
+            and payload.get("credential_authority") == "TV/TVC"
+            and payload.get("credential_requirement") == "NONE"
+            and payload.get("non_tv_tvc_secret_or_token_used") is False
+            and payload.get("github_token_required") is False
+            and payload.get("render_required") is False
+            and payload.get("authority_effect") is False
+        )
         return {
             **base,
             "state": "COMPLETE" if complete else "BLOCKED",
-            "outcome": "SOVEREIGN_LOCAL_SITE_CHILD_SAFETY_PUBLIC_OBSERVATION",
+            "outcome": "SOVEREIGN_LOCAL_SITE_STEGFIN_PUBLICATION_OBSERVATION",
             "execution": result,
             "receipt": payload,
         }
@@ -318,11 +335,7 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
             return {**base, "state": "BLOCKED", "outcome": "TVC_LOCAL_REPOSITORY_NOT_MATERIALIZED"}
         with tempfile.TemporaryDirectory(prefix="stegverse-tv-heal-") as temp_dir:
             receipt_path = Path(temp_dir) / "tv-self-heal.json"
-            result = _run([sys.executable, "scripts/sovereign_self_heal.py"], root, {
-                "STEGVERSE_TV_ROOT": str(root),
-                "STEGVERSE_TVC_ROOT": str(tvc_root),
-                "TV_SELF_HEAL_RECEIPT": str(receipt_path),
-            }, timeout=180)
+            result = _run([sys.executable, "scripts/sovereign_self_heal.py"], root, {"STEGVERSE_TV_ROOT": str(root), "STEGVERSE_TVC_ROOT": str(tvc_root), "TV_SELF_HEAL_RECEIPT": str(receipt_path)}, timeout=180)
             payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else _json_tail(result)
         state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") == "COMPLETE" else "BLOCKED"
         return {**base, "state": state, "outcome": "TVC_GRANTED_LOCAL_TV_SELF_HEAL", "receipt": payload, "execution": result}
@@ -334,11 +347,7 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
     if repo == "StegVerse-Labs/StegVerse-Healer" and workflow == "quiet_enforcer.yml":
         with tempfile.TemporaryDirectory(prefix="stegverse-quiet-") as temp_dir:
             receipt = Path(temp_dir) / "quiet.json"
-            result = _run([sys.executable, "app/audit_schedules.py"], root, {
-                "TARGETS_FILE": str(root / "data/orchestrator_targets.json"),
-                "QUIET_RECEIPT": str(receipt),
-                "STEGVERSE_REPO_ROOTS_JSON": all_roots_json,
-            }, timeout=90)
+            result = _run([sys.executable, "app/audit_schedules.py"], root, {"TARGETS_FILE": str(root / "data/orchestrator_targets.json"), "QUIET_RECEIPT": str(receipt), "STEGVERSE_REPO_ROOTS_JSON": all_roots_json}, timeout=90)
             payload = json.loads(receipt.read_text(encoding="utf-8")) if receipt.is_file() else None
         state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") == "COMPLETE" else "BLOCKED"
         return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_QUIET_ENFORCER", "receipt": payload, "execution": result}
