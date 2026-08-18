@@ -128,6 +128,119 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
                 return {**base, "state": "BLOCKED", "outcome": "SITE_LOCAL_ORCHESTRATION_BLOCKED", "execution": results}
         return {**base, "state": "COMPLETE", "outcome": "SOVEREIGN_LOCAL_SITE_ORCHESTRATION", "execution": results}
 
+    if repo == "StegVerse-Labs/Site" and workflow == "site-b27-native-validation":
+        local_forbidden = (
+            "GITHUB_TOKEN",
+            "GH_TOKEN",
+            "GITHUB_PAT",
+            "TVC_EPHEMERAL_GITHUB_TOKEN",
+            "STEGVERSE_PROVIDER_TOKEN",
+            "STEGVERSE_MASTER_RECORDS_TOKEN",
+            "STEGVERSE_HIL_REVIEW_TOKEN",
+            "STEGVERSE_HIL_PUBLICATION_TOKEN",
+            "CLOUDFLARE_API_TOKEN",
+            "CLOUDFLARE_ACCOUNT_ID",
+            "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+        )
+        present = [name for name in local_forbidden if os.getenv(name)]
+        if present:
+            return {**base, "state": "BLOCKED", "outcome": "SITE_B27_FORBIDDEN_CREDENTIAL_ENV", "forbidden": sorted(present)}
+
+        commands = [
+            "scripts/check_thought_experiments_publication.py",
+            "scripts/write_site_workflow_inventory.py",
+            "scripts/check_site_workflow_inventory.py",
+            "scripts/check_session_work_claims.py",
+            "scripts/site_handoff_orchestrator.py",
+            "scripts/check_ecosystem_heartbeat_orchestration.py",
+            "scripts/check_ecosystem_chat_application.py",
+            "scripts/check_iphone_heartbeat_transition_projection.py",
+            "scripts/run_sandbox_validation.py",
+            "scripts/check_stegfin_phone_projection.py",
+        ]
+        missing = [name for name in commands if not (root / name).is_file()]
+        if missing:
+            return {**base, "state": "BLOCKED", "outcome": "SITE_B27_VALIDATOR_MISSING", "missing": missing}
+
+        head_result = _run(["git", "rev-parse", "HEAD"], root, timeout=30)
+        source_head = str(head_result.get("stdout_tail", "")).strip().splitlines()[-1] if head_result["returncode"] == 0 and str(head_result.get("stdout_tail", "")).strip() else ""
+        if head_result["returncode"] != 0 or len(source_head) != 40:
+            return {**base, "state": "BLOCKED", "outcome": "SITE_B27_SOURCE_HEAD_UNPROVEN", "execution": head_result}
+
+        executions = []
+        for script in commands:
+            result = _run([sys.executable, script], root, timeout=240)
+            executions.append(result)
+            if result["returncode"] != 0:
+                return {
+                    **base,
+                    "state": "BLOCKED",
+                    "outcome": "SITE_B27_VALIDATION_BLOCKED",
+                    "source_head": source_head,
+                    "failed_script": script,
+                    "execution": executions,
+                }
+
+        thought_path = root / "thought-experiments-publication.report.json"
+        inventory_path = root / "data" / "site-workflow-inventory.json"
+        task_path = root / "data" / "tasks" / "SITE-ACTIONS-COST-CONTAINMENT-001-B27.json"
+        if not thought_path.is_file() or not inventory_path.is_file() or not task_path.is_file():
+            return {
+                **base,
+                "state": "BLOCKED",
+                "outcome": "SITE_B27_REQUIRED_RECEIPT_MISSING",
+                "source_head": source_head,
+                "execution": executions,
+            }
+
+        thought = _load_json(thought_path)
+        inventory = _load_json(inventory_path)
+        task = _load_json(task_path)
+        standalone = root / ".github" / "workflows" / "verify-thought-experiments-publication.yml"
+        complete = (
+            thought.get("state") == "PASS"
+            and thought.get("authority_effect") is False
+            and thought.get("activation_effect") is False
+            and not standalone.exists()
+            and inventory.get("canonical_count") == 3
+            and inventory.get("placeholder_count") == 0
+            and task.get("credential_authority") == "TV/TVC"
+            and task.get("non_tv_tvc_secret_or_token_allowed") is False
+            and task.get("github_actions_runtime_authority") == "NONE"
+            and task.get("render_required") is False
+        )
+        receipt = {
+            "schema": "stegverse.healer.site_b27_validation_receipt/v0.1",
+            "state": "PASS" if complete else "BLOCKED",
+            "source_head": source_head,
+            "credential_authority": "TV/TVC",
+            "github_token_required": False,
+            "remote_checkout_required": False,
+            "artifact_custody_required": False,
+            "repository_writeback_authority": False,
+            "runtime_authority": False,
+            "wallet_signing_broadcast_authority": False,
+            "publication_authority": False,
+            "settlement_authority": False,
+            "thought_experiments_publication": thought.get("state"),
+            "thought_experiments_authority_effect": thought.get("authority_effect"),
+            "thought_experiments_activation_effect": thought.get("activation_effect"),
+            "standalone_workflow_retired": not standalone.exists(),
+            "workflow_file_count": inventory.get("workflow_file_count"),
+            "canonical_count": inventory.get("canonical_count"),
+            "migration_required_operational_count": inventory.get("migration_required_operational_count"),
+            "placeholder_count": inventory.get("placeholder_count"),
+            "validated_scripts": commands,
+        }
+        return {
+            **base,
+            "state": "COMPLETE" if complete else "BLOCKED",
+            "outcome": "SOVEREIGN_LOCAL_SITE_B27_VALIDATION",
+            "source_head": source_head,
+            "execution": executions,
+            "receipt": receipt,
+        }
+
     if repo == "StegVerse-Labs/Site" and workflow == "marketplace-coinbase-local-observer":
         script = root / "scripts" / "advance_marketplace_coinbase_activation.py"
         if not script.is_file():
