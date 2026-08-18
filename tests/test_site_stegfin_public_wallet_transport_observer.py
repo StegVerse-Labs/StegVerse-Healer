@@ -47,7 +47,7 @@ class TestSiteStegFinPublicWalletTransportObserver(unittest.TestCase):
     def test_target_is_hourly_on_existing_scheduler(self):
         target = self.target()
         self.assertEqual(target["run_hours_utc"], list(range(24)))
-        self.assertIn("stegfin-publication", target["aliases"])
+        self.assertIn("site-stegfin-publication", target["aliases"])
         self.assertIn("no-github-token", target["status"])
         self.assertIn("no-wallet-authority", target["status"])
 
