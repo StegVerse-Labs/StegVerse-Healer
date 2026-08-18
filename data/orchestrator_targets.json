@@ -13,6 +13,16 @@
     },
     {
       "repo": "StegVerse-Labs/Site",
+      "workflow": "site-b27-native-validation",
+      "ref": "main",
+      "enabled": true,
+      "aliases": ["site-b27", "site-b27-validation", "thought-experiments-b27"],
+      "run_hours_utc": [0, 6, 12, 18],
+      "inputs": {},
+      "status": "sovereign-local-b27-validation-no-github-token-no-remote-checkout-no-artifact-custody"
+    },
+    {
+      "repo": "StegVerse-Labs/Site",
       "workflow": "marketplace-coinbase-local-observer",
       "ref": "main",
       "enabled": true,
