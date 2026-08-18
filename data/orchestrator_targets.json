@@ -55,11 +55,14 @@
       "repo": "StegVerse-Labs/Site",
       "workflow": "stegfin-public-wallet-transport-observer",
       "ref": "main",
-      "enabled": true,
+      "enabled": false,
       "aliases": ["site-stegfin-publication", "stegfin-wallet-publication", "stegfin-public-wallet-transport"],
       "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
       "inputs": {},
-      "status": "sovereign-local-hourly-stegfin-publication-observer-no-github-token-no-artifact-custody-no-wallet-authority"
+      "canonical_owner": "StegVerse-Labs/Site#388",
+      "canonical_surface": ".github/workflows/validate.yml + scripts/check_stegfin_public_wallet_transport.py",
+      "superseded_by_commit": "6c1551a4ae5456f0e46d2c2c80cc7c382a97f54b",
+      "status": "superseded-disabled-canonical-site-validation-lane-owns-publication-proof"
     },
     {
       "repo": "StegVerse-Labs/repo-standards",
