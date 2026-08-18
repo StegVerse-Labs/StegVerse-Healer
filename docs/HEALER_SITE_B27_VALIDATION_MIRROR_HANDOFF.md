@@ -8,7 +8,7 @@ This is a scoped, noncompeting child handoff for `HEALER-SITE-B27-SOVEREIGN-VALI
 goal_id: HEALER-SITE-B27-SOVEREIGN-VALIDATION-001
 originating_goal: provide an equal-or-stronger StegVerse-native validation path for Site B27 while GitHub-hosted validation is billing-blocked
 repository: StegVerse-Labs/StegVerse-Healer
-branch: feat/site-b27-sovereign-validation-carrier-14
+canonical_branch: main
 canonical_issue: StegVerse-Labs/StegVerse-Healer#14
 source_site_owner: StegVerse-Labs/Site#268
 source_site_task: data/tasks/SITE-ACTIONS-COST-CONTAINMENT-001-B27.json
@@ -23,11 +23,11 @@ github_actions_production_role: NONE
 ordinary_scheduler_owner: SHWP-HEALER-SOVEREIGN-SCHEDULER-001
 second_scheduler_or_heartbeat_allowed: false
 wallet_signing_and_broadcast: USER_ONLY
-implementation_claim: CLAIMED_FOR_IMPLEMENTATION
-validation_claim: CLAIMED_FOR_VALIDATION
+implementation_claim: COMPLETE_RELEASED
+validation_claim: COMPLETE_RELEASED_SOURCE_CARRIER
 claim_created_at: 2026-08-18T00:52:19Z
-claim_release_condition: source carrier and deterministic tests merged/released, or explicit BLOCKED state with machine-observable release condition
-state: SOURCE_IMPLEMENTED_VALIDATION_PENDING
+claim_released_by: PR #15 merge e68fc136598af641481152176dc41725e1663fe0
+state: SOURCE_CONTROL_RELEASED_LIVE_EXECUTION_MACHINE_OWNED
 ```
 
 ## Authoritative surfaces
@@ -37,13 +37,13 @@ state: SOURCE_IMPLEMENTED_VALIDATION_PENDING
 - `tests/test_site_b27_native_validation.py`
 - `docs/HEALER_SITE_B27_VALIDATION_MIRROR_HANDOFF.md`
 - issue `StegVerse-Labs/StegVerse-Healer#14`
-- source continuation `StegVerse-Labs/Site#268`, Site PR #387, and Site `data/tasks/SITE-ACTIONS-COST-CONTAINMENT-001-B27.json`
+- Site continuation `StegVerse-Labs/Site#268`, Site PR #387, and Site `data/tasks/SITE-ACTIONS-COST-CONTAINMENT-001-B27.json`
 
 ## Installed execution contract
 
-The new fixed target reuses the existing `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; no second scheduler or heartbeat is created. It runs only against an already-materialized local `StegVerse-Labs/Site` root from `STEGVERSE_REPO_ROOTS_JSON` and never performs remote checkout.
+The fixed target reuses the existing `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; no second scheduler or heartbeat exists. It operates only on an already-materialized local `StegVerse-Labs/Site` root from `STEGVERSE_REPO_ROOTS_JSON`, proves the local Git `HEAD`, and performs no remote checkout.
 
-The target executes the bounded deterministic Site validators required for B27 release evidence:
+It executes these bounded deterministic Site validators:
 
 1. `scripts/check_thought_experiments_publication.py`
 2. `scripts/write_site_workflow_inventory.py`
@@ -56,63 +56,61 @@ The target executes the bounded deterministic Site validators required for B27 r
 9. `scripts/run_sandbox_validation.py`
 10. `scripts/check_stegfin_phone_projection.py`
 
-The carrier fails closed when the Site root is absent, any required validator is absent, the local Git source head cannot be proven, any validator exits nonzero, required deterministic receipts are absent, the Thought Experiments receipt is not `PASS`, authority or activation is asserted, the retired standalone workflow still exists, the workflow inventory has anything other than three canonical workflows or zero placeholders, the B27 task does not preserve TV/TVC-only credential authority, or a credential-bearing validation environment is present.
+The carrier fails closed when the Site root is absent, any required validator is absent, the local source head cannot be proven, any validator exits nonzero, required deterministic receipts are absent, the Thought Experiments receipt is not `PASS`, authority or activation is asserted, the retired standalone workflow still exists, the workflow inventory is not canonical-3/placeholders-0, the B27 task does not preserve TV/TVC-only credential authority, or a credential-bearing validation environment is present.
 
-Successful output is embedded in the existing sovereign scheduler receipt as `stegverse.healer.site_b27_validation_receipt/v0.1` and includes the exact local source head, workflow counts, validated script list, and explicit false values for GitHub-token requirement, remote checkout, artifact custody, repository writeback authority, runtime authority, wallet signing/broadcast authority, publication authority, and settlement authority.
+A successful outcome embeds `stegverse.healer.site_b27_validation_receipt/v0.1` in the existing sovereign scheduler receipt. The receipt includes the exact local source head, workflow counts, validated scripts, and explicit false values for GitHub-token requirement, remote checkout, artifact custody, repository writeback authority, runtime authority, wallet signing/broadcast authority, publication authority, and settlement authority.
 
-## Source commits
+## Source and release evidence
 
 ```text
 target binding: 334badfaf4bcbf189a1963c970bedfcbefdd728c
 scheduler handler: 83c491650ff16be246944643b9a84e832aa676a5
 deterministic tests: cd8ea6d26b531827708c12411af7200bdc590ed8
+handoff source: 55ef1cd07919efe555c12a5a41bb58b51048a98f
+PR: #15
+merge: e68fc136598af641481152176dc41725e1663fe0
+Test Readiness: 32086347511 SUCCESS
+repo-smoke job: 95559570146 SUCCESS
+credential refusal: PASS
+anonymous exact-source fetch: PASS
+baseline repository smoke: PASS
+deterministic Healer tests: 27 PASS / 0 FAIL
+Site B27 carrier tests: 5 PASS / 0 FAIL
+validation-only authority boundary: PASS
+HEALER_RUNTIME_EXECUTION_AUTHORITY: NONE
+HEALER_GITHUB_TOKEN_AUTHORITY: NONE
 ```
 
-## Validation
-
-Static/source inspection: COMPLETE.
-Deterministic unit test source: INSTALLED.
-Hosted Healer test execution: PENDING.
-Ordinary sovereign scheduler execution against the Site B27 materialized source: MACHINE_OWNED / PENDING.
-
-Required validation commands after source checkout/materialization:
-
-```bash
-python -m unittest tests.test_site_b27_native_validation
-python -m unittest discover -s tests
-```
-
-Strongest release evidence requires either successful Healer test execution or an equal/stronger local deterministic execution plus direct inspection. Source presence alone does not prove the live scheduler executed.
+The directly inspected Test Readiness log shows all five `test_site_b27_native_validation` cases passing: credential-bearing environment blocks, missing validator blocks, exact local-head/non-authorizing PASS receipt completes, existing scheduler target binding is correct, and validator failure blocks.
 
 ## Cross-repository integration
 
-When a sovereign scheduler receipt contains a `site-b27-native-validation` outcome with `state=COMPLETE`, receipt `state=PASS`, and `source_head` exactly equal to the then-current Site B27 candidate head, Site #268 may use that as the StegVerse-native pre-merge validation carrier allowed by `data/tasks/SITE-ACTIONS-COST-CONTAINMENT-001-B27.json`. Site must still verify its own release predicates, remain current with main, merge through its canonical release path, and separately observe the post-merge Thought Experiments public routes.
+A sovereign scheduler receipt may satisfy the Site B27 task's allowed `equal-or-stronger StegVerse-native validation` path only when the `site-b27-native-validation` outcome is `COMPLETE`, its nested receipt is `PASS`, and its `source_head` exactly matches the then-current Site B27 candidate head. Site #268 must still verify its own release predicates, keep the branch current with main, merge through the canonical Site release path, and separately observe the post-merge Thought Experiments public routes.
 
 This carrier grants no Site merge authority and cannot sign/broadcast a StegFin wallet transaction, publish on behalf of a human, grant runtime authority, or settle a trade.
 
-## Blockers and machine-owned work
+## Activation boundary and machine-owned work
 
-- Ordinary Healer scheduler activation is MACHINE_OWNED and remains proven only by the canonical scheduler receipt `receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`.
-- The Site B27 candidate must be locally materialized at the exact candidate head for exact-head proof.
-- GitHub-hosted CI may remain billing-blocked; this source carrier exists specifically so that GitHub billing is not the only possible validation path.
+Source and test integration are `COMPLETE_RELEASED`. Live execution remains `MACHINE_OWNED` by the already-existing ordinary scheduler. Activation still requires the canonical receipt `receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`; source merge, GitHub CI, or chat state cannot substitute for that receipt.
+
+The Site B27 repository must be materialized at the exact candidate head for the native carrier to produce exact-head release evidence. Missing materialization or a nonmatching head is fail-closed.
 
 ## Session consolidation
 
-The user-session requirement to continue actual execution despite prior archive wording is durably represented by this issue/handoff and the Site #268 continuation. The local-model/runtime source goals remain complete/released elsewhere and are not duplicated here. StegFin signing/broadcast remains USER_ONLY.
+The local-model/runtime source goals remain complete/released elsewhere and are not duplicated here. StegFin signing/broadcast remains USER_ONLY. GitHub billing is no longer the only possible B27 validation carrier because this source path is now released.
 
 ```text
 developed_files: 4/4
-validation: 1/3
-integration: 1/3
-goal_activation: 1/3
-session_consolidation: 4/5
-archive_condition: Healer source carrier released or durably blocked; Site continuation remains self-sufficient; no chat-only requirement remains
+validation: 2/3
+integration: 2/3
+goal_activation: 2/3
+session_consolidation: 5/5
+archive_condition: source carrier released; remaining live execution is machine-owned with a durable observer and exact release condition
 ```
 
 ## Next executable actions
 
-1. Execute Healer deterministic tests on this exact branch/head through the strongest available path.
-2. Correct any source/test failure without weakening fail-closed or credential boundaries.
-3. Merge/release issue #14 only after test evidence is inspected.
-4. Wait for the existing sovereign scheduler machine lane to execute `site-b27-native-validation` against the exact materialized Site B27 head.
-5. Propagate a matching PASS receipt to Site #268 / B27 task; Site then completes its own merge and post-merge public-route proof.
+1. Existing `SHWP-HEALER-SOVEREIGN-SCHEDULER-001` executes `site-b27-native-validation` against a materialized Site B27 candidate.
+2. Inspect the scheduler receipt and require `state=COMPLETE`, nested `state=PASS`, and `source_head` equal to the exact Site B27 candidate.
+3. Propagate that receipt evidence to Site #268 / B27 task.
+4. Site completes exact-current-main merge plus post-merge Thought Experiments public-route observation, then releases the B27 claim/task/handoff.
