@@ -1,0 +1,20 @@
+{
+  "schema": "stegverse.healer.failure-multirepo-window-validation/v0.1",
+  "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+  "source": "sanitized bounded window derived from connected Gmail failure corpus",
+  "required": {
+    "input_rows": 21,
+    "parsed_notifications": 21,
+    "distinct_incidents": 7,
+    "failure_episodes": 13,
+    "amplification_episodes": 6,
+    "dependency_candidates": 11,
+    "direction_matching_candidates": 6,
+    "direction_opposing_candidates": 5,
+    "causality_claimed": false,
+    "mailbox_mutation": false
+  },
+  "credential_authority": "TV/TVC",
+  "runtime_authority": false,
+  "package_release_allowed": false
+}
