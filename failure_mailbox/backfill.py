@@ -3,12 +3,14 @@
 
 Input is JSONL containing already-read mailbox message objects. This module has no
 mailbox credentials and never mutates source mail. Unsupported messages are
-quarantined in the report rather than approximated into an incident.
+quarantined in the report rather than approximated into an incident. Transport-level
+notification outcomes are counted separately from semantic incident classes.
 """
 
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 import sys
@@ -67,6 +69,7 @@ def run_backfill(
         "duplicate_noop": 0,
         "quarantined": 0,
     }
+    notification_results: Counter[str] = Counter()
     quarantine: list[dict[str, Any]] = []
 
     for line_number, raw, row_sha256 in iter_jsonl(input_path):
@@ -82,6 +85,8 @@ def run_backfill(
         try:
             observation = parse_github_failure_message(raw)
             counters["parsed_notifications"] += 1
+            notification_result = str(observation.get("notification_result_class") or "UNCLASSIFIED_NOTIFICATION")
+            notification_results[notification_result] += 1
             result = ingest_observation(ledger, observation)
             outcome = str(result.get("result"))
             if outcome in counters:
@@ -111,17 +116,19 @@ def run_backfill(
     quarantine_rate = (counters["quarantined"] / counters["input_rows"]) if counters["input_rows"] else 0.0
 
     return {
-        "schema": "stegverse.healer.failure-mailbox-historical-backfill/v0.1",
+        "schema": "stegverse.healer.failure-mailbox-historical-backfill/v0.2",
         "source": {
             "path": str(input_path),
             "sha256": _sha256_bytes(source_bytes),
             "mailbox_mutated": False,
         },
         "counters": counters,
+        "notification_result_frequency": dict(sorted(notification_results.items())),
         "quality": {
             "parse_success_rate": (parsed / counters["input_rows"]) if counters["input_rows"] else 0.0,
             "quarantine_rate": quarantine_rate,
             "notification_to_incident_ratio": notification_to_incident,
+            "transport_outcome_separated_from_semantic_family": True,
             "causality_claimed": False,
         },
         "incident_summary": incident_report,
