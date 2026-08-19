@@ -1,0 +1,2 @@
+Validation marker for failure-mailbox benchmark v0.4 self-coverage gate.
+Underlying source is already on main at 98e22cf40fe528b83445a0d8b7a5c8f875a4efa1.
