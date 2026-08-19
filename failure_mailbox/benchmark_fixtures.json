@@ -1,6 +1,6 @@
 {
-  "schema": "stegverse.healer.failure-mailbox-benchmark-fixtures/v0.1",
-  "description": "Deterministic synthetic corpus for measuring incident compression, recurrence, lifecycle routing, neighbor detection, and archive eligibility before live mailbox backfill.",
+  "schema": "stegverse.healer.failure-mailbox-benchmark-fixtures/v0.2",
+  "description": "Deterministic synthetic corpus for incident compression, recurrence, lifecycle routing, neighbor detection, archive eligibility, and multi-workflow failure-episode amplification before live mailbox backfill.",
   "observations": [
     {
       "message_id": "m-001",
@@ -97,16 +97,43 @@
       "received_at": "2026-08-18T13:00:00Z",
       "subject": "Run failed: schema validation",
       "failure_message": "schema validation error: required property missing"
+    },
+    {
+      "message_id": "m-009",
+      "repository": "Org/G",
+      "workflow": ".github/workflows/repair-a.yml",
+      "job": "",
+      "branch": "repair-burst",
+      "commit_sha": "9999999abcdef0",
+      "run_id": "7001",
+      "received_at": "2026-08-18T13:10:00Z",
+      "subject": "Run failed: .github/workflows/repair-a.yml",
+      "failure_message": "No jobs were run"
+    },
+    {
+      "message_id": "m-010",
+      "repository": "Org/G",
+      "workflow": ".github/workflows/repair-b.yml",
+      "job": "",
+      "branch": "repair-burst",
+      "commit_sha": "9999999abcdef0",
+      "run_id": "7002",
+      "received_at": "2026-08-18T13:10:03Z",
+      "subject": "Run failed: .github/workflows/repair-b.yml",
+      "failure_message": "No jobs were run"
     }
   ],
   "duplicate_replays": ["m-001", "m-003"],
   "expected": {
-    "observation_count": 8,
-    "incident_count": 6,
-    "notification_compression_ratio": 1.3333333333,
+    "observation_count": 10,
+    "incident_count": 8,
+    "notification_compression_ratio": 1.25,
     "repeated_incident_count": 2,
     "sandbox_required_after_transition": true,
     "archive_requires_resolution_evidence": true,
-    "minimum_neighbor_candidate_count": 3
+    "minimum_neighbor_candidate_count": 3,
+    "minimum_amplification_episode_count": 1,
+    "minimum_largest_notification_episode": 2,
+    "minimum_largest_workflow_fanout_episode": 2
   }
 }
