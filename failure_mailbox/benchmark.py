@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from failure_mailbox.coverage_monitor import evaluate_coverage
 from failure_mailbox.episode_analysis import build_failure_episodes, episode_summary
 from failure_mailbox.incident_engine import (
     build_neighbor_candidates,
@@ -77,6 +78,24 @@ def run() -> dict:
     state_bytes = len(json.dumps(ledger, sort_keys=True).encode("utf-8"))
     archive_count = len(report["archive_eligible_message_ids"])
 
+    admitted_source_count = len(fixture["observations"])
+    fixture_coverage = evaluate_coverage(
+        source_count=admitted_source_count,
+        ingested_count=observation_count,
+        window_start="benchmark://fixture/start",
+        window_end="benchmark://fixture/end",
+        source_ref="benchmark://fixture/source",
+        ingestion_ref="benchmark://fixture/ledger",
+    )
+    gap_probe = evaluate_coverage(
+        source_count=5,
+        ingested_count=0,
+        window_start="benchmark://gap/start",
+        window_end="benchmark://gap/end",
+        source_ref="benchmark://gap/source",
+        ingestion_ref="benchmark://gap/ledger",
+    )
+
     expected = fixture["expected"]
     checks = {
         "observation_count": observation_count == expected["observation_count"],
@@ -94,15 +113,23 @@ def run() -> dict:
         "amplification_episode_detected": episode_report["amplification_episode_count"] >= expected["minimum_amplification_episode_count"],
         "notification_amplification_detected": episode_report["largest_notification_episode"] >= expected["minimum_largest_notification_episode"],
         "workflow_fanout_detected": episode_report["largest_workflow_fanout_episode"] >= expected["minimum_largest_workflow_fanout_episode"],
+        "fixture_intake_complete_coverage": fixture_coverage["state"] == "COMPLETE_COVERAGE" and fixture_coverage["healthy"] is True,
+        "coverage_gap_self_detection": gap_probe["state"] == "COVERAGE_GAP" and gap_probe["action_required"] is True,
+        "coverage_monitor_no_authority": all(
+            probe["authority_effect"] is False
+            and probe["heartbeat_effect"] is False
+            and probe["mailbox_mutation_authority"] is False
+            for probe in (fixture_coverage, gap_probe)
+        ),
     }
 
     return {
-        "schema": "stegverse.healer.failure-mailbox-benchmark/v0.3",
+        "schema": "stegverse.healer.failure-mailbox-benchmark/v0.4",
         "fixture_schema": fixture["schema"],
         "result": "PASS" if all(checks.values()) else "FAIL",
         "checks": checks,
         "metrics": {
-            "input_notifications": len(fixture["observations"]),
+            "input_notifications": admitted_source_count,
             "unique_message_observations": observation_count,
             "distinct_incidents": incident_count,
             "notification_to_incident_ratio": compression_ratio,
@@ -114,6 +141,9 @@ def run() -> dict:
             "largest_notification_episode": episode_report["largest_notification_episode"],
             "largest_workflow_fanout_episode": episode_report["largest_workflow_fanout_episode"],
             "archive_eligible_messages": archive_count,
+            "fixture_coverage_state": fixture_coverage["state"],
+            "fixture_coverage_ratio": fixture_coverage["coverage_ratio"],
+            "coverage_gap_probe_state": gap_probe["state"],
             "ledger_bytes": state_bytes,
             "elapsed_seconds": elapsed,
             "observations_per_second": observation_count / elapsed if elapsed > 0 else None,
@@ -122,6 +152,8 @@ def run() -> dict:
             "deterministic_core_pass": all(checks.values()),
             "incident_layer_required": True,
             "episode_layer_required": True,
+            "coverage_monitor_required": True,
+            "positive_coverage_gap_detection_required": True,
             "positive_amplification_detection_required": True,
             "historical_corpus_benchmark_required": True,
             "live_incremental_benchmark_required": True,
