@@ -44,12 +44,15 @@ class TestSiteStegFinPublicWalletTransportObserver(unittest.TestCase):
             encoding="utf-8",
         )
 
-    def test_target_is_hourly_on_existing_scheduler(self):
+    def test_target_is_superseded_and_disabled_on_existing_scheduler(self):
         target = self.target()
+        self.assertIs(target["enabled"], False)
         self.assertEqual(target["run_hours_utc"], list(range(24)))
         self.assertIn("site-stegfin-publication", target["aliases"])
-        self.assertIn("no-github-token", target["status"])
-        self.assertIn("no-wallet-authority", target["status"])
+        self.assertEqual(target["canonical_owner"], "StegVerse-Labs/Site#388")
+        self.assertEqual(target["canonical_surface"], ".github/workflows/validate.yml + scripts/check_stegfin_public_wallet_transport.py")
+        self.assertIn("superseded-disabled", target["status"])
+        self.assertIn("canonical-site-validation-lane", target["status"])
 
     def test_missing_script_fails_closed(self):
         with tempfile.TemporaryDirectory() as temp_dir:
