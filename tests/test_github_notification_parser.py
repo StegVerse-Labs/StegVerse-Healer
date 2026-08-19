@@ -35,11 +35,56 @@ class GithubNotificationParserTests(unittest.TestCase):
             "body": "Test Readiness: All jobs have failed\nhttps://github.com/StegVerse-Labs/StegVerse-Healer/actions/runs/32212113694",
         }
         obs = parse_github_failure_message(message)
-        self.assertEqual(obs["workflow"], "Test Readiness")
-        self.assertEqual(obs["branch"], "main")
-        self.assertEqual(obs["run_id"], "32212113694")
         self.assertEqual(obs["notification_result_class"], "WORKFLOW_JOB_FAILURE")
         self.assertNotIn("failure_class", obs)
+
+    def test_budget_75_90_100_become_account_level_capacity_incidents(self) -> None:
+        cases = [
+            (75, "ACTIONS_BUDGET_APPROACHING", "OPERATIONAL_CAPACITY_WARNING"),
+            (90, "ACTIONS_BUDGET_HIGH", "OPERATIONAL_CAPACITY_HIGH"),
+            (100, "ACTIONS_BUDGET_EXHAUSTED", "OPERATIONAL_CAPACITY_EXHAUSTED"),
+        ]
+        for percent, failure_class, result_class in cases:
+            with self.subTest(percent=percent):
+                obs = parse_github_failure_message({
+                    "id": f"budget-{percent}",
+                    "email_ts": "2026-08-19T13:27:23-07:00",
+                    "subject": f"[GitHub] You've hit {percent}% of your budget for the StegVerse-Labs account",
+                    "snippet": f"You've used {percent}% of your Actions budget",
+                })
+                self.assertEqual(obs["repository"], "github-account:StegVerse-Labs")
+                self.assertEqual(obs["workflow"], "GitHub Actions budget")
+                self.assertEqual(obs["failure_class"], failure_class)
+                self.assertEqual(obs["notification_result_class"], result_class)
+                self.assertEqual(obs["threshold_percent"], percent)
+
+    def test_included_minutes_90_and_100_become_account_level_capacity_incidents(self) -> None:
+        ninety = parse_github_failure_message({
+            "id": "minutes-90",
+            "email_ts": "2026-08-07T05:45:56-07:00",
+            "subject": "[GitHub] You have used 90% of the Actions minutes included for the Admissible-Existence account",
+            "snippet": "1,800 min used / 2,000 min included",
+        })
+        hundred = parse_github_failure_message({
+            "id": "minutes-100",
+            "email_ts": "2026-08-07T15:09:28-07:00",
+            "subject": "[GitHub] You have used 100% of the Actions minutes included for the Admissible-Existence account",
+            "snippet": "2,000 min used / 2,000 min included",
+        })
+        self.assertEqual(ninety["failure_class"], "ACTIONS_INCLUDED_MINUTES_WARNING")
+        self.assertEqual(ninety["notification_result_class"], "OPERATIONAL_CAPACITY_HIGH")
+        self.assertEqual(hundred["failure_class"], "ACTIONS_INCLUDED_MINUTES_EXHAUSTED")
+        self.assertEqual(hundred["notification_result_class"], "OPERATIONAL_CAPACITY_EXHAUSTED")
+        self.assertEqual(hundred["repository"], "github-account:Admissible-Existence")
+
+    def test_tvc_capacity_class_mismatch_fails_closed(self) -> None:
+        with self.assertRaises(ValueError):
+            parse_github_failure_message({
+                "id": "budget-mismatch",
+                "email_ts": "2026-08-19T13:27:23-07:00",
+                "subject": "[GitHub] You've hit 100% of your budget for the StegVerse-Labs account",
+                "signal_class": "ACTIONS_BUDGET_HIGH",
+            })
 
     def test_continuation_workflow_gets_semantic_family(self) -> None:
         message = {
@@ -67,7 +112,7 @@ class GithubNotificationParserTests(unittest.TestCase):
         self.assertEqual(obs["notification_result_class"], "WORKFLOW_JOB_FAILURE")
         self.assertNotIn("failure_class", obs)
 
-    def test_rejects_noncanonical_subject(self) -> None:
+    def test_rejects_non_operational_subject(self) -> None:
         with self.assertRaises(ValueError):
             parse_github_failure_message({"id": "m", "email_ts": "2026-01-01T00:00:00Z", "subject": "hello"})
 

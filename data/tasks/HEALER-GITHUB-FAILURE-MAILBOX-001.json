@@ -1,16 +1,26 @@
 {
-  "schema": "stegverse.healer.task/v0.1",
+  "schema": "stegverse.healer.task/v0.2",
   "task_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
   "owner": "StegVerse-Labs/StegVerse-Healer",
-  "state": "SOURCE_IMPLEMENTED_VALIDATION_AND_TRANSPORT_PENDING",
+  "state": "SOURCE_IMPLEMENTED_ACTIONS_CAPACITY_CLASSIFICATION_TRANSPORT_PENDING",
   "priority": "high",
-  "goal": "Maintain a canonical inventory of GitHub failure incidents from mailbox observations, track recurrence and lifecycle through resolution or sandbox-required outcomes, identify cross-repository propagation candidates, and emit resolution-qualified mailbox archive plans.",
+  "goal": "Maintain a canonical inventory of GitHub operational failure incidents from TV/TVC mailbox observations, including workflow failures and Actions capacity/budget exhaustion, and track recurrence/lifecycle through resolution or sandbox-required outcomes.",
   "source_surfaces": [
     "failure_mailbox/README.md",
     "failure_mailbox/incident_engine.py",
+    "failure_mailbox/github_notification_parser.py",
     "failure_mailbox/failure-observation.schema.json",
     "failure_mailbox/FAILURE_MAILBOX_MIRROR_HANDOFF.md",
+    "tests/test_github_notification_parser.py",
     "tests/test_failure_mailbox_incident_engine.py"
+  ],
+  "supported_operational_signals": [
+    "WORKFLOW_RUN_FAILURE",
+    "ACTIONS_INCLUDED_MINUTES_WARNING",
+    "ACTIONS_INCLUDED_MINUTES_EXHAUSTED",
+    "ACTIONS_BUDGET_APPROACHING",
+    "ACTIONS_BUDGET_HIGH",
+    "ACTIONS_BUDGET_EXHAUSTED"
   ],
   "authority": {
     "credential_authority": "TV/TVC",
@@ -21,17 +31,19 @@
     "ordinary_scheduler_owner": "SHWP-HEALER-SOVEREIGN-SCHEDULER-001"
   },
   "required_next": [
-    "observe exact-head deterministic validation",
-    "implement TV/TVC-authorized mailbox transport adapter",
-    "bind to existing sovereign Healer scheduler",
-    "backfill current unread GitHub failure corpus",
+    "observe exact-head deterministic validation when Actions admission is available",
+    "bind TVC-owned mailbox transport to the existing sovereign Healer scheduler without exposing credential values to Healer",
+    "materialize a bounded real mailbox batch through TVC",
+    "backfill workflow failures plus 75/90/100 budget and 90/100 included-minute notifications",
     "connect canonical worker and sandbox lifecycle outcomes",
     "validate resolution-qualified notification archival",
-    "produce failure frequency, recurrence, amplification and cross-repository propagation metrics"
+    "produce failure frequency, recurrence, amplification, capacity-exhaustion and cross-repository propagation metrics"
   ],
   "terminal_when": [
-    "live incremental failure ingestion operates through admitted TV/TVC transport",
-    "existing unread GitHub failure corpus is inventoried without losing source evidence",
+    "live incremental operational-failure ingestion operates through admitted TV/TVC transport",
+    "existing unread GitHub operational failure corpus is inventoried without losing source evidence",
+    "100 percent Actions included-minute and budget notices become account-level failure incidents",
+    "75 and 90 percent capacity notices remain visible warning/high-risk observations",
     "duplicate notifications map deterministically to canonical incidents",
     "worker unable/impossible-to-repair outcomes produce SANDBOX_REQUIRED incident state",
     "resolved incidents require durable evidence and emit bounded archive plans",
