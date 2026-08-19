@@ -1,0 +1,41 @@
+{
+  "schema": "stegverse.healer.failure-mailbox-historical-benchmark/v0.1",
+  "benchmark_id": "FAILURE-MAILBOX-HISTORICAL-TRANCHE-001",
+  "observed_source": "connected Gmail label StegVerse/GitHub Failures/New",
+  "observation_only": true,
+  "authority_effect": false,
+  "heartbeat_effect": false,
+  "corpus_state": {
+    "label_message_count_observed": 21000,
+    "label_unread_count_observed": 21000,
+    "mailbox_cleanup_performed": false
+  },
+  "amplification_cluster": {
+    "repository": "StegVerse-Labs/StegVerse-SCW",
+    "branch": "repair-repo-alignment-check-v2",
+    "commit_fragment": "86971ef",
+    "matching_failure_notifications": 50,
+    "no_jobs_run_notifications": 48,
+    "other_failure_notifications": 2,
+    "no_jobs_run_share": 0.96,
+    "gmail_query_all": "label:\"StegVerse/GitHub Failures/New\" \"repair-repo-alignment-check-v2\" \"86971ef\"",
+    "gmail_query_no_jobs": "label:\"StegVerse/GitHub Failures/New\" \"repair-repo-alignment-check-v2\" \"86971ef\" \"No jobs were run\"",
+    "next_page_token_all": null,
+    "next_page_token_no_jobs": null
+  },
+  "interpretation": {
+    "measured_fact": "One bounded branch/commit cluster generated 50 labeled failure notifications; 48 were No jobs were run notifications.",
+    "candidate_product_signal": "Notification count substantially overstates distinct actionable failure count in at least this historical cluster.",
+    "causality_claimed": false,
+    "incident_compression_not_yet_measured_by_live_engine": true
+  },
+  "next_benchmark_steps": [
+    "execute deterministic benchmark.py on sovereign Healer source",
+    "backfill normalized historical observations through incident_engine.py",
+    "measure distinct incident count and notification-to-incident ratio",
+    "measure recurrence and cross-repository temporal/dependency candidates",
+    "tune fingerprint and neighbor rules without weakening replay or resolution evidence",
+    "run live incremental shadow benchmark before packaging"
+  ],
+  "package_release_allowed": false
+}
