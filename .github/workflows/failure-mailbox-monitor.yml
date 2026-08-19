@@ -1,0 +1,137 @@
+name: Healer Failure Mailbox Monitor
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+# Scoped user-authorized ARA transport exception for Healer mailbox intake.
+# The diagnostic engine itself retains no credential, mailbox mutation,
+# repository mutation, release, runtime, wallet, or heartbeat authority.
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: healer-failure-mailbox-monitor
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Restore durable Healer diagnostic state
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p status/failure-mailbox restored-monitor-state
+          artifact_id="$(gh api \
+            "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=failure-mailbox-monitor-state&per_page=100" \
+            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // empty')"
+          if [ -n "$artifact_id" ]; then
+            gh api \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" \
+              > /tmp/failure-mailbox-monitor-state.zip
+            unzip -oq /tmp/failure-mailbox-monitor-state.zip -d restored-monitor-state
+            if [ -d restored-monitor-state/failure-mailbox ]; then
+              cp -R restored-monitor-state/failure-mailbox/. status/failure-mailbox/
+            fi
+            echo "Restored Healer diagnostic state from artifact ${artifact_id}." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No prior Healer diagnostic state exists; starting a new ledger." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Run deterministic failure-mailbox tests
+        env:
+          PYTHONPATH: .
+        run: |
+          python -m unittest discover -s tests -p 'test_failure_mailbox*.py'
+
+      - name: Poll GitHub failure mailbox through ARA Graph transport
+        env:
+          STEGVERSE_MAIL_TENANT_ID: ${{ secrets.STEGVERSE_MAIL_TENANT_ID }}
+          STEGVERSE_MAIL_CLIENT_ID: ${{ secrets.STEGVERSE_MAIL_CLIENT_ID }}
+          STEGVERSE_MAIL_CLIENT_SECRET: ${{ secrets.STEGVERSE_MAIL_CLIENT_SECRET }}
+          STEGVERSE_MONITOR_MAILBOX: ${{ secrets.STEGVERSE_MONITOR_MAILBOX }}
+        run: |
+          python failure_mailbox/poll_graph_failure_mailbox.py \
+            --batch status/failure-mailbox/current-batch.jsonl \
+            --manifest status/failure-mailbox/current-manifest.json \
+            --window-minutes 20 \
+            --lag-minutes 2 \
+            --require-config
+
+      - name: Run Healer shadow diagnostics
+        env:
+          PYTHONPATH: .
+        shell: bash
+        run: |
+          eval "$(python - <<'PY'
+          import json, shlex
+          m=json.load(open('status/failure-mailbox/current-manifest.json'))
+          values={
+            'BATCH_ID':m['batch_id'],
+            'SOURCE_COUNT':str(m['source_count']),
+            'WINDOW_START':m['window_start'],
+            'WINDOW_END':m['window_end'],
+            'SOURCE_REF':m['source_ref'],
+          }
+          for k,v in values.items():
+            print(f'{k}={shlex.quote(v)}')
+          PY
+          )"
+          python -m failure_mailbox.shadow \
+            --input status/failure-mailbox/current-batch.jsonl \
+            --ledger status/failure-mailbox/incident-ledger.json \
+            --state status/failure-mailbox/shadow-state.json \
+            --report status/failure-mailbox/latest-report.json \
+            --batch-id "$BATCH_ID" \
+            --source-count "$SOURCE_COUNT" \
+            --window-start "$WINDOW_START" \
+            --window-end "$WINDOW_END" \
+            --source-ref "$SOURCE_REF"
+
+      - name: Publish diagnostic summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## Healer failure mailbox diagnostics" >> "$GITHUB_STEP_SUMMARY"
+          echo "Transport: ARA Microsoft Graph mechanism (scoped Healer exception)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Mailbox mutation: disabled" >> "$GITHUB_STEP_SUMMARY"
+          for file in current-manifest.json latest-report.json; do
+            path="status/failure-mailbox/$file"
+            if [ -f "$path" ]; then
+              echo "### $file" >> "$GITHUB_STEP_SUMMARY"
+              echo '```json' >> "$GITHUB_STEP_SUMMARY"
+              cat "$path" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+      - name: Stage durable monitor state
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p monitor-state/failure-mailbox
+          if [ -d status/failure-mailbox ]; then
+            cp -R status/failure-mailbox/. monitor-state/failure-mailbox/
+          fi
+
+      - name: Upload durable monitor state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-mailbox-monitor-state
+          path: monitor-state
+          retention-days: 90
+          if-no-files-found: error
