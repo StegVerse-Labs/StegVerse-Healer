@@ -81,6 +81,7 @@ def run() -> dict:
     checks = {
         "observation_count": observation_count == expected["observation_count"],
         "incident_count": incident_count == expected["incident_count"],
+        "notification_compression_ratio": abs(compression_ratio - expected["notification_compression_ratio"]) < 1e-9,
         "duplicate_replay_noop": all(r["result"] == "duplicate_noop" for r in duplicate_results),
         "repeated_incident_count": len(repeated) == expected["repeated_incident_count"],
         "sandbox_routing": ledger["incidents"][sandbox_incident]["state"] == "SANDBOX_REQUIRED",
@@ -90,10 +91,13 @@ def run() -> dict:
         "episode_layer_present": episode_report["episode_count"] > 0,
         "episode_preserves_incidents": all(row["incident_count"] >= 1 for row in episodes),
         "episode_no_causality_claim": all(row["causality_claimed"] is False for row in episodes),
+        "amplification_episode_detected": episode_report["amplification_episode_count"] >= expected["minimum_amplification_episode_count"],
+        "notification_amplification_detected": episode_report["largest_notification_episode"] >= expected["minimum_largest_notification_episode"],
+        "workflow_fanout_detected": episode_report["largest_workflow_fanout_episode"] >= expected["minimum_largest_workflow_fanout_episode"],
     }
 
     return {
-        "schema": "stegverse.healer.failure-mailbox-benchmark/v0.2",
+        "schema": "stegverse.healer.failure-mailbox-benchmark/v0.3",
         "fixture_schema": fixture["schema"],
         "result": "PASS" if all(checks.values()) else "FAIL",
         "checks": checks,
@@ -118,6 +122,7 @@ def run() -> dict:
             "deterministic_core_pass": all(checks.values()),
             "incident_layer_required": True,
             "episode_layer_required": True,
+            "positive_amplification_detection_required": True,
             "historical_corpus_benchmark_required": True,
             "live_incremental_benchmark_required": True,
             "package_release_allowed": False,
