@@ -1,0 +1,32 @@
+{
+  "schema": "stegverse.healer.failure-mailbox-benchmark-validation/v0.1",
+  "benchmark_schema": "stegverse.healer.failure-mailbox-benchmark/v0.4",
+  "validated_source_commit": "98e22cf40fe528b83445a0d8b7a5c8f875a4efa1",
+  "validation_pr": 28,
+  "workflow": "Test Readiness",
+  "workflow_run_id": 32214501733,
+  "workflow_job_id": 95953368889,
+  "deterministic_tests": {
+    "passed": 60,
+    "failed": 0
+  },
+  "benchmark_result": "PASS",
+  "coverage": {
+    "fixture_state": "COMPLETE_COVERAGE",
+    "fixture_ratio": 1.0,
+    "positive_gap_probe_state": "COVERAGE_GAP",
+    "coverage_monitor_required_by_package_gate": true,
+    "positive_gap_detection_required_by_package_gate": true
+  },
+  "packaging_gate": {
+    "deterministic_core_pass": true,
+    "historical_corpus_benchmark_required": true,
+    "live_incremental_benchmark_required": true,
+    "package_release_allowed": false
+  },
+  "hosted_validation_only": true,
+  "runtime_activation_effect": false,
+  "mailbox_mutation_authority": false,
+  "credential_authority_effect": false,
+  "heartbeat_effect": false
+}
