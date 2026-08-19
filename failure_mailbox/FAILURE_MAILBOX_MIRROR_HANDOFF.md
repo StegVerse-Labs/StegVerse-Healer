@@ -1,99 +1,81 @@
 # Healer Failure Mailbox Mirror Handoff
 
-Updated: 2026-08-19
+Updated: 2026-08-19T10:51:00-05:00
 Repository: `StegVerse-Labs/StegVerse-Healer`
 Branch: `main`
-State: `ARA_GRAPH_AUTOMATION_INSTALLED_FIRST_LIVE_RUN_PENDING`
+State: `TVC_SECRET_BOUNDARY_INSTALLED_FIRST_LIVE_RUN_PENDING`
 
 ## Goal
 
 `HEALER-GITHUB-FAILURE-MAILBOX-001`
 
-Operate a Healer-owned automated failure inventory and diagnostic engine using the deterministic replay-ledger architecture demonstrated by the ARA deployment mailbox monitor, with semantics changed from deployment verification candidates to GitHub failure incidents, recurrence, episodes, coverage, dependency candidates, repair/sandbox lifecycle and evidence-qualified cleanup.
+Operate an automated Healer failure inventory/diagnostic intake while keeping all mailbox secret/key processing inside TV/TVC.
 
-## Scoped transport authorization — 2026-08-19
+## Credential ownership rule
 
-The user explicitly authorized StegVerse-Healer to reuse the same proven mailbox mechanism used by `StegVerse-Labs/ara-admissibility-interop` for automated mailbox checking.
-
-This is a scoped exception to the later TV/TVC-only transport migration requirement for this Healer intake path. It does **not** broaden Healer diagnostic, repair, repository, release, wallet, heartbeat or deployment authority.
-
-Authorized legacy intake mechanism:
+GitHub may physically store the Microsoft Graph configuration for now, but storage location is not credential authority.
 
 ```text
-GitHub Actions schedule
--> Microsoft Graph client-credentials application
--> STEGVERSE_MAIL_TENANT_ID
--> STEGVERSE_MAIL_CLIENT_ID
--> STEGVERSE_MAIL_CLIENT_SECRET
--> STEGVERSE_MONITOR_MAILBOX
--> bounded GitHub-failure observation batch
--> Healer shadow/incident engine
--> durable Actions artifact state
+credential authority: TV/TVC ONLY
+credential processor: StegVerse-Labs/TVC
+consumer credential access: NONE
+Healer direct secrets.* mailbox references: NONE
+Healer Graph OAuth/client-secret processor: REMOVED
 ```
 
-The workflow may also use `${{ github.token }}` only for the same isolated-runner artifact-state restoration role used by ARA. This exception does not make GitHub Actions or its token production/runtime/control-plane authority.
-
-## Automated intake implementation
-
-Installed on `main`:
+TV policy:
 
 ```text
-failure_mailbox/poll_graph_failure_mailbox.py
+StegVerse-Labs/TV:policies/external_secret_processing_authority_policy.json
+policy_id: tv.external-secret-processing-authority.v1
+```
+
+TVC execution handoff:
+
+```text
+StegVerse-Labs/TVC:docs/MAILBOX_FAILURE_OBSERVATION_MIRROR_HANDOFF.md
+```
+
+## Automated intake
+
+Healer schedule:
+
+```text
 .github/workflows/failure-mailbox-monitor.yml
+cron: */15 * * * *
 ```
 
-Source commits:
+The first job calls the pinned TVC reusable workflow:
 
 ```text
-Graph poller: a895efc808fa813a7d7e79c5036470ffb9ce50ff
-scheduled workflow: 9c42cc3669b0307184adae3bf689519739533a85
+StegVerse-Labs/TVC/.github/workflows/mailbox-failure-observation-reusable.yml
+ref: 4fd185494edf4e47edbf913cd227851e11ff2418
 ```
 
-Schedule:
+The TVC job owns Microsoft Graph credential processing and emits artifact:
 
 ```text
-*/15 * * * *
+tvc-mailbox-failure-observation/
+  batch.jsonl
+  manifest.json
 ```
 
-Each run uses a 20-minute observation window with a 2-minute lag so adjacent runs overlap. Deterministic message identity and shadow batch state absorb overlap/replay without turning repeated observation into new incidents.
-
-The Graph poller:
-
-- reads the configured monitor mailbox through Microsoft Graph;
-- accepts mail from `notifications@github.com` whose GitHub notification subject is `Run failed` or `PR run failed`;
-- pages backward until the bounded observation interval is exhausted;
-- emits a sanitized JSONL batch;
-- emits an independently counted non-secret manifest;
-- hashes provider message/thread/internet-message identifiers before export;
-- exports timestamp, Subject and Graph body preview only;
-- exports no credential value;
-- performs no mailbox mutation.
-
-Unlike ARA deployment intake, the Healer poller deliberately does **not** mark messages read. It also does not archive, delete or relabel them. Cleanup remains governed by incident resolution evidence.
-
-## Durable isolated-runner state
-
-The recurring workflow restores and republishes the artifact:
+Healer downloads only those sanitized outputs and refuses them unless the manifest proves:
 
 ```text
-failure-mailbox-monitor-state
+credential_authority=TV/TVC
+credential_processed_by=StegVerse-Labs/TVC
+credential_value_exposed=false
+credential_value_persisted=false
+consumer_credential_exported=false
+mailbox_mutated=false
+provider_message_ids_exported=false
+partial_materialization=false
 ```
 
-with 90-day retention. State includes, when present:
+## Consumer processing
 
-```text
-status/failure-mailbox/incident-ledger.json
-status/failure-mailbox/shadow-state.json
-status/failure-mailbox/latest-report.json
-status/failure-mailbox/current-batch.jsonl
-status/failure-mailbox/current-manifest.json
-```
-
-Artifact continuity prevents loss/duplicate processing across isolated GitHub-hosted runners. It does not grant incident-resolution, repair, release or runtime authority.
-
-## Diagnostic engine
-
-Developed and validated source includes:
+After TVC materialization, Healer runs the existing credential-neutral stack:
 
 ```text
 failure_mailbox/incident_engine.py
@@ -106,88 +88,71 @@ failure_mailbox/shadow.py
 failure_mailbox/benchmark.py
 ```
 
-Implemented semantics include:
+The former local Graph credential processor `failure_mailbox/poll_graph_failure_mailbox.py` was removed after the TVC boundary was installed.
 
-- deterministic incident IDs `GF-000001`, `GF-000002`, ...;
-- duplicate message `duplicate_noop`;
-- recurring same-signature incident history;
-- distinct notification outcome vs semantic failure family;
-- failure episodes/amplification without destroying incident identity;
-- source-to-intake self-coverage monitoring;
-- dependency candidates and counterevidence without causality claims;
-- lifecycle `OPEN`, `TRIAGED`, `REPAIRING`, `RETESTING`, `SANDBOX_REQUIRED`, `RESOLVED`, `UNRESOLVED`;
-- `UNABLE_TO_REPAIR` / `IMPOSSIBLE_TO_REPAIR` -> `SANDBOX_REQUIRED`;
-- durable resolution evidence required before archive eligibility;
-- authority effect and heartbeat effect false.
+## Durable state
+
+Healer retains diagnostic state through provider-managed Actions cache/artifact transport; no Healer script receives a GitHub or mailbox credential value for diagnostic processing.
+
+Retained state includes:
+
+```text
+status/failure-mailbox/incident-ledger.json
+status/failure-mailbox/shadow-state.json
+status/failure-mailbox/latest-report.json
+status/failure-mailbox/current-batch.jsonl
+status/failure-mailbox/current-manifest.json
+```
 
 ## Benchmark evidence
 
-Current deterministic benchmark: `stegverse.healer.failure-mailbox-benchmark/v0.4`.
-
-Validated historical/diagnostic evidence includes:
+Current non-duplicated measured benchmark denominator:
 
 ```text
 July bounded window: 137 distinct GitHub failure emails
 August bounded window: 24 distinct GitHub failure emails
-combined distinct measured benchmark emails: 161
+combined: 161 distinct emails
 ```
 
-The smaller 47/50-message, 21-message and related regression fixtures are subsets of those bounded windows and must not be added again to the reviewed-email denominator.
-
-Current benchmark evidence also includes:
-
-- deterministic v0.4 PASS;
-- 66/66 shadow-core tests PASS on the validated tranche;
-- July 137-message window partitioned into 96 `NO_JOBS_RUN` vs 41 unsuccessful-job notifications;
-- August 24-message window across 9 repositories reconstructed into 15 incidents;
-- coverage discontinuity detection where source activity continued but the legacy label intake was zero.
+Validated core evidence includes deterministic benchmark v0.4 PASS and 66/66 shadow-core tests PASS on the validated tranche.
 
 ## Authority boundary
 
-The authorized ARA-derived mailbox transport is **observation transport only**.
-
 ```text
 mailbox intake grants repair authority: false
-mailbox intake grants repository mutation authority: false
-mailbox intake grants deployment/release authority: false
-mailbox intake grants wallet/trade authority: false
-mailbox intake grants heartbeat authority/effect: false
-mailbox mutation by Healer monitor: false
+repository mutation authority: false
+deployment/release authority: false
+wallet/trade authority: false
+heartbeat authority/effect: false
+mailbox mutation: false
 ```
-
-The independent heartbeat oscillator remains unaffected by email arrival, polling cadence, incident state or lack of transitions.
-
-The separately developed TV/TVC-native mailbox path may continue as a hardening/migration target, but it is no longer a prerequisite for running Healer diagnostics because this scoped ARA-derived transport has been explicitly authorized.
 
 ## Current execution state
 
 ```text
-ARA-derived Graph poller source: INSTALLED
-15-minute workflow source: INSTALLED
-Healer shadow/incident engine: IMPLEMENTED_VALIDATED
-historical benchmark: ACTIVE / 161 DISTINCT MEASURED EMAILS
-mailbox mutation: DISABLED
-first scheduled Healer monitor run observed: false
-Healer repository access to required Graph secrets observed: false
-first automated live batch observed: false
-first automated diagnostic report observed: false
+15-minute Healer schedule: INSTALLED
+TVC reusable Graph processor: INSTALLED
+Healer direct mailbox secret processing: REMOVED
+TVC environment required: tvc-mailbox-observation
+TVC environment Graph secret provisioning observed: false
+first successful TVC Graph observation: false
+first TVC-sanitized Healer batch consumed: false
+first automated diagnostic report: false
 continuous automation activation: PENDING_FIRST_SUCCESSFUL_RUN
 ```
 
-Do not infer live automation merely from workflow installation. Activation requires an actual `Healer Failure Mailbox Monitor` run that obtains the configured Graph settings, produces a bounded batch/manifest, executes the shadow engine and retains `failure-mailbox-monitor-state`.
-
 ## Remaining work
 
-1. Observe the first scheduled or dispatched `Healer Failure Mailbox Monitor` run.
-2. If the ARA Graph settings are not available to this repository, grant this Healer workflow access to the same existing organization/repository secret configuration rather than inventing new credentials.
-3. Consume the first batch/report and verify source coverage, parser quality, incident/episode output and artifact-state continuity.
-4. Continue historical backfill beyond the currently measured 161-email benchmark corpus.
-5. Connect live incident lifecycle to canonical repair/retest/sandbox worker outcomes.
-6. Archive/cleanup mail only after durable `RESOLVED` evidence; the intake monitor itself performs no mailbox cleanup.
-7. Benchmark live recurrence, amplification, MTTR and cross-repository diagnostic value before package release.
+1. Make the existing Graph configuration available to the TVC GitHub environment `tvc-mailbox-observation` without exposing values to Healer.
+2. Observe the first successful TVC-owned Graph materialization.
+3. Consume the first TVC artifact through Healer and verify complete coverage/parser state.
+4. Continue automated/backfill processing beyond the 161-message measured corpus.
+5. Route canonical observation/vector data to the appropriate analysis subsystem rather than making Healer own matrix/topology analysis.
+6. Connect returned diagnostic/topology observations to Healer repair/retest/sandbox lifecycle.
+7. Perform mailbox cleanup only after durable `RESOLVED` evidence.
 
-## Completion gate
+## ARA relationship
 
-Automated diagnostic intake is active only after a real scheduled run succeeds and produces retained diagnostic state. Full Healer diagnostic/remediation maturity additionally requires live worker/sandbox lifecycle integration and evidence-qualified cleanup.
+ARA remains the proven behavioral mailbox baseline, but its current direct `secrets.*` mail functions are now legacy credential surfaces under the new TV/TVC rule. They should remain operational until equivalent TVC-owned execution is proven, then be migrated without losing continuity.
 
-Current status: `DO NOT ARCHIVE — FIRST LIVE AUTOMATED MAILBOX DIAGNOSTIC RUN AND DOWNSTREAM LIFECYCLE REMAIN.`
+Current status: `DO NOT ARCHIVE — TVC SECRET-SCOPE PROVISIONING AND FIRST LIVE AUTOMATED DIAGNOSTIC RUN REMAIN.`
