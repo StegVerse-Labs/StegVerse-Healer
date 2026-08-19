@@ -1,0 +1,31 @@
+{
+  "schema": "stegverse.healer.failure-mailbox-coverage-evidence/v0.1",
+  "measured_on": "2026-08-18",
+  "source": "connected_gmail_observation",
+  "raw_mailbox_ids_retained": false,
+  "mailbox_mutated": false,
+  "legacy_tracker": {
+    "label": "StegVerse/GitHub Failures/New",
+    "latest_observed_labeled_failure_at": "2026-07-08T09:10:43-07:00"
+  },
+  "recent_window": {
+    "start": "2026-08-18T19:00:00-07:00",
+    "end": "2026-08-18T19:20:00-07:00",
+    "direct_github_failure_notifications": 24,
+    "legacy_labeled_notifications": 0,
+    "coverage_state": "COVERAGE_GAP",
+    "coverage_ratio": 0.0,
+    "missing_count": 24,
+    "repository_count": 9
+  },
+  "interpretation": {
+    "claim": "The legacy labeled intake did not cover the measured recent GitHub failure stream.",
+    "cause_established": false,
+    "tracker_stop_reason_known": false,
+    "product_requirement": "Failure monitoring must compare independently observed source activity with accepted intake over the same bounded interval and surface a typed coverage gap when source activity is nonzero and accepted intake is zero."
+  },
+  "authority_effect": false,
+  "heartbeat_effect": false,
+  "runtime_activation_effect": false,
+  "package_release_effect": false
+}
