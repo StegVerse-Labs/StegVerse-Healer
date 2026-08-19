@@ -1,0 +1,55 @@
+{
+  "schema": "stegverse.healer.failure-multirepo-window-validation/v0.1",
+  "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+  "source_main_commit": "46319140e4241f458802c7c627f30de120cc1f8b",
+  "validation_head": "3e666609d9b5329d82b5347a08fd2292b735b2c0",
+  "validation_pull_request": 26,
+  "validation_workflow": "Test Readiness",
+  "validation_run_id": 32213979768,
+  "validation_job_id": 95951919538,
+  "validation_conclusion": "success",
+  "deterministic_test_count": 53,
+  "deterministic_test_result": "PASS",
+  "historical_window": {
+    "sanitized_observations": 21,
+    "parsed_observations": 21,
+    "quarantined": 0,
+    "notification_result_class": "WORKFLOW_JOB_FAILURE",
+    "distinct_incidents": 7,
+    "failure_episodes": 13,
+    "amplification_episodes": 6,
+    "semantic_continuity_incidents": 1,
+    "semantic_unknown_incidents": 6,
+    "dependency_candidates": 11,
+    "direction_matching_candidates": 6,
+    "direction_opposing_candidates": 5,
+    "raw_mailbox_ids_retained": false,
+    "mailbox_mutated": false,
+    "causality_claimed": false
+  },
+  "declared_dependency_edges": [
+    "StegVerse-Labs/Site -> GCAT-BCAT-Engine/Publisher",
+    "GCAT-BCAT-Engine/Publisher -> StegVerse-Labs/admissibility-wiki"
+  ],
+  "interpretation": [
+    "Transport-level failure status is not a semantic failure family.",
+    "Declared dependency plus time proximity creates a candidate, not causality.",
+    "Observed order opposing declared dependency direction is retained as counterevidence rather than discarded."
+  ],
+  "benchmark_schema": "stegverse.healer.failure-mailbox-benchmark/v0.3",
+  "benchmark_result": "PASS",
+  "authority_boundary": {
+    "hosted_validation_only": true,
+    "runtime_execution_authority": false,
+    "mailbox_mutation_authority": false,
+    "github_token_authority": "NONE",
+    "credential_authority": "TV/TVC",
+    "heartbeat_effect": false
+  },
+  "packaging_gate": {
+    "dependency_aware_historical_regression_pass": true,
+    "broader_historical_corpus_benchmark_required": true,
+    "live_incremental_benchmark_required": true,
+    "package_release_allowed": false
+  }
+}
