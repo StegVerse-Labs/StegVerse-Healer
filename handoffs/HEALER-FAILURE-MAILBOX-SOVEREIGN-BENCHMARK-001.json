@@ -1,0 +1,45 @@
+{
+  "schema": "stegverse.healer.handoff/v0.1",
+  "task": {
+    "task_id": "HEALER-FAILURE-MAILBOX-SOVEREIGN-BENCHMARK-001",
+    "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+    "priority": "release",
+    "state": "HANDOFF_READY"
+  },
+  "owner": {
+    "repository": "StegVerse-Labs/StegVerse-Healer",
+    "scheduler": "SHWP-HEALER-SOVEREIGN-SCHEDULER-001"
+  },
+  "execution": {
+    "command": ["python3", "failure_mailbox/benchmark.py"],
+    "working_directory": "StegVerse-Labs/StegVerse-Healer",
+    "required_capabilities": ["local_repository_execution", "sandbox_validation"],
+    "github_token_required": false,
+    "remote_checkout_required": false,
+    "artifact_custody_required": false,
+    "credential_authority": "TV/TVC",
+    "non_tv_tvc_secret_or_token_allowed": false
+  },
+  "success_predicate": {
+    "benchmark_result": "PASS",
+    "deterministic_core_pass": true,
+    "package_release_allowed": false,
+    "historical_corpus_benchmark_required": true,
+    "live_incremental_benchmark_required": true
+  },
+  "failure_policy": {
+    "repairable": "repair bounded source defect then rerun same benchmark",
+    "unable_or_impossible_to_repair": "submit sandbox resolution task",
+    "do_not_substitute_hosted_github_actions": true
+  },
+  "continuation": [
+    "consume sovereign benchmark receipt",
+    "backfill historical Gmail failure corpus",
+    "tune identity/fingerprint/neighbor rules from measured results",
+    "run live incremental shadow benchmark",
+    "package only after package gate passes"
+  ],
+  "authority_effect": false,
+  "heartbeat_effect": false,
+  "archive_eligible": false
+}
