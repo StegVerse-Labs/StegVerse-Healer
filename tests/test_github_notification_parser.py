@@ -21,11 +21,12 @@ class GithubNotificationParserTests(unittest.TestCase):
         self.assertEqual(obs["branch"], "repair-repo-alignment-check-v2")
         self.assertEqual(obs["commit_sha"], "86971ef")
         self.assertEqual(obs["run_id"], "28930420419")
+        self.assertEqual(obs["notification_result_class"], "NO_JOBS_RUN")
         self.assertEqual(obs["failure_class"], "NO_JOBS_RUN")
         self.assertFalse(obs["authority_effect"])
         self.assertFalse(obs["heartbeat_effect"])
 
-    def test_job_failure_notification(self) -> None:
+    def test_generic_job_failure_does_not_become_semantic_family(self) -> None:
         message = {
             "id": "m-jobfail",
             "email_ts": "2026-08-18T20:26:20-07:00",
@@ -37,9 +38,22 @@ class GithubNotificationParserTests(unittest.TestCase):
         self.assertEqual(obs["workflow"], "Test Readiness")
         self.assertEqual(obs["branch"], "main")
         self.assertEqual(obs["run_id"], "32212113694")
-        self.assertEqual(obs["failure_class"], "WORKFLOW_JOB_FAILURE")
+        self.assertEqual(obs["notification_result_class"], "WORKFLOW_JOB_FAILURE")
+        self.assertNotIn("failure_class", obs)
 
-    def test_pr_failure_preserves_pr_context(self) -> None:
+    def test_continuation_workflow_gets_semantic_family(self) -> None:
+        message = {
+            "id": "m-cont",
+            "email_ts": "2026-07-08T02:00:10-07:00",
+            "subject": "[StegVerse-Labs/admissibility-wiki] Run failed: Validate chain continuation - main (1088baf)",
+            "snippet": "Validate chain continuation: Some jobs were not successful",
+            "body": "Validate chain continuation: Some jobs were not successful",
+        }
+        obs = parse_github_failure_message(message)
+        self.assertEqual(obs["notification_result_class"], "WORKFLOW_JOB_FAILURE")
+        self.assertEqual(obs["failure_class"], "CONTINUITY_FAILURE")
+
+    def test_pr_failure_preserves_pr_context_without_inventing_semantic_family(self) -> None:
         message = {
             "id": "m-pr",
             "email_ts": "2026-07-08T09:10:43-07:00",
@@ -50,7 +64,8 @@ class GithubNotificationParserTests(unittest.TestCase):
         obs = parse_github_failure_message(message)
         self.assertEqual(obs["branch"], "")
         self.assertEqual(obs["pr"], "NOT READY FOR REVIEW: Fix governance observatory public path semantics")
-        self.assertEqual(obs["failure_class"], "WORKFLOW_JOB_FAILURE")
+        self.assertEqual(obs["notification_result_class"], "WORKFLOW_JOB_FAILURE")
+        self.assertNotIn("failure_class", obs)
 
     def test_rejects_noncanonical_subject(self) -> None:
         with self.assertRaises(ValueError):
