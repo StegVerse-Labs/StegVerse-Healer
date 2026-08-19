@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "stegverse.healer.github-failure-observation/v0.1",
+  "title": "StegVerse Healer GitHub Failure Observation",
+  "type": "object",
+  "required": ["message_id", "repository", "workflow", "received_at"],
+  "properties": {
+    "message_id": {"type": "string", "minLength": 1},
+    "thread_id": {"type": "string"},
+    "internet_message_id": {"type": "string"},
+    "repository": {"type": "string", "minLength": 3},
+    "workflow": {"type": "string", "minLength": 1},
+    "job": {"type": "string"},
+    "check": {"type": "string"},
+    "branch": {"type": "string"},
+    "pr": {"type": ["string", "integer"]},
+    "commit_sha": {"type": "string"},
+    "run_id": {"type": ["string", "integer"]},
+    "received_at": {"type": "string", "minLength": 1},
+    "subject": {"type": "string"},
+    "failure_message": {"type": "string"},
+    "annotation": {"type": "string"},
+    "failure_class": {"type": "string"},
+    "failure_fingerprint": {"type": "string"},
+    "source": {"type": "string"}
+  },
+  "additionalProperties": true
+}
