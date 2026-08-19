@@ -27,7 +27,8 @@ class FailureMailboxHistoricalTrancheTests(unittest.TestCase):
         self.assertEqual(report["episode_summary"]["largest_workflow_fanout_episode"], 45)
         classes = report["episode_summary"]["failure_class_episode_frequency"]
         self.assertEqual(classes["NO_JOBS_RUN"], 1)
-        self.assertEqual(classes["WORKFLOW_JOB_FAILURE"], 1)
+        self.assertEqual(classes["UNKNOWN_FAILURE"], 1)
+        self.assertNotIn("WORKFLOW_JOB_FAILURE", classes)
         self.assertFalse(report["authority_effect"])
         self.assertFalse(report["heartbeat_effect"])
         self.assertFalse(report["source"]["mailbox_mutated"])
