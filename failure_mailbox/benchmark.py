@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import json
-import tempfile
 import time
 from pathlib import Path
 
+from failure_mailbox.episode_analysis import build_failure_episodes, episode_summary
 from failure_mailbox.incident_engine import (
     build_neighbor_candidates,
     default_ledger,
@@ -62,6 +62,8 @@ def run() -> dict:
 
     build_neighbor_candidates(ledger, window_seconds=900)
     report = summary(ledger)
+    episodes = build_failure_episodes(ledger)
+    episode_report = episode_summary(episodes)
     elapsed = time.perf_counter() - start
 
     neighbor_count = sum(len(i.get("neighbor_candidates", [])) for i in ledger["incidents"].values())
@@ -81,10 +83,13 @@ def run() -> dict:
         "resolution_guard": resolution_guard_pass,
         "archive_after_evidence": archive_count > 0,
         "neighbor_candidates": neighbor_count >= expected["minimum_neighbor_candidate_count"],
+        "episode_layer_present": episode_report["episode_count"] > 0,
+        "episode_preserves_incidents": all(row["incident_count"] >= 1 for row in episodes),
+        "episode_no_causality_claim": all(row["causality_claimed"] is False for row in episodes),
     }
 
     return {
-        "schema": "stegverse.healer.failure-mailbox-benchmark/v0.1",
+        "schema": "stegverse.healer.failure-mailbox-benchmark/v0.2",
         "fixture_schema": fixture["schema"],
         "result": "PASS" if all(checks.values()) else "FAIL",
         "checks": checks,
@@ -96,6 +101,10 @@ def run() -> dict:
             "duplicate_replays_tested": len(duplicate_results),
             "repeated_incidents": len(repeated),
             "neighbor_candidates": neighbor_count,
+            "failure_episode_count": episode_report["episode_count"],
+            "amplification_episode_count": episode_report["amplification_episode_count"],
+            "largest_notification_episode": episode_report["largest_notification_episode"],
+            "largest_workflow_fanout_episode": episode_report["largest_workflow_fanout_episode"],
             "archive_eligible_messages": archive_count,
             "ledger_bytes": state_bytes,
             "elapsed_seconds": elapsed,
@@ -103,6 +112,8 @@ def run() -> dict:
         },
         "packaging_gate": {
             "deterministic_core_pass": all(checks.values()),
+            "incident_layer_required": True,
+            "episode_layer_required": True,
             "historical_corpus_benchmark_required": True,
             "live_incremental_benchmark_required": True,
             "package_release_allowed": False,
