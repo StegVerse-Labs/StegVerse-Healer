@@ -1,0 +1,16 @@
+{
+  "schema": "stegverse.healer.failure-mailbox-backfill-validation/v0.1",
+  "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+  "required": [
+    "historical backfill tests pass",
+    "invalid and unsupported messages quarantine",
+    "duplicate replay remains no-op",
+    "failure episodes preserve incident identity",
+    "mailbox mutation remains false",
+    "failure mailbox benchmark remains PASS"
+  ],
+  "credential_authority": "TV/TVC",
+  "github_token_production_authority": "NONE",
+  "runtime_authority": false,
+  "package_release_allowed": false
+}
