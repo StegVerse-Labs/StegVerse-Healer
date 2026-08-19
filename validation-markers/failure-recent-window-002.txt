@@ -1,0 +1,2 @@
+Validation marker for sanitized August 18 recent multi-repo failure window.
+Underlying fixture/test source is already on main at 3f4cd2c69802690aa06a5bdb04f517b23ba31de3.
