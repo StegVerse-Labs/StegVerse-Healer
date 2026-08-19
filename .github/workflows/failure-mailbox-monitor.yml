@@ -10,6 +10,7 @@ on:
 
 # Healer never receives mailbox credential values. GitHub may physically store
 # the Graph configuration for now, but TV/TVC owns credential processing.
+# Validation branch exercises the same production path; it does not change authority.
 permissions:
   contents: read
   actions: read
