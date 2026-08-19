@@ -1,0 +1,43 @@
+{
+  "schema": "stegverse.healer.failure-mailbox-intake-discontinuity/v0.1",
+  "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+  "legacy_intake_surface": "Gmail label StegVerse/GitHub Failures/New",
+  "legacy_label_message_count_observed": 21000,
+  "legacy_label_unread_count_observed": 21000,
+  "latest_observed_labeled_github_failure": "2026-07-08T09:10:43-07:00",
+  "recent_comparison_window": {
+    "start": "2026-08-18T19:00:00-07:00",
+    "end": "2026-08-18T19:20:00-07:00",
+    "direct_github_failure_notifications": 24,
+    "legacy_labeled_failure_notifications": 0,
+    "legacy_intake_coverage_ratio": 0.0
+  },
+  "recent_repository_frequency": {
+    "StegVerse-Labs/StegVerse-Healer": 10,
+    "master-records/orchestration": 3,
+    "StegVerse-Labs/Ecosystem-Delegation": 3,
+    "GCAT-BCAT-Engine/Publisher": 2,
+    "Admissible-Existence/RTG": 2,
+    "StegVerse-Labs/Site": 1,
+    "Admissible-Existence/.github": 1,
+    "StegVerse-Labs/crypto-bot": 1,
+    "Data-Continuation/core-lite": 1
+  },
+  "observed_discontinuity": {
+    "source_stream_continued": true,
+    "legacy_label_intake_continued": false,
+    "silent_monitor_failure_candidate": true,
+    "exact_failure_mechanism_proven": false,
+    "causality_claimed": false
+  },
+  "product_requirement": {
+    "self_monitor_ingestion_coverage": true,
+    "source_count_vs_ingested_count_per_window": true,
+    "coverage_gap_must_be_typed": true,
+    "zero_ingestion_with_nonzero_source_must_not_be_reported_as_healthy": true,
+    "mailbox_mutation_required": false
+  },
+  "authority_effect": false,
+  "heartbeat_effect": false,
+  "package_release_effect": false
+}
