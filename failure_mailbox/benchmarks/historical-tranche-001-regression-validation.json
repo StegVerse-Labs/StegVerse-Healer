@@ -1,0 +1,44 @@
+{
+  "schema": "stegverse.healer.historical-tranche-regression-validation/v0.1",
+  "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+  "source_main_commit": "b15cd58567a444830f7bd55bb9b8cb34450e14b3",
+  "validation_head": "16825b6694be917325545b46cb498eeaed1367f9",
+  "validation_pull_request": 25,
+  "validation_workflow": "Test Readiness",
+  "validation_run_id": 32213618964,
+  "validation_job_id": 95950934196,
+  "validation_conclusion": "success",
+  "deterministic_test_count": 48,
+  "deterministic_test_result": "PASS",
+  "historical_regression": {
+    "sanitized_observations": 47,
+    "parsed_observations": 47,
+    "quarantined": 0,
+    "distinct_incidents": 47,
+    "notification_to_incident_ratio": 1.0,
+    "failure_episodes": 2,
+    "amplification_episodes": 2,
+    "largest_notification_episode": 45,
+    "largest_workflow_fanout_episode": 45,
+    "raw_mailbox_ids_retained": false,
+    "mailbox_mutated": false,
+    "causality_claimed": false
+  },
+  "benchmark_schema": "stegverse.healer.failure-mailbox-benchmark/v0.3",
+  "benchmark_result": "PASS",
+  "interpretation": "The correct reduction layer for this observed burst is failure episode, not incident. Distinct workflow incidents are preserved while the burst is reduced to two bounded episode-level conditions.",
+  "authority_boundary": {
+    "hosted_validation_only": true,
+    "runtime_execution_authority": false,
+    "mailbox_mutation_authority": false,
+    "github_token_authority": "NONE",
+    "credential_authority": "TV/TVC",
+    "heartbeat_effect": false
+  },
+  "packaging_gate": {
+    "historical_single_repo_episode_regression_pass": true,
+    "multi_repo_neighbor_benchmark_required": true,
+    "live_incremental_benchmark_required": true,
+    "package_release_allowed": false
+  }
+}
