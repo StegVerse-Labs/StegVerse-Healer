@@ -1,0 +1,19 @@
+{
+  "schema": "stegverse.healer.historical-tranche-regression/v0.1",
+  "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+  "source": "sanitized derived topology from connected Gmail SCW repair burst",
+  "required": {
+    "input_rows": 47,
+    "parsed_notifications": 47,
+    "quarantined": 0,
+    "distinct_incidents": 47,
+    "failure_episodes": 2,
+    "amplification_episodes": 2,
+    "largest_notification_episode": 45,
+    "largest_workflow_fanout_episode": 45,
+    "mailbox_mutation": false
+  },
+  "credential_authority": "TV/TVC",
+  "runtime_authority": false,
+  "package_release_allowed": false
+}
