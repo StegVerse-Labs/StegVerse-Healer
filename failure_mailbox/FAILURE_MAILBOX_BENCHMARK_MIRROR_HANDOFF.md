@@ -3,7 +3,7 @@
 Updated: 2026-08-18
 Repository: `StegVerse-Labs/StegVerse-Healer`
 Branch: `main`
-State: HISTORICAL_BENCHMARK_ACTIVE_SOVEREIGN_EXECUTION_BINDING_PENDING
+State: DETERMINISTIC_BENCHMARK_VALIDATED_HISTORICAL_BENCHMARK_ACTIVE_LIVE_SHADOW_PENDING
 
 ## Goal
 
@@ -16,10 +16,43 @@ Benchmark the expanded Healer failure-mailbox package against the proven ARA det
 - `failure_mailbox/github_notification_parser.py`
 - `failure_mailbox/episode_analysis.py`
 - `failure_mailbox/benchmarks/historical-tranche-001.json`
+- `failure_mailbox/benchmarks/deterministic-v0.2-validation.json`
 - `tests/test_github_notification_parser.py`
 - `tests/test_failure_episode_analysis.py`
 - `handoffs/HEALER-FAILURE-MAILBOX-SOVEREIGN-BENCHMARK-001.json`
 - `docs/FAILURE_MAILBOX_BENCHMARK_PLAN.md`
+
+## Deterministic benchmark validation
+
+PR #22 exact-head validation succeeded for head `ab925f6133e221634f3b5d5141a772ff732add23`; validated changes were squash-merged to main as `150c48ced79f05bcf3c91ad7337a19fb3b11e57e`.
+
+Validation evidence:
+
+- workflow: `Test Readiness`
+- run ID: `32213145668`
+- job ID: `95949591259`
+- result: `SUCCESS`
+- deterministic tests: 44 / 44 PASS
+- benchmark schema: `stegverse.healer.failure-mailbox-benchmark/v0.2`
+- benchmark result: `PASS`
+- deterministic core gate: PASS
+- package release gate: CLOSED
+
+Measured synthetic metrics in that run:
+
+- input notifications: 8
+- unique observations: 8
+- distinct incidents: 6
+- notification-to-incident ratio: 1.3333333333333333
+- duplicate replays: 2
+- repeated incidents: 2
+- neighbor candidates: 6
+- failure episodes: 8
+- amplification episodes: 0
+- archive-eligible messages after durable resolution evidence: 2
+- observed microbenchmark throughput: ~13094 observations/second; this is not a production-capacity claim
+
+The zero synthetic amplification-episode count is a benchmark-fixture gap, not an episode-engine failure: the v0.1 fixture does not yet include a same-commit, multi-workflow fanout burst. The historical corpus does. The next deterministic tuning step must add such a fixture and require positive amplification detection.
 
 ## Measured historical result
 
@@ -36,15 +69,13 @@ This establishes notification amplification in the historical corpus. It does no
 
 ## Fine-tuning correction derived from the historical tranche
 
-The incident ledger intentionally includes workflow/job identity. Therefore distinct workflows must not be merged merely because they share a commit and failure class. To measure systemic fanout without corrupting incident identity, the package now has a second deterministic layer:
+The incident ledger intentionally includes workflow/job identity. Distinct workflows must not be merged merely because they share a commit and failure class. To measure systemic fanout without corrupting incident identity, the package has a second deterministic layer:
 
 ```text
 notification -> incident -> failure episode -> cross-repo neighbor/propagation candidate
 ```
 
 `failure_mailbox/episode_analysis.py` groups incidents by repository + branch/PR context + commit + failure class. It preserves every incident ID while measuring notification count, workflow count, incident count, duration and amplification candidacy. Episode records never claim causality or authority.
-
-The benchmark runner is now schema `stegverse.healer.failure-mailbox-benchmark/v0.2` and requires episode-layer correctness in addition to the original incident/lifecycle checks.
 
 ## Real-mail parser hardening
 
@@ -60,21 +91,19 @@ The benchmark runner is now schema `stegverse.healer.failure-mailbox-benchmark/v
 
 The parser is credential-neutral and performs no mailbox mutation.
 
-## Sovereign execution state
+## Validation/runtime distinction
 
-`HEALER-FAILURE-MAILBOX-SOVEREIGN-BENCHMARK-001` is `HANDOFF_READY` with command:
+The existing GitHub-hosted `Test Readiness` lane successfully fetched and validated the exact private-source PR head with an empty credential-bearing environment and `permissions: {}`. That hosted success is valid source/behavior validation evidence only. It is not sovereign runtime execution, mailbox processing, activation, or release authority.
 
-```text
-python3 failure_mailbox/benchmark.py
-```
+A separate one-shot sovereign task is registered in `StegVerse-Labs/.github` as `HEALER-FAILURE-MAILBOX-SOVEREIGN-BENCHMARK-001` with WorkerCoordinator process adapter `process:healer-failure-mailbox-benchmark-v1`. It requires an already-materialized `STEGVERSE_HEALER_SOURCE_ROOT`, a sovereign node declaration, a scheduler claim, no GitHub token, no remote checkout, and TV/TVC authority.
 
-The existing sovereign scheduler currently has no registered failure-mailbox benchmark target/handler. This is the concrete remaining execution binding gap. The hosted Test Readiness route was tested and rejected for this purpose because private-source anonymous checkout cannot satisfy the current TV/TVC_ONLY / no-GitHub-token boundary. No hosted validation success is being substituted for sovereign execution.
+The last inspected WorkerCoordinator runtime state remained `CARRIER_REFERENCE_ONLY_NO_TASK_EXECUTION` with no assignment packets seen. Therefore sovereign benchmark execution remains pending and must not be inferred from hosted validation.
 
 ## Benchmark phases
 
-1. Deterministic synthetic benchmark: replay safety, incident compression, duplicate no-op, recurrence, sandbox routing, resolution-evidence gating, temporal neighbor detection, failure-episode amplification, throughput, and ledger size.
-2. Historical unread GitHub-failure corpus benchmark: real notification-to-incident compression, failure-episode amplification, recurrence history, failure-family frequency, repository frequency, propagation candidates, false splits/false merges, throughput, and state growth.
-3. Live incremental shadow benchmark on the existing sovereign Healer scheduler before package release.
+1. Deterministic synthetic benchmark: PASS at v0.2; next tuning adds a positive multi-workflow amplification fixture and revalidates.
+2. Historical unread GitHub-failure corpus benchmark: active; measure real notification-to-incident compression, failure-episode amplification, recurrence history, failure-family frequency, repository frequency, propagation candidates, false splits/false merges, throughput, and state growth.
+3. Live incremental shadow benchmark on the admitted sovereign runtime before package release.
 
 ## Fine-tuning targets
 
@@ -96,17 +125,17 @@ No tuning may regress deterministic replay, lifecycle safety, sandbox routing, r
 
 Package release remains prohibited until:
 
-- deterministic sovereign benchmark passes;
+- the tuned deterministic benchmark passes, including positive amplification detection;
 - historical-corpus benchmark completes and tuning decisions are recorded;
 - live shadow benchmark demonstrates stable incremental classification;
 - core remains transport-neutral and credential-free;
 - adapters remain separable;
 - API/schema is versioned;
 - install/run documentation and sample deployment are validated;
-- benchmark report is retained as release evidence.
+- benchmark reports are retained as release evidence.
 
 ## Current boundary
 
-Source installed != benchmark executed != tuned != packaged != released.
+Validated source != sovereign execution != historical benchmark complete != live shadow complete != packaged != released.
 
 Current status: `DO NOT ARCHIVE THIS SESSION — UNIQUE ACTIVE WORK REMAINS.`
