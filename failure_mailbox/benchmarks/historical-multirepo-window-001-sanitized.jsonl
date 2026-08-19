@@ -1,0 +1,21 @@
+{"id":"mr-001","email_ts":"2026-07-08T01:57:14-07:00","subject":"[StegVerse-Labs/admissibility-wiki] Run failed: Validate chain continuation - main (139e66f)","snippet":"Validate chain continuation: Some jobs were not successful"}
+{"id":"mr-002","email_ts":"2026-07-08T01:57:22-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Task Runner - main (a87feb4)","snippet":"Site Task Runner: All jobs have failed"}
+{"id":"mr-003","email_ts":"2026-07-08T01:57:25-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Bootstrap Validate - main (a87feb4)","snippet":"Site Bootstrap Validate: All jobs have failed"}
+{"id":"mr-004","email_ts":"2026-07-08T01:57:33-07:00","subject":"[StegVerse-Labs/admissibility-wiki] Run failed: Validate chain continuation - main (2f1c530)","snippet":"Validate chain continuation: Some jobs were not successful"}
+{"id":"mr-005","email_ts":"2026-07-08T01:57:47-07:00","subject":"[StegVerse-Labs/admissibility-wiki] Run failed: Validate chain continuation - main (ce27202)","snippet":"Validate chain continuation: Some jobs were not successful"}
+{"id":"mr-006","email_ts":"2026-07-08T01:59:00-07:00","subject":"[StegVerse-Labs/admissibility-wiki] Run failed: Validate chain continuation - main (846dfc1)","snippet":"Validate chain continuation: Some jobs were not successful"}
+{"id":"mr-007","email_ts":"2026-07-08T01:59:50-07:00","subject":"[StegVerse-Labs/Site] Run failed: Check Ecosystem Chat Contract - main (22a2369)","snippet":"Check Ecosystem Chat Contract: All jobs have failed"}
+{"id":"mr-008","email_ts":"2026-07-08T01:59:51-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Bootstrap Validate - main (22a2369)","snippet":"Site Bootstrap Validate: All jobs have failed"}
+{"id":"mr-009","email_ts":"2026-07-08T01:59:57-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Task Runner - main (22a2369)","snippet":"Site Task Runner: All jobs have failed"}
+{"id":"mr-010","email_ts":"2026-07-08T02:00:10-07:00","subject":"[StegVerse-Labs/admissibility-wiki] Run failed: Validate chain continuation - main (1088baf)","snippet":"Validate chain continuation: Some jobs were not successful"}
+{"id":"mr-011","email_ts":"2026-07-08T02:03:04-07:00","subject":"[StegVerse-Labs/Standing-Proof-Engine] Run failed: SPE TT Binding - main (dd8cef0)","snippet":"SPE TT Binding: All jobs have failed"}
+{"id":"mr-012","email_ts":"2026-07-08T02:03:39-07:00","subject":"[StegVerse-Labs/Site] Run failed: Check Ecosystem Chat Contract - main (9cb15fa)","snippet":"Check Ecosystem Chat Contract: All jobs have failed"}
+{"id":"mr-013","email_ts":"2026-07-08T02:03:42-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Bootstrap Validate - main (9cb15fa)","snippet":"Site Bootstrap Validate: All jobs have failed"}
+{"id":"mr-014","email_ts":"2026-07-08T02:06:15-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Bootstrap Validate - main (8418d4f)","snippet":"Site Bootstrap Validate: All jobs have failed"}
+{"id":"mr-015","email_ts":"2026-07-08T02:06:20-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Task Runner - main (8418d4f)","snippet":"Site Task Runner: All jobs have failed"}
+{"id":"mr-016","email_ts":"2026-07-08T02:06:47-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Bootstrap Validate - main (4206ca4)","snippet":"Site Bootstrap Validate: All jobs have failed"}
+{"id":"mr-017","email_ts":"2026-07-08T02:06:52-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Task Runner - main (4206ca4)","snippet":"Site Task Runner: All jobs have failed"}
+{"id":"mr-018","email_ts":"2026-07-08T02:08:14-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Bootstrap Validate - main (f47b3e4)","snippet":"Site Bootstrap Validate: All jobs have failed"}
+{"id":"mr-019","email_ts":"2026-07-08T02:08:22-07:00","subject":"[StegVerse-Labs/Site] Run failed: Site Task Runner - main (f47b3e4)","snippet":"Site Task Runner: All jobs have failed"}
+{"id":"mr-020","email_ts":"2026-07-08T02:10:26-07:00","subject":"[GCAT-BCAT-Engine/Publisher] Run failed: Close Site Mirror Activation - main (22959c8)","snippet":"Close Site Mirror Activation: All jobs have failed"}
+{"id":"mr-021","email_ts":"2026-07-08T02:10:43-07:00","subject":"[StegVerse-Labs/Site] Run failed: Validate Governance Observatory Status - main (f47b3e4)","snippet":"Validate Governance Observatory Status: All jobs have failed"}
