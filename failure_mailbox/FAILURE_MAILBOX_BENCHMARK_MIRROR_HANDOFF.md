@@ -3,139 +3,195 @@
 Updated: 2026-08-18
 Repository: `StegVerse-Labs/StegVerse-Healer`
 Branch: `main`
-State: DETERMINISTIC_BENCHMARK_VALIDATED_HISTORICAL_BENCHMARK_ACTIVE_LIVE_SHADOW_PENDING
+State: DETERMINISTIC_AND_BOUNDED_HISTORICAL_REGRESSIONS_VALIDATED_BROADER_CORPUS_ACTIVE_LIVE_SHADOW_PENDING
 
 ## Goal
 
 Benchmark the expanded Healer failure-mailbox package against the proven ARA deterministic replay-ledger baseline, fine-tune only from measured evidence, then package the transport-neutral product only after benchmark gates pass.
 
-## Installed benchmark surfaces
-
-- `failure_mailbox/benchmark_fixtures.json`
-- `failure_mailbox/benchmark.py`
-- `failure_mailbox/github_notification_parser.py`
-- `failure_mailbox/episode_analysis.py`
-- `failure_mailbox/benchmarks/historical-tranche-001.json`
-- `failure_mailbox/benchmarks/deterministic-v0.2-validation.json`
-- `tests/test_github_notification_parser.py`
-- `tests/test_failure_episode_analysis.py`
-- `handoffs/HEALER-FAILURE-MAILBOX-SOVEREIGN-BENCHMARK-001.json`
-- `docs/FAILURE_MAILBOX_BENCHMARK_PLAN.md`
-
-## Deterministic benchmark validation
-
-PR #22 exact-head validation succeeded for head `ab925f6133e221634f3b5d5141a772ff732add23`; validated changes were squash-merged to main as `150c48ced79f05bcf3c91ad7337a19fb3b11e57e`.
-
-Validation evidence:
-
-- workflow: `Test Readiness`
-- run ID: `32213145668`
-- job ID: `95949591259`
-- result: `SUCCESS`
-- deterministic tests: 44 / 44 PASS
-- benchmark schema: `stegverse.healer.failure-mailbox-benchmark/v0.2`
-- benchmark result: `PASS`
-- deterministic core gate: PASS
-- package release gate: CLOSED
-
-Measured synthetic metrics in that run:
-
-- input notifications: 8
-- unique observations: 8
-- distinct incidents: 6
-- notification-to-incident ratio: 1.3333333333333333
-- duplicate replays: 2
-- repeated incidents: 2
-- neighbor candidates: 6
-- failure episodes: 8
-- amplification episodes: 0
-- archive-eligible messages after durable resolution evidence: 2
-- observed microbenchmark throughput: ~13094 observations/second; this is not a production-capacity claim
-
-The zero synthetic amplification-episode count is a benchmark-fixture gap, not an episode-engine failure: the v0.1 fixture does not yet include a same-commit, multi-workflow fanout burst. The historical corpus does. The next deterministic tuning step must add such a fixture and require positive amplification detection.
-
-## Measured historical result
-
-The first bounded historical Gmail tranche measured one `StegVerse-Labs/StegVerse-SCW` branch/commit cluster:
-
-- branch: `repair-repo-alignment-check-v2`
-- commit fragment: `86971ef`
-- labeled failure notifications: 50
-- `No jobs were run` notifications: 48
-- other failure notifications: 2
-- no-jobs share: 0.96
-
-This establishes notification amplification in the historical corpus. It does not by itself establish 50 incidents, one incident, or causality.
-
-## Fine-tuning correction derived from the historical tranche
-
-The incident ledger intentionally includes workflow/job identity. Distinct workflows must not be merged merely because they share a commit and failure class. To measure systemic fanout without corrupting incident identity, the package has a second deterministic layer:
+## Current implemented surfaces
 
 ```text
-notification -> incident -> failure episode -> cross-repo neighbor/propagation candidate
+failure_mailbox/incident_engine.py
+failure_mailbox/github_notification_parser.py
+failure_mailbox/episode_analysis.py
+failure_mailbox/dependency_analysis.py
+failure_mailbox/dependency_edges.json
+failure_mailbox/backfill.py
+failure_mailbox/failure-observation.schema.json
+failure_mailbox/benchmark.py
+failure_mailbox/benchmark_fixtures.json
+failure_mailbox/benchmarks/historical-tranche-001.json
+failure_mailbox/benchmarks/historical-tranche-001-sanitized.jsonl
+failure_mailbox/benchmarks/historical-tranche-001-regression-validation.json
+failure_mailbox/benchmarks/historical-multirepo-window-001-sanitized.jsonl
+failure_mailbox/benchmarks/historical-multirepo-window-001-validation.json
+failure_mailbox/benchmarks/deterministic-v0.2-validation.json
+failure_mailbox/benchmarks/deterministic-v0.3-validation.json
+failure_mailbox/benchmarks/backfill-v0.1-validation.json
+tests/test_failure_mailbox_incident_engine.py
+tests/test_github_notification_parser.py
+tests/test_failure_episode_analysis.py
+tests/test_failure_dependency_analysis.py
+tests/test_failure_mailbox_backfill.py
+tests/test_failure_mailbox_historical_tranche.py
+tests/test_failure_mailbox_multirepo_window.py
 ```
 
-`failure_mailbox/episode_analysis.py` groups incidents by repository + branch/PR context + commit + failure class. It preserves every incident ID while measuring notification count, workflow count, incident count, duration and amplification candidacy. Episode records never claim causality or authority.
+## Layering contract
 
-## Real-mail parser hardening
+```text
+mail notification
+-> transport notification result
+-> semantic failure incident
+-> failure episode
+-> temporal neighbor candidate
+-> declared-dependency candidate
+-> governed repair / sandbox lifecycle
+```
 
-`failure_mailbox/github_notification_parser.py` was derived from actual connected-mailbox examples and supports:
+These are intentionally distinct abstractions:
 
-- `[repo] Run failed: workflow - branch (sha)`;
-- `[repo] PR run failed: workflow - PR context (sha)`;
-- `No jobs were run` classification;
-- `All jobs have failed` / `Some jobs were not successful` classification;
-- GitHub Actions run-ID extraction from message body;
-- branch versus PR context preservation;
-- observation-only authority and heartbeat effects.
+```text
+email != incident
+incident != episode
+episode != cause
+neighbor candidate != causality
+declared dependency + temporal proximity != causality
+```
 
-The parser is credential-neutral and performs no mailbox mutation.
+## Deterministic benchmark
+
+Benchmark schema `stegverse.healer.failure-mailbox-benchmark/v0.3` is validated PASS. It requires deterministic replay, duplicate no-op, incident recurrence, sandbox routing for unable/impossible repair, evidence-gated archive eligibility, temporal neighbor detection, incident preservation, positive multi-workflow amplification detection, and explicit non-causality.
+
+Latest retained deterministic evidence: `failure_mailbox/benchmarks/deterministic-v0.3-validation.json`.
+
+## Historical single-repository tranche
+
+Connected Gmail initially measured one bounded `StegVerse-Labs/StegVerse-SCW` branch/commit cluster:
+
+```text
+branch: repair-repo-alignment-check-v2
+commit: 86971ef
+failure notifications by ID search: 50
+No jobs were run notifications by ID search: 48
+other notifications: 2
+no-jobs share: 0.96
+```
+
+A sanitized 47-observation topology was retained without raw mailbox IDs because the detailed content retrieval returned 47 visible records while the ID-only search measured 50; the 47-record regression is therefore not represented as the complete 50-message source set.
+
+Validated regression:
+
+```text
+Test Readiness run: 32213618964
+job: 95950934196
+tests: 48/48 PASS
+sanitized observations: 47
+distinct incidents: 47
+failure episodes: 2
+largest NO_JOBS_RUN episode: 45 workflow surfaces
+mailbox mutation: false
+causality claimed: false
+```
+
+This established that the correct reduction layer for that burst is episode, not incident. Distinct workflow incidents remain distinct.
+
+## Transport result versus semantic failure family
+
+The observation schema is now `stegverse.healer.github-failure-observation/v0.2`.
+
+GitHub mail transport result is recorded separately as `notification_result_class`. Generic text such as `All jobs have failed` or `Some jobs were not successful` no longer becomes a semantic failure family by itself. Semantic classification is added only when supported by the observed surface or later evidence.
+
+Examples:
+
+```text
+No jobs were run -> notification_result_class=NO_JOBS_RUN; failure_class=NO_JOBS_RUN
+Validate chain continuation + generic job failure -> notification_result_class=WORKFLOW_JOB_FAILURE; failure_class=CONTINUITY_FAILURE
+Test Readiness + generic job failure -> notification_result_class=WORKFLOW_JOB_FAILURE; failure_class omitted at parser boundary and may remain UNKNOWN_FAILURE
+```
+
+The parser remains credential-neutral and performs no mailbox mutation.
+
+## Dependency-aware multi-repository historical regression
+
+Authoritative dependency edges currently encoded from `GCAT-BCAT-Engine/Publisher:docs/PUBLISHER_MIRROR_HANDOFF.md#Cross-repository-succession`:
+
+```text
+StegVerse-Labs/Site -> GCAT-BCAT-Engine/Publisher
+GCAT-BCAT-Engine/Publisher -> StegVerse-Labs/admissibility-wiki
+```
+
+No other edge is inferred merely from temporal proximity.
+
+A sanitized bounded 21-observation window derived from the connected mailbox was validated:
+
+```text
+Test Readiness run: 32213979768
+job: 95951919538
+tests: 53/53 PASS
+parsed observations: 21
+distinct incidents: 7
+failure episodes: 13
+amplification episodes: 6
+declared-edge candidates: 11
+Site -> Publisher direction-matching candidates: 6
+Publisher -> admissibility-wiki direction-opposing candidates: 5
+causality claimed: false
+mailbox mutation: false
+benchmark v0.3: PASS
+```
+
+The direction-opposing candidates are retained as counterevidence. They are not discarded to make a propagation narrative fit the declared topology.
+
+Retained evidence: `failure_mailbox/benchmarks/historical-multirepo-window-001-validation.json`.
+
+## Historical backfill engine
+
+`failure_mailbox/backfill.py` is validated for deterministic JSONL backfill, duplicate replay, quarantine of invalid/unsupported forms, incident/episode construction, and zero mailbox mutation. It reports transport-result frequency separately from semantic failure-family frequency.
+
+Latest retained backfill validation: `failure_mailbox/benchmarks/backfill-v0.1-validation.json`.
 
 ## Validation/runtime distinction
 
-The existing GitHub-hosted `Test Readiness` lane successfully fetched and validated the exact private-source PR head with an empty credential-bearing environment and `permissions: {}`. That hosted success is valid source/behavior validation evidence only. It is not sovereign runtime execution, mailbox processing, activation, or release authority.
+Hosted `Test Readiness` is source/behavior validation evidence only. It grants no runtime, mailbox, repair, release, credential, or heartbeat authority.
 
-A separate one-shot sovereign task is registered in `StegVerse-Labs/.github` as `HEALER-FAILURE-MAILBOX-SOVEREIGN-BENCHMARK-001` with WorkerCoordinator process adapter `process:healer-failure-mailbox-benchmark-v1`. It requires an already-materialized `STEGVERSE_HEALER_SOURCE_ROOT`, a sovereign node declaration, a scheduler claim, no GitHub token, no remote checkout, and TV/TVC authority.
+A separate sovereign one-shot task remains registered in `StegVerse-Labs/.github`:
 
-The last inspected WorkerCoordinator runtime state remained `CARRIER_REFERENCE_ONLY_NO_TASK_EXECUTION` with no assignment packets seen. Therefore sovereign benchmark execution remains pending and must not be inferred from hosted validation.
+```text
+task: HEALER-FAILURE-MAILBOX-SOVEREIGN-BENCHMARK-001
+worker: healer-failure-mailbox-benchmark-worker
+adapter: process:healer-failure-mailbox-benchmark-v1
+```
 
-## Benchmark phases
+It requires an already-materialized local Healer source, sovereign node declaration, collision-safe claim, TV/TVC authority, no GitHub token, and no remote checkout.
 
-1. Deterministic synthetic benchmark: PASS at v0.2; next tuning adds a positive multi-workflow amplification fixture and revalidates.
-2. Historical unread GitHub-failure corpus benchmark: active; measure real notification-to-incident compression, failure-episode amplification, recurrence history, failure-family frequency, repository frequency, propagation candidates, false splits/false merges, throughput, and state growth.
-3. Live incremental shadow benchmark on the admitted sovereign runtime before package release.
+Last inspected WorkerCoordinator runtime state remained `CARRIER_REFERENCE_ONLY_NO_TASK_EXECUTION` with no assignment packets seen. Sovereign benchmark execution is therefore still pending and must not be inferred from hosted validation.
 
-## Fine-tuning targets
+## Remaining benchmark work
 
-Tune only from measured evidence:
-
-- failure fingerprint normalization;
-- incident identity fields;
-- branch/PR treatment;
-- recurrence thresholds;
-- failure-episode grouping fields;
-- temporal neighbor window;
-- dependency-edge and shared-commit weights;
-- intentional/fail-closed/no-jobs-run classifications;
-- archive safeguards.
-
-No tuning may regress deterministic replay, lifecycle safety, sandbox routing, resolution-evidence requirements, authority boundaries, or heartbeat independence.
+1. Complete broader historical mailbox analysis across multiple bounded windows/pages rather than extrapolating from the first-page samples.
+2. Add only authoritative repository dependency edges and preserve temporal-only neighbors where no edge is established.
+3. Measure recurrence, episode frequency, amplification, false splits/false merges, parse quarantine, state growth, and cross-repository candidate stability across the broader corpus.
+4. Use measured misclassifications to fine-tune fingerprint, semantic-family, episode, and dependency scoring rules.
+5. Admit a TV/TVC mailbox transport for live incremental shadow processing; do not mutate mail during shadow benchmark.
+6. Consume a sovereign WorkerCoordinator benchmark receipt when the registered machine task is actually executed.
+7. Package only after historical and live-shadow gates pass.
 
 ## Packaging gate
 
-Package release remains prohibited until:
+```text
+deterministic benchmark: PASS
+positive amplification detection: PASS
+historical backfill engine: PASS
+single-repo historical regression: PASS
+dependency-aware bounded multi-repo regression: PASS
+broader historical corpus benchmark: ACTIVE / NOT COMPLETE
+live incremental shadow benchmark: PENDING
+sovereign machine benchmark receipt: PENDING
+package release allowed: false
+```
 
-- the tuned deterministic benchmark passes, including positive amplification detection;
-- historical-corpus benchmark completes and tuning decisions are recorded;
-- live shadow benchmark demonstrates stable incremental classification;
-- core remains transport-neutral and credential-free;
-- adapters remain separable;
-- API/schema is versioned;
-- install/run documentation and sample deployment are validated;
-- benchmark reports are retained as release evidence.
-
-## Current boundary
-
-Validated source != sovereign execution != historical benchmark complete != live shadow complete != packaged != released.
+Source validated != sovereign execution != historical benchmark complete != live shadow complete != packaged != released.
 
 Current status: `DO NOT ARCHIVE THIS SESSION — UNIQUE ACTIVE WORK REMAINS.`
