@@ -3,195 +3,346 @@
 Updated: 2026-08-18
 Repository: `StegVerse-Labs/StegVerse-Healer`
 Branch: `main`
-State: DETERMINISTIC_AND_BOUNDED_HISTORICAL_REGRESSIONS_VALIDATED_BROADER_CORPUS_ACTIVE_LIVE_SHADOW_PENDING
+State: `DETERMINISTIC_V0_4_VALIDATED_HISTORICAL_ACTIVE_SHADOW_CORE_VALIDATED_SOVEREIGN_INPUT_PENDING`
 
 ## Goal
 
-Benchmark the expanded Healer failure-mailbox package against the proven ARA deterministic replay-ledger baseline, fine-tune only from measured evidence, then package the transport-neutral product only after benchmark gates pass.
+Develop and benchmark a transport-neutral Healer failure-intelligence package that reconstructs GitHub failure observations into durable incidents, recurrence, failure episodes, bounded dependency candidates, coverage state, repair/sandbox lifecycle and evidence-qualified archival without giving mail transport, GitHub, runtime, release or heartbeat authority to the analysis core.
 
-## Current implemented surfaces
+Package release remains prohibited until the historical corpus benchmark is sufficiently complete, a live incremental shadow batch is executed on the sovereign runtime with independently measured source coverage, and retained release evidence satisfies the package gate.
 
-```text
-failure_mailbox/incident_engine.py
-failure_mailbox/github_notification_parser.py
-failure_mailbox/episode_analysis.py
-failure_mailbox/dependency_analysis.py
-failure_mailbox/dependency_edges.json
-failure_mailbox/backfill.py
-failure_mailbox/failure-observation.schema.json
-failure_mailbox/benchmark.py
-failure_mailbox/benchmark_fixtures.json
-failure_mailbox/benchmarks/historical-tranche-001.json
-failure_mailbox/benchmarks/historical-tranche-001-sanitized.jsonl
-failure_mailbox/benchmarks/historical-tranche-001-regression-validation.json
-failure_mailbox/benchmarks/historical-multirepo-window-001-sanitized.jsonl
-failure_mailbox/benchmarks/historical-multirepo-window-001-validation.json
-failure_mailbox/benchmarks/deterministic-v0.2-validation.json
-failure_mailbox/benchmarks/deterministic-v0.3-validation.json
-failure_mailbox/benchmarks/backfill-v0.1-validation.json
-tests/test_failure_mailbox_incident_engine.py
-tests/test_github_notification_parser.py
-tests/test_failure_episode_analysis.py
-tests/test_failure_dependency_analysis.py
-tests/test_failure_mailbox_backfill.py
-tests/test_failure_mailbox_historical_tranche.py
-tests/test_failure_mailbox_multirepo_window.py
-```
-
-## Layering contract
+## Current product layers
 
 ```text
-mail notification
--> transport notification result
--> semantic failure incident
--> failure episode
--> temporal neighbor candidate
--> declared-dependency candidate
+source-stream coverage
+-> notification transport result
+-> semantic incident
+-> recurrence/history
+-> failure episode / amplification
+-> temporal neighbor
+-> declared dependency candidate + counterevidence
 -> governed repair / sandbox lifecycle
+-> evidence-qualified archival
 ```
 
-These are intentionally distinct abstractions:
+Required distinctions:
 
-```text
-email != incident
-incident != episode
-episode != cause
-neighbor candidate != causality
-declared dependency + temporal proximity != causality
-```
+- email != incident
+- incident != episode
+- episode != cause
+- temporal neighbor != dependency
+- declared dependency + temporal proximity != causality
+- notification result != semantic failure family
+- source coverage != parser quality
+- source validation != sovereign execution != release
 
-## Deterministic benchmark
+## Developed source
 
-Benchmark schema `stegverse.healer.failure-mailbox-benchmark/v0.3` is validated PASS. It requires deterministic replay, duplicate no-op, incident recurrence, sandbox routing for unable/impossible repair, evidence-gated archive eligibility, temporal neighbor detection, incident preservation, positive multi-workflow amplification detection, and explicit non-causality.
+- `failure_mailbox/incident_engine.py`
+- `failure_mailbox/github_notification_parser.py`
+- `failure_mailbox/episode_analysis.py`
+- `failure_mailbox/dependency_analysis.py`
+- `failure_mailbox/dependency_edges.json`
+- `failure_mailbox/backfill.py`
+- `failure_mailbox/coverage_monitor.py`
+- `failure_mailbox/shadow.py`
+- `failure_mailbox/benchmark.py`
+- versioned schemas, fixtures and deterministic tests under `failure_mailbox/` and `tests/`
 
-Latest retained deterministic evidence: `failure_mailbox/benchmarks/deterministic-v0.3-validation.json`.
+These are developed implementation surfaces, not placeholders.
 
-## Historical single-repository tranche
+## Parser semantics
 
-Connected Gmail initially measured one bounded `StegVerse-Labs/StegVerse-SCW` branch/commit cluster:
-
-```text
-branch: repair-repo-alignment-check-v2
-commit: 86971ef
-failure notifications by ID search: 50
-No jobs were run notifications by ID search: 48
-other notifications: 2
-no-jobs share: 0.96
-```
-
-A sanitized 47-observation topology was retained without raw mailbox IDs because the detailed content retrieval returned 47 visible records while the ID-only search measured 50; the 47-record regression is therefore not represented as the complete 50-message source set.
-
-Validated regression:
-
-```text
-Test Readiness run: 32213618964
-job: 95950934196
-tests: 48/48 PASS
-sanitized observations: 47
-distinct incidents: 47
-failure episodes: 2
-largest NO_JOBS_RUN episode: 45 workflow surfaces
-mailbox mutation: false
-causality claimed: false
-```
-
-This established that the correct reduction layer for that burst is episode, not incident. Distinct workflow incidents remain distinct.
-
-## Transport result versus semantic failure family
-
-The observation schema is now `stegverse.healer.github-failure-observation/v0.2`.
-
-GitHub mail transport result is recorded separately as `notification_result_class`. Generic text such as `All jobs have failed` or `Some jobs were not successful` no longer becomes a semantic failure family by itself. Semantic classification is added only when supported by the observed surface or later evidence.
+GitHub notification transport result and semantic failure family are separate fields.
 
 Examples:
 
-```text
-No jobs were run -> notification_result_class=NO_JOBS_RUN; failure_class=NO_JOBS_RUN
-Validate chain continuation + generic job failure -> notification_result_class=WORKFLOW_JOB_FAILURE; failure_class=CONTINUITY_FAILURE
-Test Readiness + generic job failure -> notification_result_class=WORKFLOW_JOB_FAILURE; failure_class omitted at parser boundary and may remain UNKNOWN_FAILURE
-```
+- `notification_result_class=WORKFLOW_JOB_FAILURE` may remain `failure_class=UNKNOWN_FAILURE` until stronger evidence exists.
+- `Validate chain continuation` may be classified as `CONTINUITY_FAILURE` because its workflow semantics support that family.
+- `No jobs were run` remains a distinct `NO_JOBS_RUN` class.
 
-The parser remains credential-neutral and performs no mailbox mutation.
+Generic GitHub status wording must never be promoted into an unsupported semantic root cause.
 
-## Dependency-aware multi-repository historical regression
+## Incident and episode semantics
 
-Authoritative dependency edges currently encoded from `GCAT-BCAT-Engine/Publisher:docs/PUBLISHER_MIRROR_HANDOFF.md#Cross-repository-succession`:
+Incident identity preserves repository/workflow/job/context and semantic fingerprint. Different workflow surfaces are not collapsed merely because they share a commit.
 
-```text
-StegVerse-Labs/Site -> GCAT-BCAT-Engine/Publisher
-GCAT-BCAT-Engine/Publisher -> StegVerse-Labs/admissibility-wiki
-```
+Failure episodes provide the higher-level reduction needed for fanout/amplification analysis while retaining all constituent incident IDs. Episode objects remain non-causal and non-authorizing.
 
-No other edge is inferred merely from temporal proximity.
+## Coverage monitor
 
-A sanitized bounded 21-observation window derived from the connected mailbox was validated:
+`failure_mailbox/coverage_monitor.py` evaluates independently measured source activity against accepted shadow intake over the same bounded interval.
 
-```text
-Test Readiness run: 32213979768
-job: 95951919538
-tests: 53/53 PASS
-parsed observations: 21
-distinct incidents: 7
-failure episodes: 13
-amplification episodes: 6
-declared-edge candidates: 11
-Site -> Publisher direction-matching candidates: 6
-Publisher -> admissibility-wiki direction-opposing candidates: 5
-causality claimed: false
-mailbox mutation: false
-benchmark v0.3: PASS
-```
+Typed states:
 
-The direction-opposing candidates are retained as counterevidence. They are not discarded to make a propagation narrative fit the declared topology.
+- `COMPLETE_COVERAGE`
+- `PARTIAL_COVERAGE`
+- `COVERAGE_GAP`
+- `NO_SOURCE_ACTIVITY`
+- `INVALID_COVERAGE_EVIDENCE`
 
-Retained evidence: `failure_mailbox/benchmarks/historical-multirepo-window-001-validation.json`.
-
-## Historical backfill engine
-
-`failure_mailbox/backfill.py` is validated for deterministic JSONL backfill, duplicate replay, quarantine of invalid/unsupported forms, incident/episode construction, and zero mailbox mutation. It reports transport-result frequency separately from semantic failure-family frequency.
-
-Latest retained backfill validation: `failure_mailbox/benchmarks/backfill-v0.1-validation.json`.
-
-## Validation/runtime distinction
-
-Hosted `Test Readiness` is source/behavior validation evidence only. It grants no runtime, mailbox, repair, release, credential, or heartbeat authority.
-
-A separate sovereign one-shot task remains registered in `StegVerse-Labs/.github`:
+Invariant:
 
 ```text
-task: HEALER-FAILURE-MAILBOX-SOVEREIGN-BENCHMARK-001
-worker: healer-failure-mailbox-benchmark-worker
-adapter: process:healer-failure-mailbox-benchmark-v1
+source_count > 0 and ingested_count == 0
+=> COVERAGE_GAP
 ```
 
-It requires an already-materialized local Healer source, sovereign node declaration, collision-safe claim, TV/TVC authority, no GitHub token, and no remote checkout.
+A monitor that stops ingesting while the source stream continues must therefore become visibly unhealthy instead of silently appearing idle.
 
-Last inspected WorkerCoordinator runtime state remained `CARRIER_REFERENCE_ONLY_NO_TASK_EXECUTION` with no assignment packets seen. Sovereign benchmark execution is therefore still pending and must not be inferred from hosted validation.
+## Incremental shadow processor
 
-## Remaining benchmark work
+`failure_mailbox/shadow.py` consumes already-materialized JSONL batches and persists an incremental ledger and shadow state.
 
-1. Complete broader historical mailbox analysis across multiple bounded windows/pages rather than extrapolating from the first-page samples.
-2. Add only authoritative repository dependency edges and preserve temporal-only neighbors where no edge is established.
-3. Measure recurrence, episode frequency, amplification, false splits/false merges, parse quarantine, state growth, and cross-repository candidate stability across the broader corpus.
-4. Use measured misclassifications to fine-tune fingerprint, semantic-family, episode, and dependency scoring rules.
-5. Admit a TV/TVC mailbox transport for live incremental shadow processing; do not mutate mail during shadow benchmark.
-6. Consume a sovereign WorkerCoordinator benchmark receipt when the registered machine task is actually executed.
-7. Package only after historical and live-shadow gates pass.
+Properties validated:
+
+- deterministic `batch_id` + input hash;
+- same batch/hash replay => `DUPLICATE_BATCH_NOOP`;
+- same batch ID with conflicting hash => fail closed;
+- source coverage is measured using source count vs delivered input rows;
+- parse/quarantine quality is measured separately;
+- malformed-but-delivered mail is not mislabeled as a transport outage;
+- source-count greater than delivered rows produces partial/gap coverage;
+- no mailbox mutation, authority, heartbeat or package-release effect.
+
+## Deterministic benchmark v0.4
+
+Current benchmark schema:
+
+`stegverse.healer.failure-mailbox-benchmark/v0.4`
+
+Exact-head validation:
+
+- PR: `#28` validation marker, closed without merge
+- workflow: `Test Readiness`
+- run: `32214501733`
+- job: `95953368889`
+- deterministic tests: `60/60 PASS`
+- benchmark: `PASS`
+
+v0.4 package gates now require:
+
+- deterministic incident/replay/lifecycle behavior;
+- episode/amplification behavior;
+- `fixture_intake_complete_coverage`;
+- positive `coverage_gap_self_detection`;
+- coverage monitor grants no mailbox/authority/heartbeat power;
+- historical corpus benchmark;
+- live incremental benchmark.
+
+`package_release_allowed=false` remains mandatory.
+
+Retained evidence:
+
+- `failure_mailbox/benchmarks/deterministic-v0.4-validation.json`
+- `failure_mailbox/benchmarks/intake-coverage-discontinuity-001.json`
+
+## Historical corpus evidence
+
+### July bounded window
+
+Measured connected-mailbox interval: approximately 17 minutes on 2026-07-08.
+
+Exact source denominator: `137` GitHub failure notifications.
+
+Repository distribution:
+
+- StegVerse-SCW: `109`
+- Site: `16`
+- admissibility-wiki: `10`
+- Publisher: `1`
+- Standing-Proof-Engine: `1`
+
+Execution-result distribution:
+
+- `NO_JOBS_RUN`: `96`
+- unsuccessful executed jobs: `41`
+
+All 96 no-job notifications were in the SCW share. Therefore SCW generated 109 notifications: 96 non-executing workflow surfaces plus 13 actual job-failure notifications.
+
+A sanitized SCW regression preserves 47 workflow incidents and reduces them to two episode-level conditions, including a dominant 45-workflow `NO_JOBS_RUN` episode.
+
+Validation:
+
+- PR #25 marker, closed without merge
+- Test Readiness run `32213618964`
+- job `95950934196`
+- `48/48 PASS`
+
+### Dependency-aware historical regression
+
+Only declared repository relationships may raise dependency candidates. The initial declared edge set is grounded in Publisher's canonical succession contract:
+
+```text
+Site -> Publisher -> admissibility-wiki
+```
+
+A bounded sanitized multi-repo fixture reconstructed 21 observations into 7 incidents and 13 episodes. It produced:
+
+- 6 direction-matching Site -> Publisher candidates;
+- 5 Publisher -> admissibility-wiki candidates whose observed ordering opposed the declared direction.
+
+The opposing ordering is retained as counterevidence; no candidate is a causality claim.
+
+Validation:
+
+- PR #26 marker, closed without merge
+- run `32213979768`
+- job `95951919538`
+- `53/53 PASS`
+
+### Recent August window
+
+Measured connected-mailbox interval: 2026-08-18 19:00-19:20 PDT.
+
+- direct GitHub failure notifications: `24`
+- repositories: `9`
+- Healer `Test Readiness` notifications: `10`
+- old `StegVerse/GitHub Failures/New` label intake: `0`
+
+The sanitized recent-window regression parsed 24/24 with zero quarantine, preserved 9 repositories, reconstructed 15 incidents, and correctly reduced the 10 Healer `Test Readiness` notifications to one recurring incident with `occurrence_count=10`.
+
+Validation:
+
+- PR #29 marker, closed without merge
+- run `32214594137`
+- job `95953619321`
+- `61/61 PASS`
+
+### Legacy intake discontinuity
+
+Newest observed GitHub failure carrying the legacy failure label:
+
+`2026-07-08T09:10:43-07:00`
+
+Recent August window:
+
+```text
+direct source notifications: 24
+legacy labeled intake:       0
+coverage state:              COVERAGE_GAP
+```
+
+This demonstrates an observed ~41-day label/intake discontinuity. It does **not** establish why the prior automation stopped.
+
+Product consequence: failure monitoring must monitor its own bounded source-to-intake coverage.
+
+## Shadow-core validation
+
+PR #30 marker, closed without merge.
+
+- run: `32214695207`
+- job: `95953889359`
+- deterministic tests: `66/66 PASS`
+- benchmark v0.4 remained PASS.
+
+Validated behavior includes complete recent-window coverage, duplicate no-op, conflicting replay fail-closed, partial transport coverage, parser quarantine separated from transport coverage, persistent shadow state and zero mailbox mutation/authority effect.
+
+## Sovereign WorkerCoordinator integration
+
+Two Healer-owned tasks are registered centrally in `StegVerse-Labs/.github`.
+
+### Deterministic sovereign benchmark
+
+Task: `HEALER-FAILURE-MAILBOX-SOVEREIGN-BENCHMARK-001`
+
+State: `HANDOFF_READY`
+
+No sovereign execution receipt has been observed.
+
+### Live shadow batch
+
+Task: `HEALER-FAILURE-MAILBOX-LIVE-SHADOW-001`
+
+Worker: `healer-failure-mailbox-shadow-worker`
+
+Adapter: `process:healer-failure-mailbox-shadow-v1`
+
+Required non-secret local locators:
+
+- `STEGVERSE_HEALER_SOURCE_ROOT`
+- `STEGVERSE_HEALER_SHADOW_BATCH_PATH`
+- `STEGVERSE_HEALER_SHADOW_MANIFEST_PATH`
+
+The shadow worker must never receive Gmail/OAuth/GitHub credentials. It consumes only an already-materialized bounded JSONL batch plus a non-secret manifest that attests:
+
+- `batch_id`
+- `source_count`
+- `window_start`
+- `window_end`
+- `source_ref`
+- `mailbox_mutated=false`
+- `credential_authority=TV/TVC`
+
+Current blockers:
+
+- TV/TVC-owned mailbox batch + manifest not yet observed;
+- canonical scheduler claim not yet bound;
+- sovereign shadow execution receipt not yet observed.
+
+Therefore registration is **not** live processing or activation.
+
+## Central source-validation evidence
+
+Central `.github` source-validation receipt:
+
+`StegVerse-Labs/.github:docs/receipts/healer-failure-mailbox-shadow-source-validation-2026-08-18.md`
+
+The complete central repository validation is currently red because of independent migration debt, but the new Healer shadow worker's four focused tests all passed inside the canonical 431-test run. Executable-handoff validation, workflow hygiene, organization control-plane invariants and active-worker invariants also produced positive evidence after bounded repairs.
+
+Do not restore pre-independent-oscillator heartbeat semantics merely to satisfy stale tests.
+
+## Credential-bearing mailbox transport boundary
+
+Credential-bearing Gmail observation/materialization belongs to TV/TVC, not Healer.
+
+The existing TVC provider-operation broker establishes the non-exportable credential authority pattern, but current admitted provider profiles are model/chain oriented and do not semantically admit Gmail mailbox observation. A narrower TVC mailbox observation/materialization capability is therefore still required unless an existing equivalent surface is discovered.
+
+Required output from that TVC-owned transport is only:
+
+1. sanitized bounded JSONL observations;
+2. non-secret source-count/window manifest;
+3. no exported provider credential;
+4. evidence binding source count to the same bounded interval.
 
 ## Packaging gate
 
-```text
-deterministic benchmark: PASS
-positive amplification detection: PASS
-historical backfill engine: PASS
-single-repo historical regression: PASS
-dependency-aware bounded multi-repo regression: PASS
-broader historical corpus benchmark: ACTIVE / NOT COMPLETE
-live incremental shadow benchmark: PENDING
-sovereign machine benchmark receipt: PENDING
-package release allowed: false
-```
+Release remains prohibited until all are true:
 
-Source validated != sovereign execution != historical benchmark complete != live shadow complete != packaged != released.
+- deterministic benchmark v0.4 remains PASS;
+- historical-corpus evaluation/tuning is sufficiently complete and retained;
+- a TV/TVC-owned mailbox observation/materialization path is validated;
+- live shadow processes one or more independently counted bounded source batches on sovereign runtime;
+- live coverage and parse/quarantine metrics remain stable;
+- core remains transport-neutral and credential-free;
+- adapters remain separable;
+- API/schema and install/run documentation are versioned and validated;
+- release evidence is retained.
+
+## Exact next actions
+
+1. Discover or implement the narrow TVC mailbox observation/materialization capability under TV/TVC non-exportable credential authority.
+2. Produce a bounded sanitized source batch + manifest without exposing credentials to Healer.
+3. Recheck central WorkerCoordinator state and duplicate claims.
+4. Bind and execute `HEALER-FAILURE-MAILBOX-LIVE-SHADOW-001` under a fresh canonical claim.
+5. If a coverage gap or repairable failure occurs, repair and rerun the same predicate.
+6. If the worker reports unable/impossible-to-repair, submit the governed sandbox resolution task.
+7. Consume and retain the live receipt before considering package release.
+
+## Completion accounting
+
+```text
+core_incident_parser_episode_dependency_source: COMPLETE_VALIDATED
+coverage_monitor_source: COMPLETE_VALIDATED
+historical_backfill_source: COMPLETE_VALIDATED
+shadow_processor_source: COMPLETE_VALIDATED
+benchmark_v0_4: PASS
+historical_bounded_windows: ACTIVE_VALIDATED_PARTIAL_CORPUS
+central_shadow_worker_registration: INSTALLED_FOCUSED_TESTS_PASS
+TVC_mailbox_materialization: NOT_IMPLEMENTED_OR_NOT_DISCOVERED
+sovereign_shadow_execution: NOT_OBSERVED
+package_release: PROHIBITED
+archive_ready: false
+```
 
 Current status: `DO NOT ARCHIVE THIS SESSION — UNIQUE ACTIVE WORK REMAINS.`
