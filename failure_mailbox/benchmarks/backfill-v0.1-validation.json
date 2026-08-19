@@ -1,0 +1,37 @@
+{
+  "schema": "stegverse.healer.failure-mailbox-backfill-validation/v0.1",
+  "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+  "source_main_commit": "e05c7e294ff84962fd01dfd2469c9ead0d715e38",
+  "validation_head": "1458f6847b01172c9dadb1dd4b7e5407b5476356",
+  "validation_pull_request": 24,
+  "validation_workflow": "Test Readiness",
+  "validation_run_id": 32213451011,
+  "validation_job_id": 95950459271,
+  "validation_conclusion": "success",
+  "deterministic_test_count": 47,
+  "deterministic_test_result": "PASS",
+  "backfill_tests": {
+    "preserves_distinct_incidents": true,
+    "builds_amplification_episode": true,
+    "duplicate_replay_noop_across_backfills": true,
+    "unsupported_rows_quarantined": true,
+    "invalid_rows_quarantined": true,
+    "mailbox_mutation": false
+  },
+  "benchmark_schema": "stegverse.healer.failure-mailbox-benchmark/v0.3",
+  "benchmark_result": "PASS",
+  "authority_boundary": {
+    "hosted_validation_only": true,
+    "runtime_execution_authority": false,
+    "mailbox_mutation_authority": false,
+    "github_token_authority": "NONE",
+    "credential_authority": "TV/TVC",
+    "heartbeat_effect": false
+  },
+  "packaging_gate": {
+    "historical_backfill_engine_validated": true,
+    "historical_corpus_backfill_required": true,
+    "live_incremental_benchmark_required": true,
+    "package_release_allowed": false
+  }
+}
