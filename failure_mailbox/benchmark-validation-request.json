@@ -1,0 +1,15 @@
+{
+  "schema": "stegverse.healer.failure-mailbox-benchmark-validation-request/v0.1",
+  "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+  "benchmark_id": "FAILURE-MAILBOX-BENCHMARK-001",
+  "requested_validation": [
+    "deterministic_healer_tests",
+    "failure_mailbox_product_benchmark",
+    "validation_only_authority_boundary"
+  ],
+  "package_release_allowed": false,
+  "historical_corpus_benchmark_required": true,
+  "live_incremental_benchmark_required": true,
+  "credential_authority": "TV/TVC",
+  "github_token_production_authority": "NONE"
+}
