@@ -1,18 +1,18 @@
 {
-  "schema": "stegverse.healer.task/v0.2",
+  "schema": "stegverse.healer.task/v0.3",
   "task_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
   "owner": "StegVerse-Labs/StegVerse-Healer",
-  "state": "SOURCE_IMPLEMENTED_ACTIONS_CAPACITY_CLASSIFICATION_TRANSPORT_PENDING",
+  "state": "CREDENTIAL_NEUTRAL_TVC_CLIENT_IMPLEMENTED_SCHEDULER_AND_LIVE_PROVIDER_PENDING",
   "priority": "high",
   "goal": "Maintain a canonical inventory of GitHub operational failure incidents from TV/TVC mailbox observations, including workflow failures and Actions capacity/budget exhaustion, and track recurrence/lifecycle through resolution or sandbox-required outcomes.",
   "source_surfaces": [
-    "failure_mailbox/README.md",
     "failure_mailbox/incident_engine.py",
     "failure_mailbox/github_notification_parser.py",
+    "failure_mailbox/sovereign_tvc_intake.py",
     "failure_mailbox/failure-observation.schema.json",
     "failure_mailbox/FAILURE_MAILBOX_MIRROR_HANDOFF.md",
     "tests/test_github_notification_parser.py",
-    "tests/test_failure_mailbox_incident_engine.py"
+    "tests/test_sovereign_tvc_mailbox_intake.py"
   ],
   "supported_operational_signals": [
     "WORKFLOW_RUN_FAILURE",
@@ -22,6 +22,16 @@
     "ACTIONS_BUDGET_HIGH",
     "ACTIONS_BUDGET_EXHAUSTED"
   ],
+  "transport": {
+    "provider_owner": "StegVerse-Labs/TVC",
+    "endpoint": "http://127.0.0.1:8766/v1/mailbox-failure-observation",
+    "client": "failure_mailbox/sovereign_tvc_intake.py",
+    "request_contains_credentials": false,
+    "response_may_contain_credentials": false,
+    "runtime_state_default": "$XDG_STATE_HOME/stegverse/healer/failure-mailbox",
+    "repository_runtime_state_required": false,
+    "github_actions_carrier": "RETIRED"
+  },
   "authority": {
     "credential_authority": "TV/TVC",
     "non_tv_tvc_secret_or_token_allowed": false,
@@ -30,14 +40,21 @@
     "heartbeat_effect": false,
     "ordinary_scheduler_owner": "SHWP-HEALER-SOVEREIGN-SCHEDULER-001"
   },
+  "completed_source_work": [
+    "Actions capacity/budget alerts are parsed as organization-level operational observations.",
+    "100 percent Actions capacity notices enter the incident engine as OPEN failure incidents.",
+    "The Healer client accepts only the loopback TVC mailbox endpoint and sends no protected credential material.",
+    "The Healer client rejects protected response material or unsafe manifest/use-receipt flags.",
+    "Sanitized intake state is stored in local XDG state rather than committed into repository source."
+  ],
   "required_next": [
-    "observe exact-head deterministic validation when Actions admission is available",
-    "bind TVC-owned mailbox transport to the existing sovereign Healer scheduler without exposing credential values to Healer",
+    "bind failure_mailbox/sovereign_tvc_intake.py to the existing SHWP-HEALER-SOVEREIGN-SCHEDULER-001 target loop without adding a second scheduler",
+    "activate the TVC mailbox service and vault package on the sovereign host",
     "materialize a bounded real mailbox batch through TVC",
+    "verify a real 100 percent Actions capacity email produces an OPEN github-account incident",
     "backfill workflow failures plus 75/90/100 budget and 90/100 included-minute notifications",
     "connect canonical worker and sandbox lifecycle outcomes",
-    "validate resolution-qualified notification archival",
-    "produce failure frequency, recurrence, amplification, capacity-exhaustion and cross-repository propagation metrics"
+    "validate resolution-qualified notification archival and systemic recurrence metrics"
   ],
   "terminal_when": [
     "live incremental operational-failure ingestion operates through admitted TV/TVC transport",
