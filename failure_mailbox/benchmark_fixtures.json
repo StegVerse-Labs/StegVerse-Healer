@@ -1,0 +1,112 @@
+{
+  "schema": "stegverse.healer.failure-mailbox-benchmark-fixtures/v0.1",
+  "description": "Deterministic synthetic corpus for measuring incident compression, recurrence, lifecycle routing, neighbor detection, and archive eligibility before live mailbox backfill.",
+  "observations": [
+    {
+      "message_id": "m-001",
+      "repository": "Org/A",
+      "workflow": "validate",
+      "job": "test",
+      "branch": "main",
+      "commit_sha": "aaaaaaa1111111",
+      "run_id": "1001",
+      "received_at": "2026-08-18T12:00:00Z",
+      "subject": "Run failed: validate",
+      "failure_message": "ModuleNotFoundError: No module named 'scripts'"
+    },
+    {
+      "message_id": "m-002",
+      "repository": "Org/A",
+      "workflow": "validate",
+      "job": "test",
+      "branch": "main",
+      "commit_sha": "bbbbbbb2222222",
+      "run_id": "1002",
+      "received_at": "2026-08-18T12:02:00Z",
+      "subject": "Run failed: validate",
+      "failure_message": "ModuleNotFoundError: No module named 'scripts'"
+    },
+    {
+      "message_id": "m-003",
+      "repository": "Org/B",
+      "workflow": "observe",
+      "job": "enforce",
+      "branch": "main",
+      "commit_sha": "ccccccc3333333",
+      "run_id": "2001",
+      "received_at": "2026-08-18T12:04:00Z",
+      "subject": "Run failed: observe",
+      "failure_message": "OBSERVED_STATE: BLOCKED_ROUTE_UNREACHABLE"
+    },
+    {
+      "message_id": "m-004",
+      "repository": "Org/C",
+      "workflow": "continuation",
+      "job": "validate-chain",
+      "branch": "main",
+      "commit_sha": "ddddddd4444444",
+      "run_id": "3001",
+      "received_at": "2026-08-18T12:06:00Z",
+      "subject": "Run failed: Validate chain continuation",
+      "failure_message": "predecessor lineage missing; continuation blocked"
+    },
+    {
+      "message_id": "m-005",
+      "repository": "Org/D",
+      "workflow": "noop-validator",
+      "job": "noop",
+      "branch": "main",
+      "commit_sha": "eeeeeee5555555",
+      "run_id": "4001",
+      "received_at": "2026-08-18T12:08:00Z",
+      "subject": "Run failed: noop-validator",
+      "failure_message": "No jobs were run"
+    },
+    {
+      "message_id": "m-006",
+      "repository": "Org/B",
+      "workflow": "observe",
+      "job": "enforce",
+      "branch": "main",
+      "commit_sha": "fffffff6666666",
+      "run_id": "2002",
+      "received_at": "2026-08-18T12:09:00Z",
+      "subject": "Run failed: observe",
+      "failure_message": "OBSERVED_STATE: BLOCKED_ROUTE_UNREACHABLE"
+    },
+    {
+      "message_id": "m-007",
+      "repository": "Org/E",
+      "workflow": "guard",
+      "job": "authority",
+      "branch": "main",
+      "commit_sha": "1212121abcdef0",
+      "run_id": "5001",
+      "received_at": "2026-08-18T12:30:00Z",
+      "subject": "Run failed: Architecture Guard",
+      "failure_message": "forbidden credential authority"
+    },
+    {
+      "message_id": "m-008",
+      "repository": "Org/F",
+      "workflow": "schema",
+      "job": "validate",
+      "branch": "main",
+      "commit_sha": "3434343abcdef0",
+      "run_id": "6001",
+      "received_at": "2026-08-18T13:00:00Z",
+      "subject": "Run failed: schema validation",
+      "failure_message": "schema validation error: required property missing"
+    }
+  ],
+  "duplicate_replays": ["m-001", "m-003"],
+  "expected": {
+    "observation_count": 8,
+    "incident_count": 6,
+    "notification_compression_ratio": 1.3333333333,
+    "repeated_incident_count": 2,
+    "sandbox_required_after_transition": true,
+    "archive_requires_resolution_evidence": true,
+    "minimum_neighbor_candidate_count": 3
+  }
+}
