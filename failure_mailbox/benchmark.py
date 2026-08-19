@@ -2,8 +2,13 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from failure_mailbox.episode_analysis import build_failure_episodes, episode_summary
 from failure_mailbox.incident_engine import (
@@ -14,7 +19,6 @@ from failure_mailbox.incident_engine import (
     transition_incident,
 )
 
-ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "failure_mailbox" / "benchmark_fixtures.json"
 
 
