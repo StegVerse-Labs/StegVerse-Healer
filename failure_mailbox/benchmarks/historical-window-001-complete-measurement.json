@@ -1,0 +1,69 @@
+{
+  "schema": "stegverse.healer.failure-mailbox-bounded-window-measurement/v0.1",
+  "goal_id": "HEALER-GITHUB-FAILURE-MAILBOX-001",
+  "source": "connected Gmail label StegVerse/GitHub Failures/New",
+  "window_query": "label:\"StegVerse/GitHub Failures/New\" after:1783500900 before:1783501920",
+  "window_note": "The Gmail ID search required two pages: 100 IDs on page one and 37 on page two; page two returned no continuation token.",
+  "complete_bounded_window": true,
+  "raw_message_ids_retained": false,
+  "mailbox_mutated": false,
+  "total_failure_notifications": 137,
+  "repository_frequency": {
+    "StegVerse-Labs/StegVerse-SCW": 109,
+    "StegVerse-Labs/Site": 16,
+    "StegVerse-Labs/admissibility-wiki": 10,
+    "GCAT-BCAT-Engine/Publisher": 1,
+    "StegVerse-Labs/Standing-Proof-Engine": 1
+  },
+  "repository_share": {
+    "StegVerse-Labs/StegVerse-SCW": 0.7956204379562044,
+    "StegVerse-Labs/Site": 0.11678832116788321,
+    "StegVerse-Labs/admissibility-wiki": 0.072992700729927,
+    "GCAT-BCAT-Engine/Publisher": 0.0072992700729927005,
+    "StegVerse-Labs/Standing-Proof-Engine": 0.0072992700729927005
+  },
+  "notification_result_frequency": {
+    "NO_JOBS_RUN": 96,
+    "WORKFLOW_JOB_FAILURE": 41
+  },
+  "notification_result_share": {
+    "NO_JOBS_RUN": 0.7007299270072993,
+    "WORKFLOW_JOB_FAILURE": 0.29927007299270075
+  },
+  "scw_breakdown": {
+    "total": 109,
+    "NO_JOBS_RUN": 96,
+    "WORKFLOW_JOB_FAILURE": 13,
+    "NO_JOBS_RUN_share_of_scw": 0.8807339449541285
+  },
+  "site_workflow_frequency": {
+    "Site Bootstrap Validate": 7,
+    "Site Task Runner": 6,
+    "Check Ecosystem Chat Contract": 2,
+    "Validate Governance Observatory Status": 1
+  },
+  "admissibility_wiki": {
+    "Validate chain continuation": 10,
+    "semantic_family": "CONTINUITY_FAILURE"
+  },
+  "declared_dependency_edges_used_for_candidate_regression": [
+    "StegVerse-Labs/Site -> GCAT-BCAT-Engine/Publisher",
+    "GCAT-BCAT-Engine/Publisher -> StegVerse-Labs/admissibility-wiki"
+  ],
+  "interpretation_constraints": {
+    "notification_frequency_is_not_incident_frequency": true,
+    "incident_frequency_is_not_episode_frequency": true,
+    "temporal_proximity_is_not_causality": true,
+    "declared_dependency_is_not_failure_causality": true,
+    "direction_opposing_observations_are_counterevidence": true
+  },
+  "measured_product_signal": [
+    "One repository produced 109 of 137 failure notifications in the bounded interval.",
+    "96 of 137 total notifications were No jobs were run observations.",
+    "96 of 109 SCW notifications were No jobs were run observations.",
+    "Site failures recurred across four workflow surfaces while admissibility-wiki emitted ten continuation-failure notifications in the same bounded interval."
+  ],
+  "authority_effect": false,
+  "heartbeat_effect": false,
+  "package_release_effect": false
+}
