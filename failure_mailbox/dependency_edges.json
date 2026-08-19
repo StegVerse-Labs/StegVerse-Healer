@@ -1,0 +1,26 @@
+{
+  "schema": "stegverse.healer.failure-dependency-edges/v0.1",
+  "edges": [
+    {
+      "source": "StegVerse-Labs/Site",
+      "target": "GCAT-BCAT-Engine/Publisher",
+      "relationship": "propagation_consumer",
+      "authority_ref": "GCAT-BCAT-Engine/Publisher:docs/PUBLISHER_MIRROR_HANDOFF.md#Cross-repository-succession",
+      "direction": "source_to_target"
+    },
+    {
+      "source": "GCAT-BCAT-Engine/Publisher",
+      "target": "StegVerse-Labs/admissibility-wiki",
+      "relationship": "downstream_propagation_contract",
+      "authority_ref": "GCAT-BCAT-Engine/Publisher:docs/PUBLISHER_MIRROR_HANDOFF.md#Cross-repository-succession",
+      "direction": "source_to_target"
+    }
+  ],
+  "constraints": {
+    "edge_presence_does_not_establish_failure_causality": true,
+    "temporal_proximity_does_not_establish_failure_causality": true,
+    "candidate_requires_observed_failure_episode_at_both_ends": true,
+    "authority_effect": false,
+    "heartbeat_effect": false
+  }
+}
