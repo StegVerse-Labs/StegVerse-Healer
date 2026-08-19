@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "stegverse.healer.github-failure-observation/v0.1",
+  "$id": "stegverse.healer.github-failure-observation/v0.2",
   "title": "StegVerse Healer GitHub Failure Observation",
   "type": "object",
   "required": ["message_id", "repository", "workflow", "received_at"],
@@ -20,9 +20,19 @@
     "subject": {"type": "string"},
     "failure_message": {"type": "string"},
     "annotation": {"type": "string"},
-    "failure_class": {"type": "string"},
+    "notification_result_class": {
+      "type": "string",
+      "description": "Transport-level GitHub notification outcome such as NO_JOBS_RUN or WORKFLOW_JOB_FAILURE. This is not automatically the semantic failure family."
+    },
+    "failure_class": {
+      "type": "string",
+      "description": "Semantic failure family supported by observation evidence or later classification."
+    },
     "failure_fingerprint": {"type": "string"},
-    "source": {"type": "string"}
+    "source": {"type": "string"},
+    "source_semantics": {"type": "string"},
+    "authority_effect": {"type": "boolean"},
+    "heartbeat_effect": {"type": "boolean"}
   },
   "additionalProperties": true
 }
