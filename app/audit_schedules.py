@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from app.actions_cost_reducer import build_report
+
 VALID_STATES = {"COMPLETE", "BLOCKED", "RETRY", "REVIEW_REQUIRED", "FAILED"}
 FORBIDDEN_CREDENTIALS = ("HEALER_GH_TOKEN", "GITHUB_TOKEN", "GH_TOKEN", "HEALER_PAT", "GH_STEGVERSE_AI_TOKEN")
 
@@ -92,7 +94,45 @@ def stable_projection(receipt: dict[str, Any]) -> dict[str, Any]:
         "allowed_scheduler_repository": receipt["allowed_scheduler_repository"],
         "repositories": receipt["repositories"],
         "summary": receipt["summary"],
+        "cost_analysis": receipt.get("cost_analysis"),
         "next_executable_task": receipt["next_executable_task"],
+    }
+
+
+def load_cost_policy() -> dict[str, Any]:
+    policy_path = Path(os.environ.get("ACTIONS_COST_POLICY", "data/actions_cost_policy.json"))
+    value = json.loads(policy_path.read_text(encoding="utf-8"))
+    if value.get("schema") != "stegverse.github-actions-cost-policy.v1":
+        raise ValueError("invalid Actions cost policy schema")
+    return value
+
+
+def compact_cost_analysis(report: dict[str, Any]) -> dict[str, Any]:
+    ranked = report.get("ranked_findings", [])
+    top = []
+    for row in ranked[:20]:
+        top.append({
+            "repository": row.get("repository"),
+            "workflow": row.get("workflow"),
+            "estimated_scheduled_starts_per_month": row.get("estimated_scheduled_starts_per_month"),
+            "jobs": row.get("jobs"),
+            "matrix_fanout": row.get("matrix_fanout"),
+            "review_reasons": row.get("review_reasons"),
+            "remediation_priority": row.get("remediation_priority"),
+            "recommendation": row.get("recommendation"),
+        })
+    return {
+        "schema": report.get("schema"),
+        "state": report.get("state"),
+        "credential_authority": report.get("credential_authority"),
+        "github_token_required": report.get("github_token_required"),
+        "network_required": report.get("network_required"),
+        "authority_effect": report.get("authority_effect"),
+        "workflow_count": report.get("workflow_count"),
+        "scheduled_workflow_count": report.get("scheduled_workflow_count"),
+        "review_candidate_count": report.get("review_candidate_count"),
+        "estimated_scheduled_job_starts_per_month": report.get("estimated_scheduled_job_starts_per_month"),
+        "top_remediation_candidates": top,
     }
 
 
@@ -109,6 +149,8 @@ def main() -> int:
     try:
         targets = load_targets(targets_path)
         roots = load_roots()
+        cost_policy = load_cost_policy()
+        cost_report = build_report(list(roots.values()), cost_policy)
     except Exception as exc:
         print(f"Invalid sovereign audit configuration: {exc}", file=sys.stderr)
         return 2
@@ -121,16 +163,16 @@ def main() -> int:
 
     if failed or violations:
         state = "FAILED"
-        next_task = "Remove every repository-local schedule trigger and preserve cadence in the resident heartbeat/Healer target registry."
+        next_task = "Remove every repository-local schedule trigger, preserve cadence in the resident heartbeat/Healer target registry, and consume the ranked cost-analysis candidates in descending priority."
     elif blocked:
         state = "BLOCKED"
-        next_task = "Materialize every managed repository on the sovereign carrier and rerun the local schedule audit."
+        next_task = "Materialize every managed repository on the sovereign carrier and rerun the local schedule and cost-pressure audit."
     else:
         state = "COMPLETE"
-        next_task = "Retain heartbeat-owned cadence and continue local schedule auditing."
+        next_task = "Retain heartbeat-owned cadence and migrate the highest-value non-colliding cost-analysis candidate without capability loss."
 
     receipt: dict[str, Any] = {
-        "schema": "stegverse.healer.quiet-enforcer-receipt.v2",
+        "schema": "stegverse.healer.quiet-enforcer-receipt.v3",
         "state": state,
         "manager": "single_stegverse_heartbeat",
         "allowed_scheduler_repository": None,
@@ -146,7 +188,10 @@ def main() -> int:
             "retry_count": 0,
             "review_required_count": 0,
             "failed_count": failed,
+            "cost_review_candidate_count": cost_report.get("review_candidate_count", 0),
+            "estimated_scheduled_job_starts_per_month": cost_report.get("estimated_scheduled_job_starts_per_month", 0),
         },
+        "cost_analysis": compact_cost_analysis(cost_report),
         "next_executable_task": next_task,
     }
     if receipt["state"] not in VALID_STATES:
