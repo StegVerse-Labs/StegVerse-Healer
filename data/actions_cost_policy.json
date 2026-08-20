@@ -1,0 +1,21 @@
+{
+  "schema": "stegverse.github-actions-cost-policy.v1",
+  "credential_authority": "TV/TVC",
+  "github_actions_production_role": "NONE",
+  "policy": {
+    "scheduled_workflow_monthly_start_review_threshold": 120,
+    "scheduled_workflow_monthly_start_enforce_threshold": 744,
+    "matrix_fanout_review_threshold": 4,
+    "require_concurrency_for_push_or_pull_request": true,
+    "require_cancel_in_progress_when_concurrency_present": true,
+    "review_unfiltered_push": true,
+    "review_unfiltered_pull_request": true,
+    "review_artifact_custody_for_validation": true,
+    "prefer_existing_healer_scheduler_for_recurring_non_authoritative_work": true,
+    "automatic_workflow_mutation": false,
+    "automatic_schedule_mutation": false,
+    "github_token_workaround_allowed": false,
+    "render_workaround_allowed": false
+  },
+  "authority_effect": "NONE"
+}
