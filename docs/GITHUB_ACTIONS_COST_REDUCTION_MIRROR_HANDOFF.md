@@ -1,6 +1,6 @@
 # GitHub Actions Cost Reduction Mirror Handoff
 
-Updated: 2026-08-20T07:44:00-05:00
+Updated: 2026-08-20T09:31:00-05:00
 
 ## Goal
 
@@ -9,13 +9,14 @@ Reduce StegVerse GitHub-hosted workflow spend without reducing validation capabi
 ```text
 goal_id: HEALER-GITHUB-ACTIONS-COST-REDUCTION-001
 repository: StegVerse-Labs/StegVerse-Healer
-branch: feat/actions-cost-reduction-enforcer-20260820
+branch: main
 pull_request: 32
+merge_commit: 49f0debee90ac3addffa262c1e495c9e803367cb
 credential_authority: TV/TVC
 non_tv_tvc_secret_or_token_allowed: false
 github_actions_production_role: NONE
 scheduler_owner: SHWP-HEALER-SOVEREIGN-SCHEDULER-001
-state: SOURCE_IMPLEMENTED_QUIET_ENFORCER_INTEGRATED_VALIDATION_PENDING
+state: SOURCE_VALIDATED_MERGED_SOVEREIGN_CENSUS_PENDING
 ```
 
 This work reuses the existing sovereign Healer scheduler and Quiet Enforcer. It creates no second scheduler or heartbeat.
@@ -37,16 +38,20 @@ tests/test_actions_cost_reducer.py
 tests/test_quiet_enforcer_cost_integration.py
 ```
 
-Source commits on the branch:
+## Released source evidence
 
 ```text
-handoff creation: 9edcfb91041bb95feb56ff6c09bde16f9f465dc1
-policy: b458fd2fa01a35bcf40fd220b276308345f82720
-analyzer: 32646bff235872c0791f864666310c2cb6999bf6
-analyzer tests: 5fd8250b811f0d513a5755bf2ed5daa3696b136d
-Quiet Enforcer integration: 9fadbc0b49996281807a8438eef78a8491c27d5f
-integration tests: 10e6a1306217e828e4880fd910708dc814b8a4c5
+PR: #32
+validated head: c9152bb0efa5f08f0e73defa21155476446ea7de
+Test Readiness run: 32380280789
+repo-smoke job: 96461518129
+result: SUCCESS
+merge commit: 49f0debee90ac3addffa262c1e495c9e803367cb
 ```
+
+The first Test Readiness run exposed an actual validation defect in this tranche: the newly added tests were written in pytest-function style while the repository's deterministic validation lane uses `python3 -m unittest discover`. They were therefore installed but not executed. That defect was repaired before merge by converting the new test suites to unittest-discoverable classes.
+
+The successful exact-head validation then executed the new tests directly. The log records 82 deterministic tests PASS, including all seven `ActionsCostReducerTests` and both `QuietEnforcerCostIntegrationTests`. Credential refusal, anonymous exact-source fetch, repository readiness, the failure-mailbox benchmark, and validation-only authority checks also passed.
 
 ## Installed behavior
 
@@ -75,38 +80,20 @@ render_workaround: prohibited
 automatic_cross_repo_mutation: prohibited
 ```
 
-## Deterministic test coverage installed
-
-`tests/test_actions_cost_reducer.py` covers:
-
-- hourly, six-hourly, daily, and weekday cron estimation;
-- hourly migration ranking;
-- path-filtered push/PR with concurrency cancellation;
-- matrix fanout and artifact-custody detection;
-- manual-only low-recurring-cost classification;
-- report ranking and enforcement threshold behavior;
-- fail-closed missing-root behavior.
-
-`tests/test_quiet_enforcer_cost_integration.py` covers:
-
-- Quiet Enforcer v3 embedding of ranked cost analysis while preserving a COMPLETE schedule-audit result;
-- detection/ranking of a broad unfiltered push surface;
-- preservation of the existing fail-closed repository-local schedule invariant;
-- expected 744 monthly starts for an hourly single-job schedule.
-
-These tests are installed but no hosted workflow result is treated as source or runtime proof while GitHub-hosted execution is admission/billing constrained.
-
 ## Activation boundary
 
-Source implementation and test installation do not prove ecosystem savings. Goal activation requires the existing sovereign Quiet Enforcer to execute against current locally materialized StegVerse repositories, persist a ranked cost-analysis receipt, and then at least one evidence-preserving migration must reduce expected GitHub-hosted runner starts without reducing capability.
+Source implementation, exact-head deterministic validation, and merge are complete. They do not prove ecosystem savings.
+
+Goal activation requires the existing sovereign Quiet Enforcer to execute against current locally materialized StegVerse repositories, persist a ranked v3 cost-analysis receipt, and then at least one evidence-preserving migration must reduce expected GitHub-hosted runner starts without reducing capability.
 
 ## Exact next actions
 
-1. Validate PR #32 through the strongest credential-clean available source path.
-2. Merge only after source validation is satisfied and the branch remains current.
-3. Allow the existing `quiet_enforcer.yml` Healer target to produce the first v3 receipt on the sovereign scheduler.
-4. Select the highest-ranked candidate that is not actively claimed by another workstream.
-5. Migrate that candidate to an existing canonical validation surface or the existing Healer scheduler while preserving semantics.
-6. Record before/after runner-start pressure and continue iteratively until recurring hosted validation is exceptional rather than default.
+1. Existing `SHWP-HEALER-SOVEREIGN-SCHEDULER-001` executes the already-bound `quiet_enforcer.yml` target against current locally materialized StegVerse repository roots.
+2. Persist/inspect the resulting `stegverse.healer.quiet-enforcer-receipt.v3` ranked census.
+3. Select the highest-ranked candidate that is not actively claimed by another workstream.
+4. Read that repository's applicable `*_MIRROR_HANDOFF.md` before mutation.
+5. Migrate the candidate to an existing canonical validation surface or the existing Healer scheduler while preserving semantics.
+6. Record before/after runner-start pressure and capability evidence.
+7. Continue iteratively until recurring hosted validation is exceptional rather than default.
 
 No billing-limit increase, GitHub token installation, Render deployment, automatic purchase, or authority expansion is authorized by this handoff.
