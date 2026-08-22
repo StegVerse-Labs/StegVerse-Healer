@@ -16,7 +16,7 @@ credential_authority: TV/TVC
 non_tv_tvc_secret_or_token_allowed: false
 github_token_runtime_authority: NONE
 render_required: false
-state: SOURCE_IMPLEMENTED_VALIDATION_PENDING
+state: SOURCE_VALIDATED_MERGE_PENDING
 ```
 
 This task supplies a bounded local carrier to the existing sovereign Healer scheduler. It does not acquire heartbeat product authority from Site #234 and does not authorize Site #411 to remove hosted mutating schedules until successful sovereign execution and durable persistence/propagation evidence are consumed.
@@ -50,6 +50,30 @@ release authority: false
 
 A successful carrier receipt is `stegverse.healer.site_heartbeat_response_carrier_receipt/v0.1` and records the exact Site source head and executed commands. The persistence boundary remains `LOCAL_MATERIALIZED_SITE_ONLY_UNTIL_SEPARATELY_ADMITTED_PROPAGATION`.
 
+## Exact source validation
+
+```text
+pull_request: #36
+validated_head: 6a398c090c5995dadd33c0ea7d30cfbeb3e65bd8
+pull_request_merge_ref: be4cfcadac83090565134b7e3efd1b869d5ba33e
+Test Readiness run: 32598762926 SUCCESS
+repo-smoke job: 97093712054 SUCCESS
+credential refusal: PASS
+anonymous exact-source fetch: PASS
+baseline repository smoke: PASS
+deterministic tests: 87 PASS / 0 FAIL
+heartbeat carrier tests: 5 PASS / 0 FAIL
+failure mailbox benchmark: PASS
+validation-only authority boundary: PASS
+HEALER_VALIDATION_CREDENTIAL_AUTHORITY: TV_TVC
+HEALER_VALIDATION_GITHUB_TOKEN_AUTHORITY: NONE
+HEALER_RUNTIME_EXECUTION_AUTHORITY: NONE
+```
+
+The five carrier-specific tests prove the existing-scheduler target binding, missing-source fail-closed behavior, GitHub credential refusal, successful local apply/collect/validate execution with a non-authorizing receipt, and collector failure containment before semantic validation.
+
+This hosted validation is source evidence only. It is not an ordinary sovereign scheduler execution receipt and does not prove Site heartbeat runtime, persistence, propagation, activation, or hosted-clock retirement.
+
 ## Collision boundaries
 
 - Site #234 remains canonical heartbeat-response semantics/transition owner.
@@ -61,13 +85,16 @@ A successful carrier receipt is `stegverse.healer.site_heartbeat_response_carrie
 
 ## Validation and completion gate
 
-Pending strongest available validation on the exact branch/head. Completion requires:
+Completed:
 
 1. deterministic unit tests pass on the exact source head;
-2. repository validation passes without credential authority expansion;
+2. repository validation passes without credential authority expansion.
+
+Remaining:
+
 3. source merges to `main`;
 4. ordinary `SHWP-HEALER-SOVEREIGN-SCHEDULER-001` execution produces a successful carrier receipt against current locally materialized Site;
 5. Site #234/#411 consumes that receipt and proves the required persistence/propagation path;
 6. only then may the hosted hourly schedules be removed/narrowed and validated on Site.
 
-Until steps 4-6 occur, the migration is not activated or complete.
+Until steps 3-6 occur, the migration is not activated or complete.
