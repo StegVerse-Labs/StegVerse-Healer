@@ -130,291 +130,200 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
 
     if repo == "StegVerse-Labs/Site" and workflow == "site-b27-native-validation":
         local_forbidden = (
-            "GITHUB_TOKEN",
-            "GH_TOKEN",
-            "GITHUB_PAT",
-            "TVC_EPHEMERAL_GITHUB_TOKEN",
-            "STEGVERSE_PROVIDER_TOKEN",
-            "STEGVERSE_MASTER_RECORDS_TOKEN",
-            "STEGVERSE_HIL_REVIEW_TOKEN",
-            "STEGVERSE_HIL_PUBLICATION_TOKEN",
-            "CLOUDFLARE_API_TOKEN",
-            "CLOUDFLARE_ACCOUNT_ID",
+            "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "TVC_EPHEMERAL_GITHUB_TOKEN",
+            "STEGVERSE_PROVIDER_TOKEN", "STEGVERSE_MASTER_RECORDS_TOKEN", "STEGVERSE_HIL_REVIEW_TOKEN",
+            "STEGVERSE_HIL_PUBLICATION_TOKEN", "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID",
             "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
         )
         present = [name for name in local_forbidden if os.getenv(name)]
         if present:
             return {**base, "state": "BLOCKED", "outcome": "SITE_B27_FORBIDDEN_CREDENTIAL_ENV", "forbidden": sorted(present)}
-
         commands = [
-            "scripts/check_thought_experiments_publication.py",
-            "scripts/write_site_workflow_inventory.py",
-            "scripts/check_site_workflow_inventory.py",
-            "scripts/check_session_work_claims.py",
-            "scripts/site_handoff_orchestrator.py",
-            "scripts/check_ecosystem_heartbeat_orchestration.py",
-            "scripts/check_ecosystem_chat_application.py",
-            "scripts/check_iphone_heartbeat_transition_projection.py",
-            "scripts/run_sandbox_validation.py",
-            "scripts/check_stegfin_phone_projection.py",
+            "scripts/check_thought_experiments_publication.py", "scripts/write_site_workflow_inventory.py",
+            "scripts/check_site_workflow_inventory.py", "scripts/check_session_work_claims.py",
+            "scripts/site_handoff_orchestrator.py", "scripts/check_ecosystem_heartbeat_orchestration.py",
+            "scripts/check_ecosystem_chat_application.py", "scripts/check_iphone_heartbeat_transition_projection.py",
+            "scripts/run_sandbox_validation.py", "scripts/check_stegfin_phone_projection.py",
         ]
         missing = [name for name in commands if not (root / name).is_file()]
         if missing:
             return {**base, "state": "BLOCKED", "outcome": "SITE_B27_VALIDATOR_MISSING", "missing": missing}
-
         head_result = _run(["git", "rev-parse", "HEAD"], root, timeout=30)
         source_head = str(head_result.get("stdout_tail", "")).strip().splitlines()[-1] if head_result["returncode"] == 0 and str(head_result.get("stdout_tail", "")).strip() else ""
         if head_result["returncode"] != 0 or len(source_head) != 40:
             return {**base, "state": "BLOCKED", "outcome": "SITE_B27_SOURCE_HEAD_UNPROVEN", "execution": head_result}
-
         executions = []
         for script in commands:
             result = _run([sys.executable, script], root, timeout=240)
             executions.append(result)
             if result["returncode"] != 0:
                 return {**base, "state": "BLOCKED", "outcome": "SITE_B27_VALIDATION_BLOCKED", "source_head": source_head, "failed_script": script, "execution": executions}
-
         thought_path = root / "thought-experiments-publication.report.json"
         inventory_path = root / "data" / "site-workflow-inventory.json"
         task_path = root / "data" / "tasks" / "SITE-ACTIONS-COST-CONTAINMENT-001-B27.json"
         if not thought_path.is_file() or not inventory_path.is_file() or not task_path.is_file():
             return {**base, "state": "BLOCKED", "outcome": "SITE_B27_REQUIRED_RECEIPT_MISSING", "source_head": source_head, "execution": executions}
-
-        thought = _load_json(thought_path)
-        inventory = _load_json(inventory_path)
-        task = _load_json(task_path)
+        thought = _load_json(thought_path); inventory = _load_json(inventory_path); task = _load_json(task_path)
         standalone = root / ".github" / "workflows" / "verify-thought-experiments-publication.yml"
-        complete = (
-            thought.get("state") == "PASS"
-            and thought.get("authority_effect") is False
-            and thought.get("activation_effect") is False
-            and not standalone.exists()
-            and inventory.get("canonical_count") == 3
-            and inventory.get("placeholder_count") == 0
-            and task.get("credential_authority") == "TV/TVC"
-            and task.get("non_tv_tvc_secret_or_token_allowed") is False
-            and task.get("github_actions_runtime_authority") == "NONE"
-            and task.get("render_required") is False
-        )
-        receipt = {
-            "schema": "stegverse.healer.site_b27_validation_receipt/v0.1",
-            "state": "PASS" if complete else "BLOCKED",
-            "source_head": source_head,
-            "credential_authority": "TV/TVC",
-            "github_token_required": False,
-            "remote_checkout_required": False,
-            "artifact_custody_required": False,
-            "repository_writeback_authority": False,
-            "runtime_authority": False,
-            "wallet_signing_broadcast_authority": False,
-            "publication_authority": False,
-            "settlement_authority": False,
-            "thought_experiments_publication": thought.get("state"),
-            "thought_experiments_authority_effect": thought.get("authority_effect"),
-            "thought_experiments_activation_effect": thought.get("activation_effect"),
-            "standalone_workflow_retired": not standalone.exists(),
-            "workflow_file_count": inventory.get("workflow_file_count"),
-            "canonical_count": inventory.get("canonical_count"),
-            "migration_required_operational_count": inventory.get("migration_required_operational_count"),
-            "placeholder_count": inventory.get("placeholder_count"),
-            "validated_scripts": commands,
-        }
+        complete = (thought.get("state") == "PASS" and thought.get("authority_effect") is False and thought.get("activation_effect") is False and not standalone.exists() and inventory.get("canonical_count") == 3 and inventory.get("placeholder_count") == 0 and task.get("credential_authority") == "TV/TVC" and task.get("non_tv_tvc_secret_or_token_allowed") is False and task.get("github_actions_runtime_authority") == "NONE" and task.get("render_required") is False)
+        receipt = {"schema":"stegverse.healer.site_b27_validation_receipt/v0.1","state":"PASS" if complete else "BLOCKED","source_head":source_head,"credential_authority":"TV/TVC","github_token_required":False,"remote_checkout_required":False,"artifact_custody_required":False,"repository_writeback_authority":False,"runtime_authority":False,"wallet_signing_broadcast_authority":False,"publication_authority":False,"settlement_authority":False,"thought_experiments_publication":thought.get("state"),"thought_experiments_authority_effect":thought.get("authority_effect"),"thought_experiments_activation_effect":thought.get("activation_effect"),"standalone_workflow_retired":not standalone.exists(),"workflow_file_count":inventory.get("workflow_file_count"),"canonical_count":inventory.get("canonical_count"),"migration_required_operational_count":inventory.get("migration_required_operational_count"),"placeholder_count":inventory.get("placeholder_count"),"validated_scripts":commands}
         return {**base, "state": "COMPLETE" if complete else "BLOCKED", "outcome": "SOVEREIGN_LOCAL_SITE_B27_VALIDATION", "source_head": source_head, "execution": executions, "receipt": receipt}
 
     if repo == "StegVerse-Labs/Site" and workflow == "marketplace-coinbase-local-observer":
         script = root / "scripts" / "advance_marketplace_coinbase_activation.py"
-        if not script.is_file():
-            return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_OBSERVER_MISSING"}
+        if not script.is_file(): return {**base,"state":"BLOCKED","outcome":"SITE_MARKETPLACE_OBSERVER_MISSING"}
         result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json}, timeout=90)
         payload = _json_tail(result)
-        if result["returncode"] != 0 or not payload:
-            return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_OBSERVER_FAILED", "execution": result, "receipt": payload}
-        observed_state = str(payload.get("state", ""))
-        state = "COMPLETE" if observed_state in {"COMPLETE", "ACTIVE_STEGVERSE_CONTINUATION"} else "BLOCKED"
-        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_SITE_MARKETPLACE_OBSERVATION", "execution": result, "receipt": payload}
+        if result["returncode"] != 0 or not payload: return {**base,"state":"BLOCKED","outcome":"SITE_MARKETPLACE_OBSERVER_FAILED","execution":result,"receipt":payload}
+        state = "COMPLETE" if str(payload.get("state", "")) in {"COMPLETE","ACTIVE_STEGVERSE_CONTINUATION"} else "BLOCKED"
+        return {**base,"state":state,"outcome":"SOVEREIGN_LOCAL_SITE_MARKETPLACE_OBSERVATION","execution":result,"receipt":payload}
 
     if repo == "StegVerse-Labs/Site" and workflow == "marketplace-coinbase-local-projection-import":
         script = root / "scripts" / "import_marketplace_coinbase_accessibility.py"
-        if not script.is_file():
-            return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_PROJECTION_IMPORTER_MISSING"}
-        if roots.get("GCAT-BCAT-Engine/Publisher") is None:
-            return {**base, "state": "BLOCKED", "outcome": "PUBLISHER_LOCAL_REPOSITORY_NOT_MATERIALIZED"}
+        if not script.is_file(): return {**base,"state":"BLOCKED","outcome":"SITE_MARKETPLACE_PROJECTION_IMPORTER_MISSING"}
+        if roots.get("GCAT-BCAT-Engine/Publisher") is None: return {**base,"state":"BLOCKED","outcome":"PUBLISHER_LOCAL_REPOSITORY_NOT_MATERIALIZED"}
         result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json}, timeout=90)
-        status_path = root / "data" / "marketplace-coinbase-accessibility-status.json"
-        payload = json.loads(status_path.read_text(encoding="utf-8")) if status_path.is_file() else None
-        if result["returncode"] != 0 or not payload:
-            return {**base, "state": "BLOCKED", "outcome": "SITE_MARKETPLACE_PROJECTION_IMPORT_FAILED", "execution": result, "receipt": payload}
-        projected_state = str(payload.get("state", ""))
-        state = "COMPLETE" if projected_state in {"PAPER_ACCESSIBLE", "PENDING_UPSTREAM"} else "BLOCKED"
-        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_SITE_MARKETPLACE_PROJECTION_IMPORT", "execution": result, "receipt": payload}
+        status_path = root / "data" / "marketplace-coinbase-accessibility-status.json"; payload = json.loads(status_path.read_text(encoding="utf-8")) if status_path.is_file() else None
+        if result["returncode"] != 0 or not payload: return {**base,"state":"BLOCKED","outcome":"SITE_MARKETPLACE_PROJECTION_IMPORT_FAILED","execution":result,"receipt":payload}
+        state = "COMPLETE" if str(payload.get("state", "")) in {"PAPER_ACCESSIBLE","PENDING_UPSTREAM"} else "BLOCKED"
+        return {**base,"state":state,"outcome":"SOVEREIGN_LOCAL_SITE_MARKETPLACE_PROJECTION_IMPORT","execution":result,"receipt":payload}
 
     if repo == "StegVerse-Labs/Site" and workflow == "child-safety-public-deployment-observer":
         script = root / "scripts" / "check_child_safety_public_deployment.py"
-        if not script.is_file():
-            return {**base, "state": "BLOCKED", "outcome": "SITE_CHILD_SAFETY_OBSERVER_MISSING"}
+        if not script.is_file(): return {**base,"state":"BLOCKED","outcome":"SITE_CHILD_SAFETY_OBSERVER_MISSING"}
         with tempfile.TemporaryDirectory(prefix="stegverse-child-safety-") as temp_dir:
             receipt_path = Path(temp_dir) / "child-safety-public-deployment.report.json"
             result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGVERSE_CHILD_SAFETY_REPORT": str(receipt_path)}, timeout=60)
             payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else None
-        if result["returncode"] != 0 or not payload:
-            return {**base, "state": "BLOCKED", "outcome": "SITE_CHILD_SAFETY_PUBLIC_ROUTE_BLOCKED", "execution": result, "receipt": payload}
-        complete = (
-            payload.get("state") == "VERIFIED_PUBLICLY_REACHABLE"
-            and payload.get("authority_effect") is False
-            and payload.get("github_token_required") is False
-            and payload.get("artifact_custody_required") is False
-        )
-        return {**base, "state": "COMPLETE" if complete else "BLOCKED", "outcome": "SOVEREIGN_LOCAL_SITE_CHILD_SAFETY_PUBLIC_OBSERVATION", "execution": result, "receipt": payload}
+        if result["returncode"] != 0 or not payload: return {**base,"state":"BLOCKED","outcome":"SITE_CHILD_SAFETY_PUBLIC_ROUTE_BLOCKED","execution":result,"receipt":payload}
+        complete = payload.get("state") == "VERIFIED_PUBLICLY_REACHABLE" and payload.get("authority_effect") is False and payload.get("github_token_required") is False and payload.get("artifact_custody_required") is False
+        return {**base,"state":"COMPLETE" if complete else "BLOCKED","outcome":"SOVEREIGN_LOCAL_SITE_CHILD_SAFETY_PUBLIC_OBSERVATION","execution":result,"receipt":payload}
 
-    if repo == "StegVerse-Labs/Site" and workflow == "stegfin-public-wallet-transport-observer":
-        local_forbidden = (
-            "GITHUB_TOKEN",
-            "GH_TOKEN",
-            "GITHUB_PAT",
-            "TVC_EPHEMERAL_GITHUB_TOKEN",
-            "STEGVERSE_PROVIDER_TOKEN",
-            "STEGVERSE_MASTER_RECORDS_TOKEN",
-            "CLOUDFLARE_API_TOKEN",
-            "CLOUDFLARE_ACCOUNT_ID",
-            "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
-        )
+    if repo == "StegVerse-Labs/Site" and workflow == "heartbeat-response-sovereign-carrier":
+        local_forbidden = ("GITHUB_TOKEN","GH_TOKEN","GITHUB_PAT","TVC_EPHEMERAL_GITHUB_TOKEN","STEGVERSE_PROVIDER_TOKEN","STEGVERSE_MASTER_RECORDS_TOKEN","CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID","ACTIONS_ID_TOKEN_REQUEST_TOKEN")
         present = [name for name in local_forbidden if os.getenv(name)]
         if present:
-            return {**base, "state": "BLOCKED", "outcome": "SITE_STEGFIN_PUBLICATION_FORBIDDEN_CREDENTIAL_ENV", "forbidden": sorted(present)}
+            return {**base,"state":"BLOCKED","outcome":"SITE_HEARTBEAT_RESPONSE_FORBIDDEN_CREDENTIAL_ENV","forbidden":sorted(present)}
+        commands = [
+            ([sys.executable,"scripts/process_heartbeat_response_node.py","--apply"], "node_apply"),
+            ([sys.executable,"scripts/collect_heartbeat_response_receipts.py","--apply"], "collector_apply"),
+            ([sys.executable,"scripts/check_heartbeat_response_network.py"], "network_validation"),
+        ]
+        missing = [command[0][1] for command in commands if not (root / command[0][1]).is_file()]
+        if missing:
+            return {**base,"state":"BLOCKED","outcome":"SITE_HEARTBEAT_RESPONSE_CARRIER_SOURCE_MISSING","missing":missing}
+        head_result = _run(["git","rev-parse","HEAD"], root, timeout=30)
+        source_head = str(head_result.get("stdout_tail","")).strip().splitlines()[-1] if head_result["returncode"] == 0 and str(head_result.get("stdout_tail","")).strip() else ""
+        if head_result["returncode"] != 0 or len(source_head) != 40:
+            return {**base,"state":"BLOCKED","outcome":"SITE_HEARTBEAT_RESPONSE_SOURCE_HEAD_UNPROVEN","execution":head_result}
+        executions = []
+        for command, label in commands:
+            result = _run(command, root, timeout=240)
+            result["label"] = label
+            executions.append(result)
+            if result["returncode"] != 0:
+                return {**base,"state":"BLOCKED","outcome":"SITE_HEARTBEAT_RESPONSE_SOVEREIGN_EXECUTION_BLOCKED","source_head":source_head,"failed_step":label,"execution":executions}
+        receipt = {
+            "schema":"stegverse.healer.site_heartbeat_response_carrier_receipt/v0.1",
+            "state":"PASS",
+            "source_head":source_head,
+            "canonical_owner":"StegVerse-Labs/Site#234",
+            "migration_issue":"StegVerse-Labs/Site#411",
+            "credential_authority":"TV/TVC",
+            "github_token_required":False,
+            "remote_checkout_required":False,
+            "artifact_custody_required":False,
+            "repository_writeback_authority":False,
+            "local_state_mutation":True,
+            "runtime_authority":False,
+            "activation_authority":False,
+            "publication_authority":False,
+            "custody_authority":False,
+            "release_authority":False,
+            "commands":[item[0] for item in commands],
+            "persistence_boundary":"LOCAL_MATERIALIZED_SITE_ONLY_UNTIL_SEPARATELY_ADMITTED_PROPAGATION",
+        }
+        return {**base,"state":"COMPLETE","outcome":"SOVEREIGN_LOCAL_SITE_HEARTBEAT_RESPONSE_CARRIER","source_head":source_head,"execution":executions,"receipt":receipt}
+
+    if repo == "StegVerse-Labs/Site" and workflow == "stegfin-public-wallet-transport-observer":
+        local_forbidden = ("GITHUB_TOKEN","GH_TOKEN","GITHUB_PAT","TVC_EPHEMERAL_GITHUB_TOKEN","STEGVERSE_PROVIDER_TOKEN","STEGVERSE_MASTER_RECORDS_TOKEN","CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID","ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+        present = [name for name in local_forbidden if os.getenv(name)]
+        if present: return {**base,"state":"BLOCKED","outcome":"SITE_STEGFIN_PUBLICATION_FORBIDDEN_CREDENTIAL_ENV","forbidden":sorted(present)}
         script = root / "scripts" / "check_stegfin_public_wallet_transport.py"
-        if not script.is_file():
-            return {**base, "state": "BLOCKED", "outcome": "SITE_STEGFIN_PUBLICATION_OBSERVER_MISSING"}
+        if not script.is_file(): return {**base,"state":"BLOCKED","outcome":"SITE_STEGFIN_PUBLICATION_OBSERVER_MISSING"}
         with tempfile.TemporaryDirectory(prefix="stegverse-stegfin-publication-") as temp_dir:
             receipt_path = Path(temp_dir) / "stegfin-public-wallet-transport.report.json"
-            result = _run(
-                [sys.executable, str(script.relative_to(root))],
-                root,
-                {"STEGFIN_PUBLICATION_REPORT": str(receipt_path)},
-                timeout=60,
-            )
+            result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGFIN_PUBLICATION_REPORT": str(receipt_path)}, timeout=60)
             payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else None
-        if result["returncode"] != 0 or not payload:
-            return {**base, "state": "BLOCKED", "outcome": "SITE_STEGFIN_PUBLICATION_OBSERVATION_BLOCKED", "execution": result, "receipt": payload}
-        complete = (
-            payload.get("state") == "VERIFIED_PUBLICATION"
-            and payload.get("publication_proven") is True
-            and payload.get("observed_ui_blob") == "114b3c39052d5b1622407080407259a0040a1369"
-            and payload.get("credential_authority") == "TV/TVC"
-            and payload.get("credential_requirement") == "NONE"
-            and payload.get("non_tv_tvc_secret_or_token_used") is False
-            and payload.get("github_token_required") is False
-            and payload.get("render_required") is False
-            and payload.get("authority_effect") is False
-        )
-        return {
-            **base,
-            "state": "COMPLETE" if complete else "BLOCKED",
-            "outcome": "SOVEREIGN_LOCAL_SITE_STEGFIN_PUBLICATION_OBSERVATION",
-            "execution": result,
-            "receipt": payload,
-        }
+        if result["returncode"] != 0 or not payload: return {**base,"state":"BLOCKED","outcome":"SITE_STEGFIN_PUBLICATION_OBSERVATION_BLOCKED","execution":result,"receipt":payload}
+        complete = payload.get("state") == "VERIFIED_PUBLICATION" and payload.get("publication_proven") is True and payload.get("observed_ui_blob") == "114b3c39052d5b1622407080407259a0040a1369" and payload.get("credential_authority") == "TV/TVC" and payload.get("credential_requirement") == "NONE" and payload.get("non_tv_tvc_secret_or_token_used") is False and payload.get("github_token_required") is False and payload.get("render_required") is False and payload.get("authority_effect") is False
+        return {**base,"state":"COMPLETE" if complete else "BLOCKED","outcome":"SOVEREIGN_LOCAL_SITE_STEGFIN_PUBLICATION_OBSERVATION","execution":result,"receipt":payload}
 
     if repo == "StegVerse-Labs/repo-standards" and workflow == "st018-local-task-manager":
-        script = root / "tools" / "run_st018_task_manager.py"
-        registry = root / "orchestration" / "st018-task-registry.json"
-        if not script.is_file():
-            return {**base, "state": "BLOCKED", "outcome": "RSTD_ST018_TASK_MANAGER_MISSING"}
-        if not registry.is_file():
-            return {**base, "state": "BLOCKED", "outcome": "RSTD_ST018_TASK_REGISTRY_MISSING"}
+        script = root / "tools" / "run_st018_task_manager.py"; registry = root / "orchestration" / "st018-task-registry.json"
+        if not script.is_file(): return {**base,"state":"BLOCKED","outcome":"RSTD_ST018_TASK_MANAGER_MISSING"}
+        if not registry.is_file(): return {**base,"state":"BLOCKED","outcome":"RSTD_ST018_TASK_REGISTRY_MISSING"}
         result = _run([sys.executable, str(script.relative_to(root))], root, timeout=240)
-        report_path = root / "reports" / "st018-task-execution.report.json"
-        payload = json.loads(report_path.read_text(encoding="utf-8")) if report_path.is_file() else None
-        if result["returncode"] != 0 or not payload:
-            return {**base, "state": "BLOCKED", "outcome": "RSTD_ST018_TASK_MANAGER_FAILED", "execution": result, "receipt": payload}
+        report_path = root / "reports" / "st018-task-execution.report.json"; payload = json.loads(report_path.read_text(encoding="utf-8")) if report_path.is_file() else None
+        if result["returncode"] != 0 or not payload: return {**base,"state":"BLOCKED","outcome":"RSTD_ST018_TASK_MANAGER_FAILED","execution":result,"receipt":payload}
         state = "COMPLETE" if payload.get("status") == "PASS" else "BLOCKED"
-        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_RSTD_ST018_TASK_MANAGER", "execution": result, "receipt": payload}
+        return {**base,"state":state,"outcome":"SOVEREIGN_LOCAL_RSTD_ST018_TASK_MANAGER","execution":result,"receipt":payload}
 
     if repo == "StegVerse-Labs/TV" and workflow == "tv_self_heal.yml":
         tvc_root = roots.get("StegVerse-Labs/TVC")
-        if tvc_root is None:
-            return {**base, "state": "BLOCKED", "outcome": "TVC_LOCAL_REPOSITORY_NOT_MATERIALIZED"}
+        if tvc_root is None: return {**base,"state":"BLOCKED","outcome":"TVC_LOCAL_REPOSITORY_NOT_MATERIALIZED"}
         with tempfile.TemporaryDirectory(prefix="stegverse-tv-heal-") as temp_dir:
             receipt_path = Path(temp_dir) / "tv-self-heal.json"
-            result = _run([sys.executable, "scripts/sovereign_self_heal.py"], root, {"STEGVERSE_TV_ROOT": str(root), "STEGVERSE_TVC_ROOT": str(tvc_root), "TV_SELF_HEAL_RECEIPT": str(receipt_path)}, timeout=180)
+            result = _run([sys.executable,"scripts/sovereign_self_heal.py"], root, {"STEGVERSE_TV_ROOT":str(root),"STEGVERSE_TVC_ROOT":str(tvc_root),"TV_SELF_HEAL_RECEIPT":str(receipt_path)}, timeout=180)
             payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else _json_tail(result)
         state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") == "COMPLETE" else "BLOCKED"
-        return {**base, "state": state, "outcome": "TVC_GRANTED_LOCAL_TV_SELF_HEAL", "receipt": payload, "execution": result}
+        return {**base,"state":state,"outcome":"TVC_GRANTED_LOCAL_TV_SELF_HEAL","receipt":payload,"execution":result}
 
     if repo == "StegVerse-Labs/Continuity" and workflow == "continuity.yml":
-        result = _run([sys.executable, "scripts/guardian.py"], root, {"STEGVERSE_REPO_ROOTS_JSON": all_roots_json, "GUARDIAN_DAYS_NO_ACK": "3"}, timeout=90)
-        return {**base, "state": "COMPLETE" if result["returncode"] == 0 else "BLOCKED", "outcome": "SOVEREIGN_LOCAL_CONTINUITY_GUARDIAN", "execution": result}
+        result = _run([sys.executable,"scripts/guardian.py"], root, {"STEGVERSE_REPO_ROOTS_JSON":all_roots_json,"GUARDIAN_DAYS_NO_ACK":"3"}, timeout=90)
+        return {**base,"state":"COMPLETE" if result["returncode"] == 0 else "BLOCKED","outcome":"SOVEREIGN_LOCAL_CONTINUITY_GUARDIAN","execution":result}
 
     if repo == "StegVerse-Labs/StegVerse-Healer" and workflow == "quiet_enforcer.yml":
         with tempfile.TemporaryDirectory(prefix="stegverse-quiet-") as temp_dir:
             receipt = Path(temp_dir) / "quiet.json"
-            result = _run([sys.executable, "app/audit_schedules.py"], root, {"TARGETS_FILE": str(root / "data/orchestrator_targets.json"), "QUIET_RECEIPT": str(receipt), "STEGVERSE_REPO_ROOTS_JSON": all_roots_json}, timeout=90)
+            result = _run([sys.executable,"app/audit_schedules.py"], root, {"TARGETS_FILE":str(root / "data/orchestrator_targets.json"),"QUIET_RECEIPT":str(receipt),"STEGVERSE_REPO_ROOTS_JSON":all_roots_json}, timeout=90)
             payload = json.loads(receipt.read_text(encoding="utf-8")) if receipt.is_file() else None
         state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") == "COMPLETE" else "BLOCKED"
-        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_QUIET_ENFORCER", "receipt": payload, "execution": result}
+        return {**base,"state":state,"outcome":"SOVEREIGN_LOCAL_QUIET_ENFORCER","receipt":payload,"execution":result}
 
     if repo == "StegVerse-Labs/StegVerse-Healer" and workflow == "stegdeploy-publication-relay.yml":
         with tempfile.TemporaryDirectory(prefix="stegverse-relay-") as temp_dir:
-            state_path = Path(temp_dir) / "relay.json"
-            intake_path = Path(temp_dir) / "intake.json"
-            result = _run([sys.executable, "app/relay_stegdeploy_publication.py"], root, {
-                "STEGVERSE_REPO_ROOTS_JSON": all_roots_json,
-                "HEALER_RELAY_STATE": str(state_path),
-                "STEGDEPLOY_RUNTIME_INTAKE_RECEIPT": str(intake_path),
-                "HEALER_LAST_PUBLICATION_RECEIPT_SHA256": os.getenv("HEALER_LAST_PUBLICATION_RECEIPT_SHA256", ""),
-            }, timeout=210)
+            state_path = Path(temp_dir) / "relay.json"; intake_path = Path(temp_dir) / "intake.json"
+            result = _run([sys.executable,"app/relay_stegdeploy_publication.py"], root, {"STEGVERSE_REPO_ROOTS_JSON":all_roots_json,"HEALER_RELAY_STATE":str(state_path),"STEGDEPLOY_RUNTIME_INTAKE_RECEIPT":str(intake_path),"HEALER_LAST_PUBLICATION_RECEIPT_SHA256":os.getenv("HEALER_LAST_PUBLICATION_RECEIPT_SHA256","")}, timeout=210)
             payload = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else _json_tail(result)
-        state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") in {"COMPLETE", "NOOP_ALREADY_VERIFIED"} else "BLOCKED"
-        return {**base, "state": state, "outcome": "SOVEREIGN_LOCAL_STEGDEPLOY_RELAY", "receipt": payload, "execution": result}
+        state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") in {"COMPLETE","NOOP_ALREADY_VERIFIED"} else "BLOCKED"
+        return {**base,"state":state,"outcome":"SOVEREIGN_LOCAL_STEGDEPLOY_RELAY","receipt":payload,"execution":result}
 
     return {**base, "state": "REVIEW_REQUIRED", "outcome": "NO_SOVEREIGN_HANDLER_BOUND"}
 
 
 def build_and_execute(config_path: Path) -> dict[str, Any]:
-    _forbid_github_credentials()
-    config = _load_json(config_path)
-    targets = config.get("targets")
-    if not isinstance(targets, list):
-        raise ValueError("targets must be a list")
-    roots = _repo_roots()
-    roots_json = json.dumps({repo: str(path) for repo, path in sorted(roots.items())}, sort_keys=True)
-    scope = (os.getenv("RUN_SCOPE") or "all").strip().lower()
-    mode = (os.getenv("DISPATCH_MODE") or "schedule").strip().lower()
-    now = _now()
-    selected = []
+    _forbid_github_credentials(); config = _load_json(config_path); targets = config.get("targets")
+    if not isinstance(targets, list): raise ValueError("targets must be a list")
+    roots = _repo_roots(); roots_json = json.dumps({repo:str(path) for repo,path in sorted(roots.items())}, sort_keys=True)
+    scope = (os.getenv("RUN_SCOPE") or "all").strip().lower(); mode = (os.getenv("DISPATCH_MODE") or "schedule").strip().lower(); now = _now(); selected = []
     for target in targets:
-        if not isinstance(target, dict) or not target.get("enabled", True):
-            continue
-        short = str(target.get("repo", "")).split("/")[-1].lower()
-        aliases = {str(value).lower() for value in target.get("aliases", [])}
-        if scope != "all" and scope != short and scope not in aliases:
-            continue
-        if _due(target, now, mode):
-            selected.append(target)
+        if not isinstance(target, dict) or not target.get("enabled", True): continue
+        short = str(target.get("repo", "")).split("/")[-1].lower(); aliases = {str(value).lower() for value in target.get("aliases", [])}
+        if scope != "all" and scope != short and scope not in aliases: continue
+        if _due(target, now, mode): selected.append(target)
     outcomes = [_execute_target(target, roots, roots_json) for target in selected]
     terminal = "COMPLETE"
     if any(item["state"] == "FAILED" for item in outcomes): terminal = "FAILED"
     elif any(item["state"] == "BLOCKED" for item in outcomes): terminal = "BLOCKED"
     elif any(item["state"] == "REVIEW_REQUIRED" for item in outcomes): terminal = "REVIEW_REQUIRED"
-    return {
-        "schema": "stegverse.healer.sovereign_scheduler_receipt/v0.1",
-        "state": terminal,
-        "generated_at": now.isoformat().replace("+00:00", "Z"),
-        "scope": scope,
-        "mode": mode,
-        "credential_authority": "TV/TVC",
-        "github_token_required": False,
-        "github_actions_production_role": False,
-        "selected_targets": len(selected),
-        "outcomes": outcomes,
-    }
+    return {"schema":"stegverse.healer.sovereign_scheduler_receipt/v0.1","state":terminal,"generated_at":now.isoformat().replace("+00:00","Z"),"scope":scope,"mode":mode,"credential_authority":"TV/TVC","github_token_required":False,"github_actions_production_role":False,"selected_targets":len(selected),"outcomes":outcomes}
 
 
 def main() -> int:
     config_path = Path(os.getenv("TARGETS_FILE", "data/orchestrator_targets.json")).resolve()
-    try:
-        receipt = build_and_execute(config_path)
-    except Exception as exc:
-        receipt = {"schema": "stegverse.healer.sovereign_scheduler_receipt/v0.1", "state": "FAILED", "credential_authority": "TV/TVC", "github_token_required": False, "error": str(exc)}
+    try: receipt = build_and_execute(config_path)
+    except Exception as exc: receipt = {"schema":"stegverse.healer.sovereign_scheduler_receipt/v0.1","state":"FAILED","credential_authority":"TV/TVC","github_token_required":False,"error":str(exc)}
     print(json.dumps(receipt, sort_keys=True))
     return 0 if receipt["state"] == "COMPLETE" else 3
 
