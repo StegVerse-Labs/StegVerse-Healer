@@ -18,6 +18,36 @@ state: SOURCE_CONTROL_RELEASED_LIVE_SCHEDULER_ACTIVATION_MACHINE_OWNED
 
 Canonical organization/runtime continuations are `StegVerse-Labs/.github/docs/ORG_MIRROR_HANDOFF.md`, `StegVerse-Labs/.github/handoffs/SHWP-DURABLE-RUNTIME-ACTIVATION.json`, and `StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`.
 
+## Workflow hygiene responsibility — StegVerse-Labs/.github
+
+StegVerse-Healer is the canonical owner for repository hygiene and workflow-surface minimization affecting `StegVerse-Labs/.github`.
+
+Accepted evaluation source:
+
+```text
+document: docs/GITHUB_ROOT_WORKFLOW_HYGIENE_EVALUATION_REQUEST.md
+admission PR: #33
+exact validated head: b150868c9d6083a6c032fb0d8a2f747f7e142283
+Test Readiness: 32577928955 SUCCESS
+merge commit: 9090dde4b38795226f3179e03dcbf1ad8592dc64
+execution issue: #34
+```
+
+Imported fanout evidence currently describes 18 `.github` workflow files: 12 automatic-push and 6 PR/manual-only after recent containment repairs. The proposed 18→2 structure is an evaluation hypothesis, not an already-authorized deletion set.
+
+Healer #34 owns the next execution tranche:
+
+- independently classify every current `.github` workflow;
+- target the established 0/1/2 stable-entry-surface policy where technically sufficient;
+- preserve source/schema/config/test validation parity and meaningful PR coverage;
+- preserve manual dispatch for intentionally expensive checks;
+- transfer recurring/operational behavior to existing StegVerse-owned scheduler/workers where appropriate;
+- reconcile active owners before absorbing owner-sensitive surfaces;
+- preserve TV/TVC-only credential authority, no NON-TV/TVC secrets/tokens, no GitHub-token production/runtime authority, and no Render;
+- record exact-current-main validation, final workflow count, exceptions, migrations, and blockers before claiming completion.
+
+Issue creation, assignment, evaluation admission, or workflow success does not satisfy this hygiene goal. Actual accepted consolidation/transfer/elimination and parity evidence remain required.
+
 ## Released source integrations
 
 - `HEALER-G18-PRE-CARRIER-ASSIST-001`: PR #5 merge `571b6a86737173a89235110294025f9808695531`.
@@ -122,4 +152,4 @@ TV/TVC remains credential authority. No NON-TV/TVC secret/token, provider creden
 
 ## Continuation
 
-Child-safety observer source continuation is now canonical in Healer #13 and Site #268/B26. Ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268. Future work must reuse these fixed handlers rather than create a second scheduler/heartbeat.
+Workflow hygiene for `StegVerse-Labs/.github` continues under Healer #34. Child-safety observer source continuation remains canonical in Healer #13 and Site #268/B26. Ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268. Future work must reuse established Healer handlers/scheduler rather than create a second scheduler/heartbeat.
