@@ -2,13 +2,23 @@
   "schema_version": "1.0.0",
   "goal_id": "HEALER-TEST-READINESS-FANOUT-037",
   "issue": 37,
-  "purpose": "Trigger one exact PR validation after documentation-only fanout narrowing.",
-  "expected_trigger_behavior": {
+  "validation_pull_request": 38,
+  "validated_head": "01db8f61111ee0df8a0296985288473d764bf70c",
+  "workflow_run": 32601378334,
+  "workflow_job": 97100031649,
+  "result": "PASS",
+  "validated_behavior": {
     "docs_only_push_or_pull_request": false,
     "root_readme_only_push_or_pull_request": false,
     "non_documentation_push_or_pull_request": true,
     "workflow_dispatch": true,
-    "cancel_in_progress": true
+    "cancel_in_progress": true,
+    "credential_refusal": "PASS",
+    "anonymous_exact_source_fetch": "PASS",
+    "baseline_repository_smoke": "PASS",
+    "deterministic_tests": "PASS",
+    "failure_mailbox_benchmark": "PASS",
+    "validation_only_authority_boundary": "PASS"
   },
   "authority": {
     "credential_authority": "TV/TVC",
@@ -18,5 +28,5 @@
     "runtime_effect": false,
     "activation_effect": false
   },
-  "state": "AWAITING_EXACT_PR_VALIDATION"
+  "state": "EXACT_PR_VALIDATION_PASS"
 }
