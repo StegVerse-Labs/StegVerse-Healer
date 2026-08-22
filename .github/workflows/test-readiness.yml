@@ -2,10 +2,20 @@ name: Test Readiness
 
 on:
   push:
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'README.md'
   workflow_dispatch:
 
 permissions: {}
+
+concurrency:
+  group: healer-test-readiness-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   repo-smoke:
