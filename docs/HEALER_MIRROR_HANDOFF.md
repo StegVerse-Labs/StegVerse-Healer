@@ -30,23 +30,62 @@ admission PR: #33
 exact validated head: b150868c9d6083a6c032fb0d8a2f747f7e142283
 Test Readiness: 32577928955 SUCCESS
 merge commit: 9090dde4b38795226f3179e03dcbf1ad8592dc64
-execution issue: #34
+execution issue: #34 OPEN
 ```
 
-Imported fanout evidence currently describes 18 `.github` workflow files: 12 automatic-push and 6 PR/manual-only after recent containment repairs. The proposed 18→2 structure is an evaluation hypothesis, not an already-authorized deletion set.
+### Current physical result
 
-Healer #34 owns the next execution tranche:
+The imported baseline was 18 `.github` workflows: 12 automatic-push and 6 PR/manual-only. Healer #34 has now executed six parity-proven consolidations.
 
-- independently classify every current `.github` workflow;
-- target the established 0/1/2 stable-entry-surface policy where technically sufficient;
-- preserve source/schema/config/test validation parity and meaningful PR coverage;
-- preserve manual dispatch for intentionally expensive checks;
-- transfer recurring/operational behavior to existing StegVerse-owned scheduler/workers where appropriate;
-- reconcile active owners before absorbing owner-sensitive surfaces;
-- preserve TV/TVC-only credential authority, no NON-TV/TVC secrets/tokens, no GitHub-token production/runtime authority, and no Render;
-- record exact-current-main validation, final workflow count, exceptions, migrations, and blockers before claiming completion.
+```text
+baseline: 18 total / 12 automatic-push / 6 PR-manual-only
+current: 12 total / 9 automatic-push / 3 PR-manual-only
+removed: 6 / 18 = 33.33%
+stable dispatchers explicitly established: 2
+preferred final target: 0/1/2 where technically sufficient
+```
 
-Issue creation, assignment, evaluation admission, or workflow success does not satisfy this hygiene goal. Actual accepted consolidation/transfer/elimination and parity evidence remain required.
+Stable dispatcher surfaces:
+
+```text
+StegVerse-Labs/.github/.github/workflows/org-control-plane-validate.yml
+StegVerse-Labs/.github/.github/workflows/heartbeat-worker-project.yml
+```
+
+Validated Healer tranches:
+
+| Removed workflow | Destination | PR | Merge | Heartbeat validation | Org-control validation |
+| --- | --- | ---: | --- | ---: | ---: |
+| `org-handoff-render.yml` | org control | #251 | `82a5909aa37ea228e9c00dd55fc1e11ab706850b` | 32590490975 PASS | 32590490904 PASS |
+| `archive-readiness-validate.yml` | org control | #252 | `fae7f6a1edc4d54dd67134773faf76acc87eae59` | 32590584716 PASS | 32590584788 PASS |
+| `org-heartbeat.yml` | heartbeat worker | #253 | `2236df65a495975ca9bc7d9c8fad7d863934617f` | 32590794869 PASS | 32590794862 PASS |
+| `org-heartbeat-watchdog.yml` | heartbeat worker/manual only | #254 | `c3256be218dbabdf4fb82e877e71d2884925c904` | 32590947641 PASS | 32590947607 PASS |
+| `native-process-worker-canary.yml` | heartbeat worker | #255 | `856d1823283f3ade54ac95094d73ec149c245d74` | 32591051012 PASS | 32591050991 PASS |
+| `external-timing-match-validation.yml` | heartbeat worker | #256 | `278299617d17a4f410b0ef0e2d1da1a609b67fc4` | 32591188347 PASS | 32591188133 PASS |
+
+Parity/safety results:
+
+- handoff rendering and generated projection parity preserved;
+- archive-readiness validator/test preserved;
+- heartbeat source validation preserved without restoring routine state/receipt main-push fanout;
+- watchdog remains manually invocable only and was not added to automatic execution;
+- native canary handoff is terminal `COMPLETED`, successor policy `NONE`; only retained evidence validation remains;
+- external-timing source/validation is complete/released; fixed-cadence and zero-authority checks remain, while `.github#122` retains live producer ownership;
+- all six exact heads passed both retained validator families before merge;
+- TV/TVC remains credential authority; no NON-TV/TVC secrets/tokens, GitHub-token runtime authority, Render, runtime authority, wallet authority, deployment authority, or provider authority were introduced.
+
+Canonical current evidence:
+
+```text
+StegVerse-Labs/.github/control/workflow-surface-registry.json
+StegVerse-Labs/.github/control/actions-fanout-workflow-inventory-2026-08-18.json
+StegVerse-Labs/.github/docs/ACTIONS_FANOUT_REPAIR_MIRROR_HANDOFF.md
+StegVerse-Labs/StegVerse-Healer#34
+```
+
+Healer #34 remains open. Ten non-dispatcher workflow surfaces still require independent classification as consolidation/transfer/elimination, active-owner blocked, or evidence-backed standalone exception. Count >2 cannot be treated as terminal without technical exception evidence.
+
+Issue creation, assignment, evaluation admission, workflow success, or source merge alone does not satisfy the hygiene goal. Actual accepted consolidation/transfer/elimination and parity evidence remain required.
 
 ## Released source integrations
 
@@ -81,7 +120,7 @@ nonzero observer result: BLOCKED
 non-VERIFIED_PUBLICLY_REACHABLE receipt: BLOCKED
 github_token_required: false
 artifact_custody_required: false
-remote checkout required: false
+remote_checkout_required: false
 ```
 
 Source evidence:
@@ -152,4 +191,4 @@ TV/TVC remains credential authority. No NON-TV/TVC secret/token, provider creden
 
 ## Continuation
 
-Workflow hygiene for `StegVerse-Labs/.github` continues under Healer #34. Child-safety observer source continuation remains canonical in Healer #13 and Site #268/B26. Ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268. Future work must reuse established Healer handlers/scheduler rather than create a second scheduler/heartbeat.
+Workflow hygiene for `StegVerse-Labs/.github` continues under Healer #34 from the current 12-workflow denominator. Child-safety observer source continuation remains canonical in Healer #13 and Site #268/B26. Ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268. Future work must reuse established Healer handlers/scheduler rather than create a second scheduler/heartbeat.
