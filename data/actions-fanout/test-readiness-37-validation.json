@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "goal_id": "HEALER-TEST-READINESS-FANOUT-037",
+  "issue": 37,
+  "purpose": "Trigger one exact PR validation after documentation-only fanout narrowing.",
+  "expected_trigger_behavior": {
+    "docs_only_push_or_pull_request": false,
+    "root_readme_only_push_or_pull_request": false,
+    "non_documentation_push_or_pull_request": true,
+    "workflow_dispatch": true,
+    "cancel_in_progress": true
+  },
+  "authority": {
+    "credential_authority": "TV/TVC",
+    "github_actions_production_role": "NONE",
+    "github_token_runtime_authority": "NONE",
+    "render_required": false,
+    "runtime_effect": false,
+    "activation_effect": false
+  },
+  "state": "AWAITING_EXACT_PR_VALIDATION"
+}
