@@ -53,6 +53,21 @@
     },
     {
       "repo": "StegVerse-Labs/Site",
+      "workflow": "executive-rhetoric-ledger-local-sync",
+      "ref": "main",
+      "enabled": true,
+      "aliases": ["site-erl-sync", "executive-rhetoric-ledger-sync", "erl-sync"],
+      "run_hours_utc": [14],
+      "inputs": {},
+      "canonical_owner": "StegVerse-Labs/StegVerse-Healer#39",
+      "source_repository": "StegVerse-Labs/Executive_Rhetoric_Ledger",
+      "source_path": "publication/compendium.json",
+      "destination_path": "public/data/executive-rhetoric-ledger/compendium.json",
+      "acknowledgment_path": "receipts/executive-rhetoric-ledger-ack.json",
+      "status": "sovereign-local-daily-mirror-no-github-token-no-remote-checkout-no-artifact-custody"
+    },
+    {
+      "repo": "StegVerse-Labs/Site",
       "workflow": "heartbeat-response-sovereign-carrier",
       "ref": "main",
       "enabled": true,
