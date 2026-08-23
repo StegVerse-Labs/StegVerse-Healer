@@ -128,6 +128,10 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
                 return {**base, "state": "BLOCKED", "outcome": "SITE_LOCAL_ORCHESTRATION_BLOCKED", "execution": results}
         return {**base, "state": "COMPLETE", "outcome": "SOVEREIGN_LOCAL_SITE_ORCHESTRATION", "execution": results}
 
+    if repo == "StegVerse-Labs/Site" and workflow == "executive-rhetoric-ledger-local-sync":
+        from app.site_erl_sync import execute_site_erl_sync
+        return execute_site_erl_sync(target, roots, base)
+
     if repo == "StegVerse-Labs/Site" and workflow == "site-b27-native-validation":
         local_forbidden = (
             "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "TVC_EPHEMERAL_GITHUB_TOKEN",
