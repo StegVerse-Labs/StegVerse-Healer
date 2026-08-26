@@ -1,6 +1,6 @@
 # Healer .github Workflow Hygiene Mirror Handoff
 
-Updated: 2026-08-22
+Updated: 2026-08-26
 Repository owner: `StegVerse-Labs/StegVerse-Healer`
 Target repository: `StegVerse-Labs/.github`
 Canonical issue: `StegVerse-Labs/StegVerse-Healer#34`
@@ -43,7 +43,7 @@ Imported baseline:
 6 PR/manual-only
 ```
 
-Current target-repository evidence:
+Current target-repository evidence, rechecked on live `StegVerse-Labs/.github/main`:
 
 ```text
 11 workflow files
@@ -98,7 +98,7 @@ The nine non-dispatcher workflows now remaining are predominantly owner-sensitiv
 ```text
 activate-ecosystem-chat-sovereign-inference-worker.yml — active owner #60
 activate-sovereign-runtime-worker.yml — active durable-runtime owner #59
-a ll-org-heartbeat-federation.yml — owner #81
+all-org-heartbeat-federation.yml — owner #81
 mcp-activation-binding-test.yml — active MCP ownership
 sovereign-ephemeral-console.yml — durable-runtime/G18 ownership
 sovereign-runtime-self-bootstrap.yml — #59/#65 ownership
@@ -107,18 +107,33 @@ steggate-heartbeat-integration.yml — active rendezvous handoff remains HANDOFF
 test-lanes-autolaunch-validation.yml — active machine-owned test-lane task
 ```
 
-(Note: `a ll-org-heartbeat-federation.yml` above denotes the actual `all-org-heartbeat-federation.yml`; spacing is prose-only and carries no path authority.)
-
 Next Healer action is owner reconciliation for one bounded surface, followed by consolidation/transfer/elimination only if validation parity and runtime non-interference are proven. Otherwise record `KEEP_STANDALONE_EXCEPTION` with technical necessity.
 
-## Site cost dependency
+## Site cost dependency — reconciled current state
 
-GitHub billing evidence supplied 2026-08-22 identified `StegVerse-Labs/Site` as the largest observed Actions repository cost center. Site B27 already owns retirement of the hourly Thought Experiments workflow but remains waiting for the sovereign Healer scheduler receipt; `SHWP-HEALER-SOVEREIGN-SCHEDULER-001` is still `HANDOFF_READY`. GitHub CI cannot substitute.
+GitHub billing evidence supplied during the Actions cost session identified `StegVerse-Labs/Site` as the largest observed Actions repository cost center. Canonical Site authority remains `StegVerse-Labs/Site/docs/ACTIONS_COST_CONTAINMENT_MIRROR_HANDOFF.md` / Site #268.
 
-A separate Site VA-guide workflow is a proven cost candidate but requires a distinct Site pre-work claim before mutation.
+The earlier statement that the VA Claims Guide workflow was only a pending candidate is superseded. Site's canonical handoff records the VA Claims Guide cost repair as RELEASED (Site #428); Healer must not recreate that lane.
+
+Current nonterminal Site dependencies relevant to Healer are:
+
+1. **Thought Experiments B27** — source/native validation carrier exists, but exact live validation still depends on the sovereign scheduler receipt.
+2. **VA governed surfaces deployment observer** — Site PR #473 merged as `b526c69a647b96cf8ee6e9e44aca0facc1d61241` after Handoff `32669715065`, Heartbeat `32669715039`, and Bootstrap `32669715040` PASS. Its six-hour schedule/writeback/artifact mechanics are removed, but the task remains `MERGED_AWAITING_TASK_SPECIFIC_MAIN_OBSERVATION`; see `StegVerse-Labs/Site/docs/VA_GOVERNED_SURFACES_DEPLOYMENT_ACTIONS_FANOUT_MIRROR_HANDOFF.md`.
+3. **Executive Rhetoric Ledger sync migration** — Healer #39 / PR #40 installed the fixed local target on the existing sovereign scheduler. Exact head `aca5b7871e2720b0d56757e33fc2a22c10291136` passed Test Readiness `32670203077` / job `97269769966`; merge `ff3d9985b773d91dce0d90351a7a8a04a499c59b`. Source is `COMPLETE_RELEASED`; live execution is `MACHINE_OWNED_PENDING_SCHEDULER_RECEIPT`. Detailed authority: `docs/SITE_ERL_SOVEREIGN_SYNC_MIRROR_HANDOFF.md`.
+4. **Site `validate.yml` trigger narrowing** — remains blocked by active Site claim `SITE-STEGFIN-IOS-LOCAL-WALLET-TRANSPORT-388-20260817`, whose current receipt is `SOURCE_AND_SITE_MERGED_CORRECTED_PUBLICATION_PROOF_PENDING` and `release_blocked=true`.
+
+The required scheduler receipt remains:
+
+`StegVerse-Labs/.github/receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`
+
+Live inspection still reports it absent. `SHWP-HEALER-SOVEREIGN-SCHEDULER-001` remains the single canonical scheduler lane; do not create a second scheduler or worker. Until the receipt proves the ERL target COMPLETE/PASS, Site's existing GitHub ERL sync carrier must remain for continuity.
+
+## Upstream physical dependency
+
+The scheduler handoff depends on the durable heartbeat/runtime lane. `StegVerse-Labs/.github/handoffs/SHWP-IPHONE-HB30-INLINE-CAPSULE-002.json` remains source-released but records `PHYSICAL_RECEIPT_NOT_YET_OBSERVED` at a `HUMAN_PHYSICAL_EXECUTION_BOUNDARY` on the current iPhone. No credential is required for that physical action. The current iPhone executes the released inline capsule in an existing secure `https://stegverse.org` Safari context; `.github#209` / G18 / WorkerCoordinator own subsequent materialization and observation.
 
 ## Completion gate
 
-This hygiene goal is not complete. Eleven workflows remain, nine are not yet terminally classified, Site cost work remains active, and count >2 cannot be accepted without explicit exception evidence.
+This hygiene goal is not complete. Eleven `.github` workflows remain, nine are not yet terminally classified, Site cost work remains active, the sovereign scheduler has no live receipt, and count >2 cannot be accepted without explicit exception evidence.
 
 Current status: `DO NOT ARCHIVE THIS SESSION — UNIQUE ACTIVE WORK REMAINS.`
