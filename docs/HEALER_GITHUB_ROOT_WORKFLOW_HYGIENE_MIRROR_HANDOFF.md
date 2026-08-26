@@ -46,10 +46,10 @@ Imported baseline:
 Current target-repository evidence, rechecked on live `StegVerse-Labs/.github/main`:
 
 ```text
-11 workflow files
+10 workflow files
 8 automatic-push
-3 PR/manual-only
-7 standalone workflows removed with parity proof
+2 PR/manual-only
+8 standalone workflows removed with parity proof
 2 stable dispatchers established
 reduction: 7/18 = 38.89%
 ```
@@ -93,7 +93,7 @@ StegVerse-Labs/.github/docs/ACTIONS_FANOUT_REPAIR_MIRROR_HANDOFF.md
 
 ## Remaining workflow classes
 
-The nine non-dispatcher workflows now remaining are predominantly owner-sensitive and must not be deleted for denominator pressure alone:
+The eight non-dispatcher workflows now remaining are predominantly owner-sensitive and must not be deleted for denominator pressure alone:
 
 ```text
 activate-ecosystem-chat-sovereign-inference-worker.yml — active owner #60
@@ -104,10 +104,24 @@ sovereign-ephemeral-console.yml — durable-runtime/G18 ownership
 sovereign-runtime-self-bootstrap.yml — #59/#65 ownership
 stegfin-early-adopter-contribution-validator-source.yml — active StegFin ownership
 steggate-heartbeat-integration.yml — active rendezvous handoff remains HANDOFF_READY
-test-lanes-autolaunch-validation.yml — active machine-owned test-lane task
 ```
 
 Next Healer action is owner reconciliation for one bounded surface, followed by consolidation/transfer/elimination only if validation parity and runtime non-interference are proven. Otherwise record `KEEP_STANDALONE_EXCEPTION` with technical necessity.
+
+## 2026-08-26 test-lanes consolidation
+
+The optional Test Lanes autolaunch task remains active, but its dedicated validation workflow did not need to remain standalone. The workflow-only binding assertions were promoted into the stable deterministic unittest suite and the standalone workflow was removed.
+
+```text
+removed: .github/workflows/test-lanes-autolaunch-validation.yml
+coverage replacement: tests/test_test_lanes_autolaunch_binding.py
+stable dispatcher: .github/workflows/heartbeat-worker-project.yml
+runtime/autolaunch source changed: false
+direct Test Lanes runner changed: false
+credential/runtime authority effect: NONE
+current workflow count: 10
+remaining non-dispatchers: 8
+```
 
 ## Site cost dependency — reconciled current state
 
