@@ -80,6 +80,12 @@ Current observed state: `HANDOFF_READY` with authorized heartbeat carrier and a 
 
 At this handoff revision that required scheduler receipt is absent. Therefore the new ERL target has **not** been proven in live sovereign execution.
 
+## 2026-08-26 dependency correction
+
+Heartbeat activation is already terminal and the historical HB30 iPhone capsule is satisfied/superseded. There is no current iPhone action required for this ERL migration.
+
+The scheduler's unresolved dependency is the separate machine-owned `SHWP-DURABLE-RUNTIME-ACTIVATION` substrate, currently blocked because no eligible StegVerse-owned/federated sovereign node declaration is present. The existing scheduler lane must consume that runtime when available; no second scheduler or hosted substitute is authorized.
+
 ## Site retirement gate
 
 Do not remove or disable `StegVerse-Labs/Site/.github/workflows/sync-executive-rhetoric-ledger.yml` until a live scheduler receipt proves the fixed `executive-rhetoric-ledger-local-sync` target executed successfully against materialized Site + Executive_Rhetoric_Ledger roots and produced a PASS destination acknowledgment.
