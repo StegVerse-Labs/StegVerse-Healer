@@ -1,5 +1,7 @@
 # StegVerse-Healer Mirror Handoff
 
+Updated: 2026-08-26
+
 ## Canonical state
 
 ```text
@@ -18,6 +20,16 @@ state: SOURCE_CONTROL_RELEASED_LIVE_SCHEDULER_ACTIVATION_MACHINE_OWNED
 
 Canonical organization/runtime continuations are `StegVerse-Labs/.github/docs/ORG_MIRROR_HANDOFF.md`, `StegVerse-Labs/.github/handoffs/SHWP-DURABLE-RUNTIME-ACTIVATION.json`, and `StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`.
 
+Detailed scoped handoffs supersede older summary prose for their lanes:
+
+```text
+docs/HEALER_GITHUB_ROOT_WORKFLOW_HYGIENE_MIRROR_HANDOFF.md
+docs/SITE_ERL_SOVEREIGN_SYNC_MIRROR_HANDOFF.md
+docs/HEALER_SITE_B27_VALIDATION_MIRROR_HANDOFF.md
+docs/HEALER_SITE_HEARTBEAT_RESPONSE_CARRIER_MIRROR_HANDOFF.md
+docs/HEALER_STEGFIN_PUBLICATION_OBSERVER_MIRROR_HANDOFF.md
+```
+
 ## Workflow hygiene responsibility — StegVerse-Labs/.github
 
 StegVerse-Healer is the canonical owner for repository hygiene and workflow-surface minimization affecting `StegVerse-Labs/.github`.
@@ -33,15 +45,16 @@ merge commit: 9090dde4b38795226f3179e03dcbf1ad8592dc64
 execution issue: #34 OPEN
 ```
 
-### Current physical result
+### Current physical result — reconciled live state
 
-The imported baseline was 18 `.github` workflows: 12 automatic-push and 6 PR/manual-only. Healer #34 has now executed six parity-proven consolidations.
+The imported baseline was 18 `.github` workflows: 12 automatic-push and 6 PR/manual-only. Healer #34 has now executed seven parity-proven consolidations.
 
 ```text
 baseline: 18 total / 12 automatic-push / 6 PR-manual-only
-current: 12 total / 9 automatic-push / 3 PR-manual-only
-removed: 6 / 18 = 33.33%
+current: 11 total / 8 automatic-push / 3 PR-manual-only
+removed: 7 / 18 = 38.89%
 stable dispatchers explicitly established: 2
+remaining non-dispatchers: 9
 preferred final target: 0/1/2 where technically sufficient
 ```
 
@@ -62,6 +75,7 @@ Validated Healer tranches:
 | `org-heartbeat-watchdog.yml` | heartbeat worker/manual only | #254 | `c3256be218dbabdf4fb82e877e71d2884925c904` | 32590947641 PASS | 32590947607 PASS |
 | `native-process-worker-canary.yml` | heartbeat worker | #255 | `856d1823283f3ade54ac95094d73ec149c245d74` | 32591051012 PASS | 32591050991 PASS |
 | `external-timing-match-validation.yml` | heartbeat worker | #256 | `278299617d17a4f410b0ef0e2d1da1a609b67fc4` | 32591188347 PASS | 32591188133 PASS |
+| `activate-host-self-attest-worker.yml` | heartbeat worker | #257 | `1240cc0087f5777b08c1913561d4b7125df74cbf` | 32591396135 PASS | 32591396122 PASS |
 
 Parity/safety results:
 
@@ -69,9 +83,9 @@ Parity/safety results:
 - archive-readiness validator/test preserved;
 - heartbeat source validation preserved without restoring routine state/receipt main-push fanout;
 - watchdog remains manually invocable only and was not added to automatic execution;
-- native canary handoff is terminal `COMPLETED`, successor policy `NONE`; only retained evidence validation remains;
+- native canary and host self-attest handoffs are terminal `COMPLETED`, successor policy `NONE`; only retained evidence validation remains;
 - external-timing source/validation is complete/released; fixed-cadence and zero-authority checks remain, while `.github#122` retains live producer ownership;
-- all six exact heads passed both retained validator families before merge;
+- all seven exact heads passed both retained validator families before merge;
 - TV/TVC remains credential authority; no NON-TV/TVC secrets/tokens, GitHub-token runtime authority, Render, runtime authority, wallet authority, deployment authority, or provider authority were introduced.
 
 Canonical current evidence:
@@ -80,10 +94,11 @@ Canonical current evidence:
 StegVerse-Labs/.github/control/workflow-surface-registry.json
 StegVerse-Labs/.github/control/actions-fanout-workflow-inventory-2026-08-18.json
 StegVerse-Labs/.github/docs/ACTIONS_FANOUT_REPAIR_MIRROR_HANDOFF.md
+docs/HEALER_GITHUB_ROOT_WORKFLOW_HYGIENE_MIRROR_HANDOFF.md
 StegVerse-Labs/StegVerse-Healer#34
 ```
 
-Healer #34 remains open. Ten non-dispatcher workflow surfaces still require independent classification as consolidation/transfer/elimination, active-owner blocked, or evidence-backed standalone exception. Count >2 cannot be treated as terminal without technical exception evidence.
+Healer #34 remains open. Nine non-dispatcher workflow surfaces still require owner-safe classification as consolidation/transfer/elimination, active-owner blocked, or evidence-backed standalone exception. Count >2 cannot be treated as terminal without technical exception evidence.
 
 Issue creation, assignment, evaluation admission, workflow success, or source merge alone does not satisfy the hygiene goal. Actual accepted consolidation/transfer/elimination and parity evidence remain required.
 
@@ -94,6 +109,31 @@ Issue creation, assignment, evaluation admission, workflow success, or source me
 - `HEALER-SITE-MARKETPLACE-PROJECTION-LOCAL-IMPORT-001`: source/integration COMPLETE_RELEASED; issue #8 closed.
 - `HEALER-RSTD-ST018-LOCAL-TASK-MANAGER-001`: source/integration COMPLETE_RELEASED; issue #11.
 - `HEALER-SITE-CHILD-SAFETY-PUBLIC-OBSERVER-001`: source/integration COMPLETE_RELEASED; issue #13 pending closeout record only.
+- `HEALER-SITE-ERL-SOVEREIGN-SYNC-039`: source/integration COMPLETE_RELEASED through issue #39 / PR #40; live execution pending scheduler receipt.
+
+## Executive Rhetoric Ledger sovereign Site sync — source RELEASED / live execution pending
+
+Canonical scoped handoff:
+
+`docs/SITE_ERL_SOVEREIGN_SYNC_MIRROR_HANDOFF.md`
+
+```text
+canonical_issue: #39
+source_pull_request: #40
+validated_head: aca5b7871e2720b0d56757e33fc2a22c10291136
+Test Readiness: 32670203077 SUCCESS
+repo-smoke job: 97269769966 SUCCESS
+merge_commit: ff3d9985b773d91dce0d90351a7a8a04a499c59b
+source_state: COMPLETE_RELEASED
+live_execution_state: MACHINE_OWNED_PENDING_SCHEDULER_RECEIPT
+site_github_workflow_retirement_authorized: false
+```
+
+The fixed target `executive-rhetoric-ledger-local-sync` runs at 14 UTC on the existing sovereign scheduler only. `app/site_erl_sync.py` requires already-materialized Site + Executive_Rhetoric_Ledger roots, validates source JSON, mirrors exact bytes, verifies SHA-256 identity, emits a destination-owned acknowledgment, refuses GitHub credentials, and has no remote checkout, artifact custody, GitHub writeback, runtime, provider, publication, or activation authority.
+
+The resident `.github` scheduler registry/handoff already consumes #40 evidence; no duplicate worker was created.
+
+Do not remove Site `.github/workflows/sync-executive-rhetoric-ledger.yml` until the live scheduler receipt proves the fixed target COMPLETE/PASS.
 
 ## Child-safety sovereign public-route observer
 
@@ -185,10 +225,28 @@ Healer PR #9 merge `b280025ed0007d10fdbb377cdf77cfd74443565c` binds fixed target
 
 ## Activation boundary
 
-Source/CI integration is complete, but ordinary live Healer execution remains `MACHINE_OWNED`. Activation requires `receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`. No source merge, CI run, chat session, GitHub Action, publication, or deployment substitutes for that receipt.
+Source/CI integration is complete for the scheduler and its released handlers, but ordinary live Healer execution remains `MACHINE_OWNED`.
+
+Required live receipt:
+
+`StegVerse-Labs/.github/receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`
+
+Live inspection on 2026-08-26 still reports that receipt absent. No source merge, CI run, chat session, GitHub Action, publication, or deployment substitutes for it.
+
+Canonical machine handoff:
+
+`StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`
+
+Current scheduler task state remains `HANDOFF_READY`, executor `AUTHORIZED`, worker available. The scheduler depends on `SHWP-DURABLE-RUNTIME-ACTIVATION`.
+
+The upstream physical heartbeat handoff `StegVerse-Labs/.github/handoffs/SHWP-IPHONE-HB30-INLINE-CAPSULE-002.json` is source-released but remains at `HUMAN_PHYSICAL_EXECUTION_BOUNDARY` / `PHYSICAL_RECEIPT_NOT_YET_OBSERVED` on the current iPhone. No credential is required for that physical step; G18 and WorkerCoordinator own subsequent materialization and observation.
 
 TV/TVC remains credential authority. No NON-TV/TVC secret/token, provider credential, wallet authority, publication authority, release authority, custody authority, or financial authority is introduced. USER_ONLY remains the sole StegFin signing/broadcast authority. Do not use Render.
 
 ## Continuation
 
-Workflow hygiene for `StegVerse-Labs/.github` continues under Healer #34 from the current 12-workflow denominator. Child-safety observer source continuation remains canonical in Healer #13 and Site #268/B26. Ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268. Future work must reuse established Healer handlers/scheduler rather than create a second scheduler/heartbeat.
+Workflow hygiene for `StegVerse-Labs/.github` continues under Healer #34 from the current **11-workflow** denominator, not the superseded 12-workflow summary. Nine non-dispatcher surfaces remain owner-sensitive.
+
+Site cost continuation remains Site #268. The VA Claims Guide lane is already released and must not be recreated. Current Site dependencies include the merged-but-not-task-observed VA governed-surface observer, Thought Experiments B27, the active StegFin `validate.yml` publication claim, and eventual retirement of the legacy ERL GitHub carrier only after a real sovereign scheduler receipt.
+
+Ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268. Future work must reuse established Healer handlers/scheduler rather than create a second scheduler/heartbeat.
