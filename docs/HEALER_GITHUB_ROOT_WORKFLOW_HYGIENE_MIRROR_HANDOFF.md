@@ -1,6 +1,6 @@
 # Healer .github Workflow Hygiene Mirror Handoff
 
-Updated: 2026-08-26
+Updated: 2026-08-26 16:18 CDT
 Repository owner: `StegVerse-Labs/StegVerse-Healer`
 Target repository: `StegVerse-Labs/.github`
 Canonical issue: `StegVerse-Labs/StegVerse-Healer#34`
@@ -128,9 +128,22 @@ The required scheduler receipt remains:
 
 Live inspection still reports it absent. `SHWP-HEALER-SOVEREIGN-SCHEDULER-001` remains the single canonical scheduler lane; do not create a second scheduler or worker. Until the receipt proves the ERL target COMPLETE/PASS, Site's existing GitHub ERL sync carrier must remain for continuity.
 
-## Upstream physical dependency
+## Upstream runtime dependency — corrected 2026-08-26
 
-The scheduler handoff depends on the durable heartbeat/runtime lane. `StegVerse-Labs/.github/handoffs/SHWP-IPHONE-HB30-INLINE-CAPSULE-002.json` remains source-released but records `PHYSICAL_RECEIPT_NOT_YET_OBSERVED` at a `HUMAN_PHYSICAL_EXECUTION_BOUNDARY` on the current iPhone. No credential is required for that physical action. The current iPhone executes the released inline capsule in an existing secure `https://stegverse.org` Safari context; `.github#209` / G18 / WorkerCoordinator own subsequent materialization and observation.
+Heartbeat activation is terminal under the HB32 protocol anchor and does not block this hygiene lane. The historical iPhone HB30 capsule is already satisfied/superseded and requires **no current user action**.
+
+The single remaining upstream execution dependency for `SHWP-HEALER-SOVEREIGN-SCHEDULER-001` is the separate durable worker/runtime substrate:
+
+```text
+StegVerse-Labs/.github/handoffs/SHWP-DURABLE-RUNTIME-ACTIVATION.json
+state: BLOCKED_SOVEREIGN_NODE_REQUIRED_NON_HEARTBEAT
+receipt blocker: SOVEREIGN_NODE_DECLARATION_NOT_PRESENT
+claim/fence: existing G18/fence18 machine-owned
+next boundary: eligible StegVerse-owned/federated sovereign node + canonical native installer/verifier
+current iPhone HB30 action: NONE
+```
+
+Do not create a second scheduler/runtime lane. Once the existing durable-runtime owner produces real sovereign-node execution evidence, consume it in the existing Healer scheduler lane and then evaluate ERL/B27 retirements.
 
 ## Completion gate
 
