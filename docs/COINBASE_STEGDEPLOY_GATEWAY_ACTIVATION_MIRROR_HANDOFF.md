@@ -161,3 +161,48 @@ TVC advertised-route observer PR #179:
 ```
 
 After a real local StegDeploy execution, the node itself can advertise Coinbase routes and TVC can consume them without an out-of-band hostname. Actual public TLS ingress/reachability remains separate and unobserved.
+
+
+## Native TLS runtime locator integration — 2026-08-27
+
+Upstream native TLS source is now merged and hosted-validated:
+
+```text
+StegVerse-org/LLM-adapter PR #209
+merge: 10a6f6247771b2a85b07f5f19810403c3acde513
+Coinbase SKAP Service Gateway Validation: 33121152939 SUCCESS
+global validate: 33121152794 SUCCESS
+TLS termination: UVICORN_NATIVE
+reverse proxy required: false
+Render/Cloudflare required: false
+```
+
+The existing Healer target now accepts optional path-only runtime locators:
+
+```text
+STEGVERSE_SERVICE_GATEWAY_TLS_CERT_FILE
+STEGVERSE_SERVICE_GATEWAY_TLS_KEY_FILE
+STEGVERSE_SERVICE_GATEWAY_TLS_BIND_ADDRESS
+STEGVERSE_SERVICE_GATEWAY_TLS_PORT
+```
+
+These variables are locators/configuration only; certificate/private-key bytes are not read into the Healer receipt and are not copied into the child environment as secret values. Certificate/key locators must be paired and materialized locally before the TLS attempt.
+
+Behavior:
+
+```text
+no TLS locators
+-> existing local HTTP StegDeploy readiness only
+-> production_public_route_observed=false
+
+paired TV/TVC TLS locators
+-> existing LLM-adapter deploy-tls bootstrap
+-> native Uvicorn TLS
+-> local HTTPS readiness
+-> production_public_route_observed=false
+-> public_certificate_hostname_verified=false
+```
+
+A local TLS-ready receipt remains insufficient for production route activation. TVC must still independently observe the advertised HTTPS node/readiness route with normal hostname/certificate verification.
+
+No user-operated second machine and no manual shell step are introduced.

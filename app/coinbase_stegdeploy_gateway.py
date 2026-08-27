@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -16,6 +17,10 @@ TVC_REPO = "StegVerse-Labs/TVC"
 ROLE = "service_gateway_coinbase_skap_ciphertext_intake"
 DECISION_SCHEMA = "stegverse.tvc.coinbase_service_gateway_no_value_decision/v1"
 READINESS_URL = "http://127.0.0.1:8000/api/coinbase/skap/readiness"
+TLS_CERT_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_CERT_FILE"
+TLS_KEY_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_KEY_FILE"
+TLS_BIND_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_BIND_ADDRESS"
+TLS_PORT_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_PORT"
 FORBIDDEN_ENV = (
     "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "HEALER_GH_TOKEN", "HEALER_PAT",
     "GH_STEGVERSE_AI_TOKEN", "ACTIONS_RUNTIME_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
@@ -47,6 +52,64 @@ def valid_sha256(value: Any) -> bool:
         and value.startswith("sha256:")
         and len(value) == 71
         and all(ch in "0123456789abcdef" for ch in value[7:])
+    )
+
+
+def resolve_tls_request() -> dict[str, Any] | None:
+    cert_raw = os.getenv(TLS_CERT_ENV, "").strip()
+    key_raw = os.getenv(TLS_KEY_ENV, "").strip()
+    if bool(cert_raw) != bool(key_raw):
+        raise GatewayActivationError("TLS_CERT_AND_KEY_LOCATORS_MUST_BE_PAIRED")
+    if not cert_raw:
+        return None
+
+    cert_file = Path(cert_raw).expanduser().resolve()
+    key_file = Path(key_raw).expanduser().resolve()
+    if not cert_file.is_file():
+        raise GatewayActivationError("TLS_CERT_FILE_NOT_MATERIALIZED")
+    if not key_file.is_file():
+        raise GatewayActivationError("TLS_KEY_FILE_NOT_MATERIALIZED")
+
+    bind_address = os.getenv(TLS_BIND_ENV, "0.0.0.0").strip() or "0.0.0.0"
+    try:
+        port = int(os.getenv(TLS_PORT_ENV, "443"))
+    except ValueError as exc:
+        raise GatewayActivationError("TLS_PORT_INVALID") from exc
+    if not (1 <= port <= 65535):
+        raise GatewayActivationError("TLS_PORT_INVALID")
+
+    return {
+        "cert_file": cert_file,
+        "key_file": key_file,
+        "bind_address": bind_address,
+        "port": port,
+    }
+
+
+def build_deploy_command(tls_request: dict[str, Any] | None) -> tuple[list[str], str, bool]:
+    if tls_request is None:
+        return (
+            [sys.executable, "scripts/stegdeploy_bootstrap.py", "deploy", "--health-url", "http://127.0.0.1:8000/health"],
+            READINESS_URL,
+            False,
+        )
+    port = int(tls_request["port"])
+    return (
+        [
+            sys.executable,
+            "scripts/stegdeploy_bootstrap.py",
+            "deploy-tls",
+            "--tls-cert-file",
+            str(tls_request["cert_file"]),
+            "--tls-key-file",
+            str(tls_request["key_file"]),
+            "--bind-address",
+            str(tls_request["bind_address"]),
+            "--port",
+            str(port),
+        ],
+        f"https://127.0.0.1:{port}/api/coinbase/skap/readiness",
+        True,
     )
 
 
@@ -152,12 +215,15 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
     if tvc_root is None:
         raise GatewayActivationError("TVC_LOCAL_REPOSITORY_NOT_MATERIALIZED")
 
-    required = (
+    tls_request = resolve_tls_request()
+    required = [
         llm_root / "scripts/stegdeploy_bootstrap.py",
         llm_root / "compose.stegdeploy.yaml",
         llm_root / "llm_adapter/deployed_gateway.py",
         llm_root / "llm_adapter/service_gateway_composed.py",
-    )
+    ]
+    if tls_request is not None:
+        required.append(llm_root / "compose.stegdeploy.tls.yaml")
     missing = [str(path.relative_to(llm_root)) for path in required if not path.is_file()]
     if missing:
         raise GatewayActivationError("LLM_ADAPTER_STEGDEPLOY_SOURCE_INCOMPLETE:" + ",".join(missing))
@@ -173,8 +239,9 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
     if head.returncode != 0 or len(source_head) != 40:
         raise GatewayActivationError("LLM_ADAPTER_SOURCE_HEAD_UNPROVEN")
 
+    deploy_command, readiness_url, tls_enabled = build_deploy_command(tls_request)
     deploy = subprocess.run(
-        [sys.executable, "scripts/stegdeploy_bootstrap.py", "deploy", "--health-url", "http://127.0.0.1:8000/health"],
+        deploy_command,
         cwd=llm_root, env=env, text=True, capture_output=True, check=False, timeout=900,
     )
     if deploy.returncode != 0:
@@ -190,11 +257,13 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             "github_token_required": False,
             "provider_operation_started": False,
             "production_public_route_observed": False,
+            "tls_enabled": tls_enabled,
             "authority_effect": "NONE",
         }
 
     try:
-        with urllib.request.urlopen(READINESS_URL, timeout=5) as response:
+        context = ssl._create_unverified_context() if tls_enabled else None
+        with urllib.request.urlopen(readiness_url, timeout=5, context=context) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except Exception as exc:
         raise GatewayActivationError("LOCAL_COINBASE_READINESS_UNAVAILABLE:" + type(exc).__name__) from exc
@@ -205,21 +274,25 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
     return {
         "schema": "stegverse.healer.coinbase_stegdeploy_gateway_activation/v1",
         "state": "COMPLETE",
-        "outcome": "LOCAL_SOVEREIGN_COINBASE_GATEWAY_READY",
+        "outcome": "LOCAL_SOVEREIGN_COINBASE_GATEWAY_TLS_READY" if tls_enabled else "LOCAL_SOVEREIGN_COINBASE_GATEWAY_READY",
         "source_head": source_head,
         "decision_ref": str(decision_path),
         "decision_id": decision["decision_id"],
-        "readiness_url": READINESS_URL,
+        "readiness_url": readiness_url,
         "readiness": payload,
         "credential_authority": "TV/TVC",
         "credential_material_present": False,
         "github_token_required": False,
         "render_required": False,
+        "tls_enabled": tls_enabled,
+        "tls_locator_source": "TV_TVC_RUNTIME_FILE_PATHS" if tls_enabled else "NONE",
+        "tls_private_key_material_recorded": False,
+        "public_certificate_hostname_verified": False,
         "network_source_fetch_performed": False,
         "provider_operation_started": False,
         "may_authorize_order": False,
         "production_public_route_observed": False,
-        "authority_effect": "LOCAL_RUNTIME_OBSERVATION_ONLY",
+        "authority_effect": "LOCAL_TLS_RUNTIME_OBSERVATION_ONLY" if tls_enabled else "LOCAL_RUNTIME_OBSERVATION_ONLY",
     }
 
 
