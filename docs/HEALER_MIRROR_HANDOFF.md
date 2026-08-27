@@ -274,3 +274,12 @@ The handler consumes only already-local `StegVerse-org/LLM-adapter` + `StegVerse
 Source is MERGED on main. Hosted Test Readiness run `33118079568` / job `98677773520` passed the semantic implementation before a final formatting-only registry cleanup. This does not claim sovereign execution, public HTTPS reachability, TVC recipient liveness, owner ingress, provider capability, order execution, or settlement.
 
 Next runtime boundary: the existing sovereign scheduler executes this target on the admitted resident substrate. Missing local source, missing Docker/StegDeploy prerequisites, or missing TVC decision receipt must remain BLOCKED with no fabricated readiness.
+
+
+### Coinbase Gateway decision source closure
+
+TVC PR #173 merged as `e8813e81494deb8e8563763675b5123e360397e6`, supplying the canonical non-secret no-value Gateway decision receipt. Exact-current TVC runs `33118626226` and `33118626234` passed.
+
+Healer PR #42 merged as `a60e9d6717b4784591dffca8147b0b4afda2d468` with Test Readiness `33118760520 SUCCESS`, requiring canonical decision schema, receipt digest and SHA-256 policy/decision bindings before local StegDeploy execution.
+
+This closes the remaining source dependency for the Gateway scheduler target. Runtime execution, loopback readiness, public HTTPS route, TVC recipient liveness and owner ingress remain separate unobserved predicates.
