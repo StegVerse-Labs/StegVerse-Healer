@@ -206,3 +206,32 @@ paired TV/TVC TLS locators
 A local TLS-ready receipt remains insufficient for production route activation. TVC must still independently observe the advertised HTTPS node/readiness route with normal hostname/certificate verification.
 
 No user-operated second machine and no manual shell step are introduced.
+
+
+## Resident worker propagation merged
+
+The TLS-capable Healer target is now reachable from the existing machine-owned sovereign worker without widening credential authority.
+
+```text
+Healer PR #43:
+  merge 7aa88c39d5e46402e3368b5ebd81d27a773ce93d
+  Test Readiness 33121314608 SUCCESS
+
+StegVerse-Labs/.github PR #328:
+  merge 583f3277c7eee9f0d12ab63280d31fbbc278aa85
+  Heartbeat Worker Project 33121525095 SUCCESS
+  Organization control-plane validation 33121525130 SUCCESS
+```
+
+Only the four TLS path/non-secret config locators can cross the worker boundary. Provider/Master-Records/GitHub tokens and certificate/private-key bytes do not.
+
+Current runtime state remains:
+
+```text
+SHWP-DURABLE-RUNTIME-ACTIVATION: BLOCKED_ON_ELIGIBLE_SOVEREIGN_NODE_DECLARATION
+G18 claim/fence: MACHINE_OWNED / fence18
+local TLS Gateway receipt: NOT OBSERVED
+public HTTPS route: NOT OBSERVED
+user action required: false
+heartbeat dependency: false
+```
