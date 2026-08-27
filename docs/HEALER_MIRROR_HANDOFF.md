@@ -250,3 +250,27 @@ Workflow hygiene for `StegVerse-Labs/.github` continues under Healer #34 from th
 Site cost continuation remains Site #268. The VA Claims Guide lane is already released and must not be recreated. Current Site dependencies include the merged-but-not-task-observed VA governed-surface observer, Thought Experiments B27, the active StegFin `validate.yml` publication claim, and eventual retirement of the legacy ERL GitHub carrier only after a real sovereign scheduler receipt.
 
 Ordinary scheduler activation belongs to `SHWP-HEALER-SOVEREIGN-SCHEDULER-001`; broader Site workflow/token remediation remains at Site #268. Future work must reuse established Healer handlers/scheduler rather than create a second scheduler/heartbeat.
+
+
+## Coinbase StegDeploy sovereign Gateway activation
+
+Canonical scoped handoff:
+
+`docs/COINBASE_STEGDEPLOY_GATEWAY_ACTIVATION_MIRROR_HANDOFF.md`
+
+This lane reuses the existing `SHWP-HEALER-SOVEREIGN-SCHEDULER-001` rather than creating a second scheduler or heartbeat.
+
+Installed source on branch `feat/coinbase-stegdeploy-sovereign-gateway-20260827`:
+
+```text
+app/coinbase_stegdeploy_gateway.py
+app/sovereign_scheduler.py fixed handler binding
+data/orchestrator_targets.json::coinbase-stegdeploy-sovereign-gateway
+tests/test_coinbase_stegdeploy_gateway.py
+```
+
+The handler consumes only already-local `StegVerse-org/LLM-adapter` + `StegVerse-Labs/TVC` roots, refuses GitHub/provider credentials, requires an authentic non-secret TVC no-value decision receipt, invokes the already-merged local StegDeploy bootstrap, and requires canonical loopback Coinbase readiness with `gateway_execution_authority=NONE`.
+
+Source installation does not claim sovereign execution, public HTTPS reachability, TVC recipient liveness, owner ingress, provider capability, order execution, or settlement.
+
+Next runtime boundary: the existing sovereign scheduler executes this target on the admitted resident substrate. Missing local source, missing Docker/StegDeploy prerequisites, or missing TVC decision receipt must remain BLOCKED with no fabricated readiness.
