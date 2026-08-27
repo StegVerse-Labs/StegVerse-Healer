@@ -47,11 +47,11 @@ Current target-repository evidence, rechecked on live `StegVerse-Labs/.github/ma
 
 ```text
 2 workflow files
-8 automatic-push
-2 PR/manual-only
-16 standalone workflows removed with parity preservation
+2 automatic-push-capable stable dispatchers
+2 PR/manual-capable stable dispatchers
+16 standalone workflows removed/consolidated with parity preservation
 2 stable dispatchers established
-reduction: 7/18 = 38.89%
+reduction: 16/18 = 88.89%
 ```
 
 Stable dispatchers:
@@ -113,8 +113,9 @@ stable dispatcher: .github/workflows/heartbeat-worker-project.yml
 runtime/autolaunch source changed: false
 direct Test Lanes runner changed: false
 credential/runtime authority effect: NONE
-current workflow count: 3
-remaining non-dispatchers: 1
+historical intermediate count: superseded
+final live workflow count: 2
+final non-dispatchers: 0
 ```
 
 ## 2026-08-27 federation and MCP consolidation
@@ -130,11 +131,12 @@ mcp-activation-binding-test.yml -> REMOVED
   parity: tests/test_sdk_mcp_activation_binding.py + tests/test_sdk_mcp_canonical_validation_worker.py
   SDK MCP exact sovereign artifact task: STILL HANDOFF_READY / MACHINE_OWNED
 
-current workflow count: 3
+historical intermediate counts: superseded
+final live workflow count: 2
 stable dispatchers: 2
-non-dispatchers: 6
-automatic-push workflows: 7
-PR-only workflows: 1
+final non-dispatchers: 0
+automatic-push-capable stable dispatchers: 2
+PR/manual-capable stable dispatchers: 2
 ```
 
 This is hosted-validation surface reduction only. It does not constitute federation coverage, MCP runtime validation, release, activation, or sovereign-node evidence.
@@ -151,10 +153,11 @@ stable dispatcher: heartbeat-worker-project.yml
 G18 machine-owned runtime task: UNCHANGED / BLOCKED ON SOVEREIGN_NODE_DECLARATION_NOT_PRESENT
 native runtime source: PRESERVED
 runtime claim/fence: UNCHANGED
-current workflow count: 3
-non-dispatchers: 3
-automatic-push workflows: 4
-PR-only workflows: 1
+historical intermediate counts: superseded
+final live workflow count: 2
+final non-dispatchers: 0
+automatic-push-capable stable dispatchers: 2
+PR/manual-capable stable dispatchers: 2
 ```
 
 This is validation-surface consolidation only. It does not fabricate sovereign-node evidence or complete G18.
@@ -169,11 +172,12 @@ steggate-heartbeat-integration.yml -> REMOVED
 stable dispatcher: heartbeat-worker-project.yml
 inference runtime task: UNCHANGED / LIVE EXECUTION PENDING
 StegGate rendezvous task: UNCHANGED
-current workflow count: 3
+historical intermediate counts: superseded
+final live workflow count: 2
 stable dispatchers: 2
-non-dispatchers: 1
-automatic-push workflows: 2
-PR-only workflows: 1
+final non-dispatchers: 0
+automatic-push-capable stable dispatchers: 2
+PR/manual-capable stable dispatchers: 2
 ```
 
 The remaining non-dispatcher is `stegfin-early-adopter-contribution-validator-source.yml`, whose source lane is separately owner-bound. It must be reconciled with that canonical owner before removal or recorded as an explicit standalone exception.
