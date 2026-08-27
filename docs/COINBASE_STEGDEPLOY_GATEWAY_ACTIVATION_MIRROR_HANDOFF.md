@@ -94,3 +94,29 @@ real sovereign Gateway local readiness
 ```
 
 User action required: NONE until READY_FOR_OWNER_INGRESS plus production public route are genuinely observed.
+
+
+## Merge / validation evidence
+
+```text
+PR: StegVerse-Labs/StegVerse-Healer#41
+merge: 1a6dacf80b84e62b2c8709f9dcc75765cea1f5f7
+source state: MERGED_MAIN
+scheduler target installed: true
+second scheduler created: false
+second heartbeat created: false
+```
+
+Hosted Test Readiness run `33118079568`, job `98677773520`, passed the repository smoke suite, deterministic Healer tests, credential refusal, anonymous exact-source retrieval and validation-only authority checks on the prior semantic PR head. The final branch-only change before merge minimized JSON formatting churn and did not alter target semantics; no separate exact-final-head hosted run is claimed.
+
+Runtime distinctions remain:
+
+```text
+source merged: true
+real sovereign scheduler execution receipt: NOT OBSERVED
+local Coinbase Gateway READY: NOT OBSERVED
+production public HTTPS route: NOT OBSERVED
+TVC READY_FOR_OWNER_INGRESS: NOT OBSERVED
+```
+
+The next runtime attempt may proceed only when the already-local TVC tree contains the canonical non-secret no-value decision receipt. Missing decision/runtime/Docker prerequisites must remain BLOCKED.
