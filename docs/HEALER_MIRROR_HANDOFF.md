@@ -260,7 +260,7 @@ Canonical scoped handoff:
 
 This lane reuses the existing `SHWP-HEALER-SOVEREIGN-SCHEDULER-001` rather than creating a second scheduler or heartbeat.
 
-Installed source on branch `feat/coinbase-stegdeploy-sovereign-gateway-20260827`:
+Merged source on `main` via PR #41 / `1a6dacf80b84e62b2c8709f9dcc75765cea1f5f7`:
 
 ```text
 app/coinbase_stegdeploy_gateway.py
@@ -271,6 +271,6 @@ tests/test_coinbase_stegdeploy_gateway.py
 
 The handler consumes only already-local `StegVerse-org/LLM-adapter` + `StegVerse-Labs/TVC` roots, refuses GitHub/provider credentials, requires an authentic non-secret TVC no-value decision receipt, invokes the already-merged local StegDeploy bootstrap, and requires canonical loopback Coinbase readiness with `gateway_execution_authority=NONE`.
 
-Source installation does not claim sovereign execution, public HTTPS reachability, TVC recipient liveness, owner ingress, provider capability, order execution, or settlement.
+Source is MERGED on main. Hosted Test Readiness run `33118079568` / job `98677773520` passed the semantic implementation before a final formatting-only registry cleanup. This does not claim sovereign execution, public HTTPS reachability, TVC recipient liveness, owner ingress, provider capability, order execution, or settlement.
 
 Next runtime boundary: the existing sovereign scheduler executes this target on the admitted resident substrate. Missing local source, missing Docker/StegDeploy prerequisites, or missing TVC decision receipt must remain BLOCKED with no fabricated readiness.
