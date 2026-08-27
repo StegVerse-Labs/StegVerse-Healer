@@ -69,6 +69,61 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
             with self.assertRaisesRegex(mod.GatewayActivationError, "NOT_MATERIALIZED"):
                 mod.locate_decision(root)
 
+
+    def test_tls_locators_are_path_only_and_must_be_paired(self) -> None:
+        import os
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            cert = root / "cert.pem"
+            key = root / "key.pem"
+            cert.write_text("cert", encoding="utf-8")
+            key.write_text("key", encoding="utf-8")
+
+            old = dict(os.environ)
+            try:
+                os.environ[mod.TLS_CERT_ENV] = str(cert)
+                os.environ.pop(mod.TLS_KEY_ENV, None)
+                with self.assertRaisesRegex(mod.GatewayActivationError, "MUST_BE_PAIRED"):
+                    mod.resolve_tls_request()
+
+                os.environ[mod.TLS_KEY_ENV] = str(key)
+                os.environ[mod.TLS_BIND_ENV] = "0.0.0.0"
+                os.environ[mod.TLS_PORT_ENV] = "443"
+                request = mod.resolve_tls_request()
+                self.assertIsNotNone(request)
+                self.assertEqual(request["cert_file"], cert.resolve())
+                self.assertEqual(request["key_file"], key.resolve())
+                self.assertEqual(request["bind_address"], "0.0.0.0")
+                self.assertEqual(request["port"], 443)
+            finally:
+                os.environ.clear()
+                os.environ.update(old)
+
+    def test_tls_deploy_command_uses_existing_bootstrap_without_secret_values(self) -> None:
+        request = {
+            "cert_file": Path("/runtime/tvc/gateway-cert.pem"),
+            "key_file": Path("/runtime/tvc/gateway-key.pem"),
+            "bind_address": "0.0.0.0",
+            "port": 443,
+        }
+        command, readiness_url, tls_enabled = mod.build_deploy_command(request)
+        self.assertTrue(tls_enabled)
+        self.assertIn("deploy-tls", command)
+        self.assertIn("/runtime/tvc/gateway-cert.pem", command)
+        self.assertIn("/runtime/tvc/gateway-key.pem", command)
+        self.assertIn("0.0.0.0", command)
+        self.assertIn("443", command)
+        self.assertEqual(readiness_url, "https://127.0.0.1:443/api/coinbase/skap/readiness")
+        self.assertNotIn("PRIVATE KEY", " ".join(command))
+        self.assertNotIn("BEGIN CERTIFICATE", " ".join(command))
+
+    def test_http_mode_remains_local_and_non_public(self) -> None:
+        command, readiness_url, tls_enabled = mod.build_deploy_command(None)
+        self.assertFalse(tls_enabled)
+        self.assertIn("deploy", command)
+        self.assertEqual(readiness_url, mod.READINESS_URL)
+        self.assertTrue(readiness_url.startswith("http://127.0.0.1:"))
+
     def test_scheduler_target_is_registered_and_bounded(self) -> None:
         root = Path(__file__).resolve().parents[1]
         config = json.loads((root / "data/orchestrator_targets.json").read_text(encoding="utf-8"))
