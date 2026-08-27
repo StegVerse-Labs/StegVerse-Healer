@@ -46,10 +46,10 @@ Imported baseline:
 Current target-repository evidence, rechecked on live `StegVerse-Labs/.github/main`:
 
 ```text
-10 workflow files
+8 workflow files
 8 automatic-push
 2 PR/manual-only
-8 standalone workflows removed with parity proof
+10 standalone workflows removed with parity preservation
 2 stable dispatchers established
 reduction: 7/18 = 38.89%
 ```
@@ -93,13 +93,11 @@ StegVerse-Labs/.github/docs/ACTIONS_FANOUT_REPAIR_MIRROR_HANDOFF.md
 
 ## Remaining workflow classes
 
-The eight non-dispatcher workflows now remaining are predominantly owner-sensitive and must not be deleted for denominator pressure alone:
+The six non-dispatcher workflows now remaining are predominantly owner-sensitive and must not be deleted for denominator pressure alone:
 
 ```text
 activate-ecosystem-chat-sovereign-inference-worker.yml — active owner #60
 activate-sovereign-runtime-worker.yml — active durable-runtime owner #59
-all-org-heartbeat-federation.yml — owner #81
-mcp-activation-binding-test.yml — active MCP ownership
 sovereign-ephemeral-console.yml — durable-runtime/G18 ownership
 sovereign-runtime-self-bootstrap.yml — #59/#65 ownership
 stegfin-early-adopter-contribution-validator-source.yml — active StegFin ownership
@@ -119,9 +117,31 @@ stable dispatcher: .github/workflows/heartbeat-worker-project.yml
 runtime/autolaunch source changed: false
 direct Test Lanes runner changed: false
 credential/runtime authority effect: NONE
-current workflow count: 10
-remaining non-dispatchers: 8
+current workflow count: 8
+remaining non-dispatchers: 6
 ```
+
+## 2026-08-27 federation and MCP consolidation
+
+Two additional owner-safe validation surfaces were consolidated into the stable heartbeat-worker dispatcher without altering their machine-owned runtime tasks:
+
+```text
+all-org-heartbeat-federation.yml -> REMOVED
+  parity: tests/test_organization_federation_binding.py + existing federation suites
+  issue #81 live topology task: STILL ACTIVE / MACHINE_OWNED
+
+mcp-activation-binding-test.yml -> REMOVED
+  parity: tests/test_sdk_mcp_activation_binding.py + tests/test_sdk_mcp_canonical_validation_worker.py
+  SDK MCP exact sovereign artifact task: STILL HANDOFF_READY / MACHINE_OWNED
+
+current workflow count: 8
+stable dispatchers: 2
+non-dispatchers: 6
+automatic-push workflows: 7
+PR-only workflows: 1
+```
+
+This is hosted-validation surface reduction only. It does not constitute federation coverage, MCP runtime validation, release, activation, or sovereign-node evidence.
 
 ## Site cost dependency — reconciled current state
 
@@ -161,6 +181,6 @@ Do not create a second scheduler/runtime lane. Once the existing durable-runtime
 
 ## Completion gate
 
-This hygiene goal is not complete. Eleven `.github` workflows remain, nine are not yet terminally classified, Site cost work remains active, the sovereign scheduler has no live receipt, and count >2 cannot be accepted without explicit exception evidence.
+This hygiene goal is not complete. Eight `.github` workflows remain, six are not yet terminally classified, Site cost work remains active, the sovereign scheduler has no live receipt, and count >2 cannot be accepted without explicit exception evidence.
 
 Current status: `DO NOT ARCHIVE THIS SESSION — UNIQUE ACTIVE WORK REMAINS.`
