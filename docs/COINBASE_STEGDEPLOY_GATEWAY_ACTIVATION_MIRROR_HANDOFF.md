@@ -145,3 +145,19 @@ schema/digest/SHA-256 bindings: REQUIRED
 ```
 
 Source prerequisites for an admitted local StegDeploy attempt are now installed. Actual scheduler execution and local/public route observations remain unobserved.
+
+
+## Downstream sovereign route discovery source complete
+
+The local runtime target's downstream route-discovery contract is now source-complete:
+
+```text
+LLM-adapter node advertisement PR #208:
+  merge 479b8caad6504317603e60661f2f79d7fd04afcc
+TVC advertised-route observer PR #179:
+  merge f883fa2a9ed01a3bba78510a9216b17eb7dffac0
+  Stage Drain Validation 33119463670 SUCCESS
+  Capability Broker Validation 33119463674 SUCCESS
+```
+
+After a real local StegDeploy execution, the node itself can advertise Coinbase routes and TVC can consume them without an out-of-band hostname. Actual public TLS ingress/reachability remains separate and unobserved.
