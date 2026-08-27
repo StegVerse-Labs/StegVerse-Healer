@@ -6,18 +6,9 @@
       "workflow": "site-task-runner.yml",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "site"
-      ],
-      "run_hours_utc": [
-        0,
-        6,
-        12,
-        18
-      ],
-      "inputs": {
-        "task": "all-local"
-      },
+      "aliases": ["site"],
+      "run_hours_utc": [0, 6, 12, 18],
+      "inputs": {"task": "all-local"},
       "status": "sovereign-local-handler-bound"
     },
     {
@@ -25,17 +16,8 @@
       "workflow": "site-b27-native-validation",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "site-b27",
-        "site-b27-validation",
-        "thought-experiments-b27"
-      ],
-      "run_hours_utc": [
-        0,
-        6,
-        12,
-        18
-      ],
+      "aliases": ["site-b27", "site-b27-validation", "thought-experiments-b27"],
+      "run_hours_utc": [0, 6, 12, 18],
       "inputs": {},
       "status": "sovereign-local-b27-validation-no-github-token-no-remote-checkout-no-artifact-custody"
     },
@@ -44,36 +26,8 @@
       "workflow": "marketplace-coinbase-local-observer",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "site-marketplace-coinbase",
-        "marketplace-coinbase-observer"
-      ],
-      "run_hours_utc": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23
-      ],
+      "aliases": ["site-marketplace-coinbase", "marketplace-coinbase-observer"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
       "inputs": {},
       "status": "sovereign-local-hourly-observer-no-github-token-no-remote-checkout"
     },
@@ -82,36 +36,8 @@
       "workflow": "marketplace-coinbase-local-projection-import",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "site-marketplace-projection",
-        "marketplace-coinbase-projection"
-      ],
-      "run_hours_utc": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23
-      ],
+      "aliases": ["site-marketplace-projection", "marketplace-coinbase-projection"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
       "inputs": {},
       "status": "sovereign-local-hourly-projection-import-no-github-token-no-remote-fetch"
     },
@@ -120,36 +46,8 @@
       "workflow": "child-safety-public-deployment-observer",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "site-child-safety",
-        "child-safety-public-observer"
-      ],
-      "run_hours_utc": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23
-      ],
+      "aliases": ["site-child-safety", "child-safety-public-observer"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
       "inputs": {},
       "status": "sovereign-local-hourly-public-route-observer-no-github-token-no-artifact-custody"
     },
@@ -158,14 +56,8 @@
       "workflow": "executive-rhetoric-ledger-local-sync",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "site-erl-sync",
-        "executive-rhetoric-ledger-sync",
-        "erl-sync"
-      ],
-      "run_hours_utc": [
-        14
-      ],
+      "aliases": ["site-erl-sync", "executive-rhetoric-ledger-sync", "erl-sync"],
+      "run_hours_utc": [14],
       "inputs": {},
       "canonical_owner": "StegVerse-Labs/StegVerse-Healer#39",
       "source_repository": "StegVerse-Labs/Executive_Rhetoric_Ledger",
@@ -179,37 +71,8 @@
       "workflow": "heartbeat-response-sovereign-carrier",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "site-heartbeat-response",
-        "heartbeat-response-watchdog",
-        "heartbeat-response-collector"
-      ],
-      "run_hours_utc": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23
-      ],
+      "aliases": ["site-heartbeat-response", "heartbeat-response-watchdog", "heartbeat-response-collector"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
       "inputs": {},
       "canonical_owner": "StegVerse-Labs/Site#234",
       "migration_issue": "StegVerse-Labs/Site#411",
@@ -220,37 +83,8 @@
       "workflow": "stegfin-public-wallet-transport-observer",
       "ref": "main",
       "enabled": false,
-      "aliases": [
-        "site-stegfin-publication",
-        "stegfin-wallet-publication",
-        "stegfin-public-wallet-transport"
-      ],
-      "run_hours_utc": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23
-      ],
+      "aliases": ["site-stegfin-publication", "stegfin-wallet-publication", "stegfin-public-wallet-transport"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
       "inputs": {},
       "canonical_owner": "StegVerse-Labs/Site#388",
       "canonical_surface": ".github/workflows/validate.yml + scripts/check_stegfin_public_wallet_transport.py",
@@ -262,17 +96,8 @@
       "workflow": "st018-local-task-manager",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "repo-standards",
-        "st018-local",
-        "st018-task-manager"
-      ],
-      "run_hours_utc": [
-        0,
-        6,
-        12,
-        18
-      ],
+      "aliases": ["repo-standards", "st018-local", "st018-task-manager"],
+      "run_hours_utc": [0, 6, 12, 18],
       "inputs": {},
       "status": "sovereign-local-st018-task-manager-no-github-token-no-remote-checkout"
     },
@@ -281,20 +106,9 @@
       "workflow": "scw_orchestrator.yml",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "scw"
-      ],
-      "run_hours_utc": [
-        0,
-        6,
-        12,
-        18
-      ],
-      "inputs": {
-        "cmd": "org-scan",
-        "orgs": "StegVerse-Labs",
-        "dry_run": "true"
-      },
+      "aliases": ["scw"],
+      "run_hours_utc": [0, 6, 12, 18],
+      "inputs": {"cmd": "org-scan", "orgs": "StegVerse-Labs", "dry_run": "true"},
       "status": "sovereign-local-handler-bound-no-github-token"
     },
     {
@@ -302,36 +116,8 @@
       "workflow": "uptime.yml",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "scw-uptime",
-        "uptime"
-      ],
-      "run_hours_utc": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23
-      ],
+      "aliases": ["scw-uptime", "uptime"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
       "inputs": {},
       "status": "sovereign-local-hourly-handler-bound"
     },
@@ -340,13 +126,8 @@
       "workflow": "tv_self_heal.yml",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "tv",
-        "tv-self-heal"
-      ],
-      "run_hours_utc": [
-        6
-      ],
+      "aliases": ["tv", "tv-self-heal"],
+      "run_hours_utc": [6],
       "inputs": {},
       "status": "sovereign-local-handler-bound-tvc-execution-grant-required"
     },
@@ -354,9 +135,7 @@
       "repo": "StegVerse-Labs/CosDen",
       "enabled": false,
       "audit_only": true,
-      "aliases": [
-        "cosden"
-      ],
+      "aliases": ["cosden"],
       "canonical_owner": "StegVerse-Labs/StegDB",
       "canonical_path": "canonical/cosden",
       "handoff": "docs/COSDEN_MIRROR_HANDOFF.md",
@@ -367,16 +146,8 @@
       "workflow": "continuity.yml",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "continuity",
-        "continuity-guardian"
-      ],
-      "run_hours_utc": [
-        0,
-        6,
-        12,
-        18
-      ],
+      "aliases": ["continuity", "continuity-guardian"],
+      "run_hours_utc": [0, 6, 12, 18],
       "inputs": {},
       "status": "sovereign-local-handler-bound-no-github-token"
     },
@@ -385,13 +156,8 @@
       "workflow": "quiet_enforcer.yml",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "quiet-enforcer",
-        "schedule-audit"
-      ],
-      "run_hours_utc": [
-        3
-      ],
+      "aliases": ["quiet-enforcer", "schedule-audit"],
+      "run_hours_utc": [3],
       "inputs": {},
       "status": "sovereign-local-handler-bound-no-github-token"
     },
@@ -400,36 +166,8 @@
       "workflow": "stegdeploy-publication-relay.yml",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "stegdeploy-relay",
-        "publication-relay"
-      ],
-      "run_hours_utc": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23
-      ],
+      "aliases": ["stegdeploy-relay", "publication-relay"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
       "inputs": {},
       "status": "sovereign-local-handler-bound-local-image-proof-required"
     },
@@ -438,37 +176,8 @@
       "workflow": "coinbase-stegdeploy-sovereign-gateway",
       "ref": "main",
       "enabled": true,
-      "aliases": [
-        "coinbase-gateway",
-        "coinbase-stegdeploy",
-        "skap-gateway"
-      ],
-      "run_hours_utc": [
-        0,
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        18,
-        19,
-        20,
-        21,
-        22,
-        23
-      ],
+      "aliases": ["coinbase-gateway", "coinbase-stegdeploy", "skap-gateway"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
       "inputs": {},
       "canonical_owner": "StegVerse-Labs/TVC#119",
       "handoff": "docs/COINBASE_STEGDEPLOY_GATEWAY_ACTIVATION_MIRROR_HANDOFF.md",
