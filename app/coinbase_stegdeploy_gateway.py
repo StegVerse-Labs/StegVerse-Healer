@@ -31,8 +31,8 @@ class GatewayActivationError(ValueError):
     pass
 
 
-def load_roots() -> dict[str, Path]:
-    raw = os.getenv("STEGVERSE_REPO_ROOTS_JSON", "").strip()
+def load_roots(raw_override: str | None = None) -> dict[str, Path]:
+    raw = (raw_override if raw_override is not None else os.getenv("STEGVERSE_REPO_ROOTS_JSON", "")).strip()
     if not raw:
         raise GatewayActivationError("STEGVERSE_REPO_ROOTS_JSON_REQUIRED")
     value = json.loads(raw)
@@ -115,8 +115,8 @@ def _clean_env(decision: dict[str, Any]) -> dict[str, str]:
     return env
 
 
-def execute() -> dict[str, Any]:
-    roots = load_roots()
+def execute(roots_json: str | None = None) -> dict[str, Any]:
+    roots = load_roots(roots_json)
     llm_root = roots.get(LLM_REPO)
     tvc_root = roots.get(TVC_REPO)
     if llm_root is None:
