@@ -10,22 +10,35 @@ from app import coinbase_stegdeploy_gateway as mod
 
 class CoinbaseStegDeployGatewayTests(unittest.TestCase):
     def decision(self) -> dict:
-        return {
+        body = {
+            "schema": "stegverse.tvc.coinbase_service_gateway_no_value_decision/v1",
             "role": "service_gateway_coinbase_skap_ciphertext_intake",
             "admissible": True,
             "binding_matched": True,
             "allowed_keys": [],
             "denied_keys": [],
             "credential_values_available": False,
-            "decision_id": "sha256:test-decision",
-            "policy_hash": "sha256:test-policy",
+            "decision_id": "sha256:" + "d" * 64,
+            "policy_hash": "sha256:" + "a" * 64,
         }
+        return {**body, "receipt_digest": mod.digest(body)}
+
+    def redigest(self, receipt: dict) -> None:
+        body = {k: v for k, v in receipt.items() if k != "receipt_digest"}
+        receipt["receipt_digest"] = mod.digest(body)
 
     def test_decision_requires_no_value_tvc_scope(self) -> None:
         mod.validate_decision(self.decision())
         bad = self.decision()
         bad["credential_values_available"] = True
+        self.redigest(bad)
         with self.assertRaisesRegex(mod.GatewayActivationError, "CREDENTIAL_VALUE_SCOPE"):
+            mod.validate_decision(bad)
+
+    def test_decision_tamper_is_rejected_before_runtime(self) -> None:
+        bad = self.decision()
+        bad["admissible"] = False
+        with self.assertRaisesRegex(mod.GatewayActivationError, "RECEIPT_DIGEST_INVALID"):
             mod.validate_decision(bad)
 
     def test_readiness_preserves_gateway_authority_boundary(self) -> None:
