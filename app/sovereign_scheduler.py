@@ -303,6 +303,24 @@ def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_js
         state = "COMPLETE" if result["returncode"] == 0 and payload and payload.get("state") in {"COMPLETE","NOOP_ALREADY_VERIFIED"} else "BLOCKED"
         return {**base,"state":state,"outcome":"SOVEREIGN_LOCAL_STEGDEPLOY_RELAY","receipt":payload,"execution":result}
 
+    if repo == "StegVerse-org/LLM-adapter" and workflow == "coinbase-stegdeploy-sovereign-gateway":
+        from app.coinbase_stegdeploy_gateway import execute as execute_coinbase_gateway
+        try:
+            payload = execute_coinbase_gateway(all_roots_json)
+        except Exception as exc:
+            payload = {
+                "schema":"stegverse.healer.coinbase_stegdeploy_gateway_activation/v1",
+                "state":"BLOCKED",
+                "outcome":str(exc),
+                "credential_authority":"TV/TVC",
+                "github_token_required":False,
+                "provider_operation_started":False,
+                "production_public_route_observed":False,
+                "authority_effect":"NONE",
+            }
+        state = "COMPLETE" if payload.get("state") == "COMPLETE" else "BLOCKED"
+        return {**base,"state":state,"outcome":"SOVEREIGN_LOCAL_COINBASE_STEGDEPLOY_GATEWAY","receipt":payload}
+
     return {**base, "state": "REVIEW_REQUIRED", "outcome": "NO_SOVEREIGN_HANDLER_BOUND"}
 
 
