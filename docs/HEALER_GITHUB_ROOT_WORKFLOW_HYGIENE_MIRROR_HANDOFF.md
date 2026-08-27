@@ -38,7 +38,7 @@ execution issue: Healer #34 OPEN
 Imported baseline:
 
 ```text
-18 workflow files
+15 workflow files
 12 automatic-push
 6 PR/manual-only
 ```
@@ -46,10 +46,10 @@ Imported baseline:
 Current target-repository evidence, rechecked on live `StegVerse-Labs/.github/main`:
 
 ```text
-8 workflow files
+5 workflow files
 8 automatic-push
 2 PR/manual-only
-10 standalone workflows removed with parity preservation
+13 standalone workflows removed with parity preservation
 2 stable dispatchers established
 reduction: 7/18 = 38.89%
 ```
@@ -93,13 +93,10 @@ StegVerse-Labs/.github/docs/ACTIONS_FANOUT_REPAIR_MIRROR_HANDOFF.md
 
 ## Remaining workflow classes
 
-The six non-dispatcher workflows now remaining are predominantly owner-sensitive and must not be deleted for denominator pressure alone:
+The three non-dispatcher workflows now remaining are predominantly owner-sensitive and must not be deleted for denominator pressure alone:
 
 ```text
 activate-ecosystem-chat-sovereign-inference-worker.yml — active owner #60
-activate-sovereign-runtime-worker.yml — active durable-runtime owner #59
-sovereign-ephemeral-console.yml — durable-runtime/G18 ownership
-sovereign-runtime-self-bootstrap.yml — #59/#65 ownership
 stegfin-early-adopter-contribution-validator-source.yml — active StegFin ownership
 steggate-heartbeat-integration.yml — active rendezvous handoff remains HANDOFF_READY
 ```
@@ -117,8 +114,8 @@ stable dispatcher: .github/workflows/heartbeat-worker-project.yml
 runtime/autolaunch source changed: false
 direct Test Lanes runner changed: false
 credential/runtime authority effect: NONE
-current workflow count: 8
-remaining non-dispatchers: 6
+current workflow count: 5
+remaining non-dispatchers: 3
 ```
 
 ## 2026-08-27 federation and MCP consolidation
@@ -134,7 +131,7 @@ mcp-activation-binding-test.yml -> REMOVED
   parity: tests/test_sdk_mcp_activation_binding.py + tests/test_sdk_mcp_canonical_validation_worker.py
   SDK MCP exact sovereign artifact task: STILL HANDOFF_READY / MACHINE_OWNED
 
-current workflow count: 8
+current workflow count: 5
 stable dispatchers: 2
 non-dispatchers: 6
 automatic-push workflows: 7
@@ -142,6 +139,26 @@ PR-only workflows: 1
 ```
 
 This is hosted-validation surface reduction only. It does not constitute federation coverage, MCP runtime validation, release, activation, or sovereign-node evidence.
+
+## 2026-08-27 sovereign runtime consolidation
+
+The three G18/sovereign-runtime hosted validation carriers were consolidated into the stable heartbeat-worker validation dispatcher after preserving their deterministic test coverage and automatic source-change validation.
+
+```text
+activate-sovereign-runtime-worker.yml -> REMOVED
+sovereign-runtime-self-bootstrap.yml -> REMOVED
+sovereign-ephemeral-console.yml -> REMOVED
+stable dispatcher: heartbeat-worker-project.yml
+G18 machine-owned runtime task: UNCHANGED / BLOCKED ON SOVEREIGN_NODE_DECLARATION_NOT_PRESENT
+native runtime source: PRESERVED
+runtime claim/fence: UNCHANGED
+current workflow count: 5
+non-dispatchers: 3
+automatic-push workflows: 4
+PR-only workflows: 1
+```
+
+This is validation-surface consolidation only. It does not fabricate sovereign-node evidence or complete G18.
 
 ## Site cost dependency — reconciled current state
 
@@ -181,6 +198,6 @@ Do not create a second scheduler/runtime lane. Once the existing durable-runtime
 
 ## Completion gate
 
-This hygiene goal is not complete. Eight `.github` workflows remain, six are not yet terminally classified, Site cost work remains active, the sovereign scheduler has no live receipt, and count >2 cannot be accepted without explicit exception evidence.
+This hygiene goal is not complete. Five `.github` workflows remain, three are not yet terminally classified, Site cost work remains active, the sovereign scheduler has no live receipt, and count >2 cannot be accepted without explicit exception evidence.
 
 Current status: `DO NOT ARCHIVE THIS SESSION — UNIQUE ACTIVE WORK REMAINS.`
