@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -13,6 +14,7 @@ from typing import Any
 LLM_REPO = "StegVerse-org/LLM-adapter"
 TVC_REPO = "StegVerse-Labs/TVC"
 ROLE = "service_gateway_coinbase_skap_ciphertext_intake"
+DECISION_SCHEMA = "stegverse.tvc.coinbase_service_gateway_no_value_decision/v1"
 READINESS_URL = "http://127.0.0.1:8000/api/coinbase/skap/readiness"
 FORBIDDEN_ENV = (
     "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "HEALER_GH_TOKEN", "HEALER_PAT",
@@ -29,6 +31,14 @@ DECISION_CANDIDATES = (
 
 class GatewayActivationError(ValueError):
     pass
+
+
+def canonical(value: Any) -> bytes:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+def digest(value: Any) -> str:
+    return "sha256:" + hashlib.sha256(canonical(value)).hexdigest()
 
 
 def load_roots(raw_override: str | None = None) -> dict[str, Path]:
@@ -48,6 +58,15 @@ def load_roots(raw_override: str | None = None) -> dict[str, Path]:
 
 
 def validate_decision(receipt: dict[str, Any]) -> None:
+    if receipt.get("schema") != DECISION_SCHEMA:
+        raise GatewayActivationError("TVC_DECISION_SCHEMA_INVALID")
+    body = {k: v for k, v in receipt.items() if k != "receipt_digest"}
+    if receipt.get("receipt_digest") != digest(body):
+        raise GatewayActivationError("TVC_DECISION_RECEIPT_DIGEST_INVALID")
+    for field in ("policy_hash", "decision_id"):
+        value = receipt.get(field)
+        if not isinstance(value, str) or not value.startswith("sha256:") or len(value) != 71:
+            raise GatewayActivationError(f"TVC_DECISION_{field.upper()}_INVALID")
     if receipt.get("role") != ROLE:
         raise GatewayActivationError("TVC_DECISION_ROLE_INVALID")
     if receipt.get("admissible") is not True or receipt.get("binding_matched") is not True:
