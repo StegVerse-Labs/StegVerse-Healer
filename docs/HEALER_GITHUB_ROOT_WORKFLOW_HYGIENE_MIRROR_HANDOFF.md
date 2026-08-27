@@ -38,7 +38,7 @@ execution issue: Healer #34 OPEN
 Imported baseline:
 
 ```text
-15 workflow files
+13 workflow files
 12 automatic-push
 6 PR/manual-only
 ```
@@ -46,10 +46,10 @@ Imported baseline:
 Current target-repository evidence, rechecked on live `StegVerse-Labs/.github/main`:
 
 ```text
-5 workflow files
+3 workflow files
 8 automatic-push
 2 PR/manual-only
-13 standalone workflows removed with parity preservation
+15 standalone workflows removed with parity preservation
 2 stable dispatchers established
 reduction: 7/18 = 38.89%
 ```
@@ -93,12 +93,10 @@ StegVerse-Labs/.github/docs/ACTIONS_FANOUT_REPAIR_MIRROR_HANDOFF.md
 
 ## Remaining workflow classes
 
-The three non-dispatcher workflows now remaining are predominantly owner-sensitive and must not be deleted for denominator pressure alone:
+The one non-dispatcher workflow now remaining are predominantly owner-sensitive and must not be deleted for denominator pressure alone:
 
 ```text
-activate-ecosystem-chat-sovereign-inference-worker.yml — active owner #60
 stegfin-early-adopter-contribution-validator-source.yml — active StegFin ownership
-steggate-heartbeat-integration.yml — active rendezvous handoff remains HANDOFF_READY
 ```
 
 Next Healer action is owner reconciliation for one bounded surface, followed by consolidation/transfer/elimination only if validation parity and runtime non-interference are proven. Otherwise record `KEEP_STANDALONE_EXCEPTION` with technical necessity.
@@ -114,8 +112,8 @@ stable dispatcher: .github/workflows/heartbeat-worker-project.yml
 runtime/autolaunch source changed: false
 direct Test Lanes runner changed: false
 credential/runtime authority effect: NONE
-current workflow count: 5
-remaining non-dispatchers: 3
+current workflow count: 3
+remaining non-dispatchers: 1
 ```
 
 ## 2026-08-27 federation and MCP consolidation
@@ -131,7 +129,7 @@ mcp-activation-binding-test.yml -> REMOVED
   parity: tests/test_sdk_mcp_activation_binding.py + tests/test_sdk_mcp_canonical_validation_worker.py
   SDK MCP exact sovereign artifact task: STILL HANDOFF_READY / MACHINE_OWNED
 
-current workflow count: 5
+current workflow count: 3
 stable dispatchers: 2
 non-dispatchers: 6
 automatic-push workflows: 7
@@ -152,13 +150,32 @@ stable dispatcher: heartbeat-worker-project.yml
 G18 machine-owned runtime task: UNCHANGED / BLOCKED ON SOVEREIGN_NODE_DECLARATION_NOT_PRESENT
 native runtime source: PRESERVED
 runtime claim/fence: UNCHANGED
-current workflow count: 5
+current workflow count: 3
 non-dispatchers: 3
 automatic-push workflows: 4
 PR-only workflows: 1
 ```
 
 This is validation-surface consolidation only. It does not fabricate sovereign-node evidence or complete G18.
+
+## 2026-08-27 inference and StegGate consolidation
+
+The hosted inference and StegGate validation workflows were consolidated into `heartbeat-worker-project.yml` after their unique boundary assertions were made normal deterministic tests.
+
+```text
+activate-ecosystem-chat-sovereign-inference-worker.yml -> REMOVED
+steggate-heartbeat-integration.yml -> REMOVED
+stable dispatcher: heartbeat-worker-project.yml
+inference runtime task: UNCHANGED / LIVE EXECUTION PENDING
+StegGate rendezvous task: UNCHANGED
+current workflow count: 3
+stable dispatchers: 2
+non-dispatchers: 1
+automatic-push workflows: 2
+PR-only workflows: 1
+```
+
+The remaining non-dispatcher is `stegfin-early-adopter-contribution-validator-source.yml`, whose source lane is separately owner-bound. It must be reconciled with that canonical owner before removal or recorded as an explicit standalone exception.
 
 ## Site cost dependency — reconciled current state
 
@@ -198,6 +215,6 @@ Do not create a second scheduler/runtime lane. Once the existing durable-runtime
 
 ## Completion gate
 
-This hygiene goal is not complete. Five `.github` workflows remain, three are not yet terminally classified, Site cost work remains active, the sovereign scheduler has no live receipt, and count >2 cannot be accepted without explicit exception evidence.
+This hygiene goal is not complete. Three `.github` workflows remain; the single non-dispatcher is the active StegFin early-adopter validation source lane, Site cost work remains active, the sovereign scheduler has no live receipt, and count >2 cannot be accepted without explicit exception evidence.
 
 Current status: `DO NOT ARCHIVE THIS SESSION — UNIQUE ACTIVE WORK REMAINS.`
