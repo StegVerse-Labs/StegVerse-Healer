@@ -19,7 +19,7 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
             "denied_keys": [],
             "credential_values_available": False,
             "decision_id": "sha256:" + "d" * 64,
-            "policy_hash": "sha256:" + "p" * 64,
+            "policy_hash": "sha256:" + "a" * 64,
         }
         return {**body, "receipt_digest": mod.digest(body)}
 
