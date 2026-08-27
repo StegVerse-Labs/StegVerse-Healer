@@ -120,3 +120,28 @@ TVC READY_FOR_OWNER_INGRESS: NOT OBSERVED
 ```
 
 The next runtime attempt may proceed only when the already-local TVC tree contains the canonical non-secret no-value decision receipt. Missing decision/runtime/Docker prerequisites must remain BLOCKED.
+
+
+## TVC decision availability + consumer hardening
+
+The downstream TVC decision prerequisite is now source-materialized and hosted-validated:
+
+```text
+StegVerse-Labs/TVC PR #173
+merge: e8813e81494deb8e8563763675b5123e360397e6
+receipt: receipts/service-gateway/coinbase-skap-intake-decision.json
+Stage Drain Validation 33118626226: SUCCESS
+Capability Broker Validation 33118626234: SUCCESS
+credential material: NONE
+```
+
+The Healer consumer now verifies that decision before any deploy attempt:
+
+```text
+Healer PR #42
+merge: a60e9d6717b4784591dffca8147b0b4afda2d468
+Test Readiness 33118760520: SUCCESS
+schema/digest/SHA-256 bindings: REQUIRED
+```
+
+Source prerequisites for an admitted local StegDeploy attempt are now installed. Actual scheduler execution and local/public route observations remain unobserved.
