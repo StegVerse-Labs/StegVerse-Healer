@@ -4,7 +4,7 @@ Updated: 2026-08-26 16:18 CDT
 Repository owner: `StegVerse-Labs/StegVerse-Healer`
 Target repository: `StegVerse-Labs/.github`
 Canonical issue: `StegVerse-Labs/StegVerse-Healer#34`
-State: ACTIVE_OWNER_RECONCILIATION_AND_COST_REDUCTION
+State: COMPLETE_TARGET_REACHED
 
 ## Authority
 
@@ -38,7 +38,7 @@ execution issue: Healer #34 OPEN
 Imported baseline:
 
 ```text
-13 workflow files
+12 workflow files
 12 automatic-push
 6 PR/manual-only
 ```
@@ -46,10 +46,10 @@ Imported baseline:
 Current target-repository evidence, rechecked on live `StegVerse-Labs/.github/main`:
 
 ```text
-3 workflow files
+2 workflow files
 8 automatic-push
 2 PR/manual-only
-15 standalone workflows removed with parity preservation
+16 standalone workflows removed with parity preservation
 2 stable dispatchers established
 reduction: 7/18 = 38.89%
 ```
@@ -93,13 +93,14 @@ StegVerse-Labs/.github/docs/ACTIONS_FANOUT_REPAIR_MIRROR_HANDOFF.md
 
 ## Remaining workflow classes
 
-The one non-dispatcher workflow now remaining are predominantly owner-sensitive and must not be deleted for denominator pressure alone:
+No non-dispatcher workflow remains. The target repository now contains only the two stable dispatchers:
 
 ```text
-stegfin-early-adopter-contribution-validator-source.yml — active StegFin ownership
+org-control-plane-validate.yml
+heartbeat-worker-project.yml
 ```
 
-Next Healer action is owner reconciliation for one bounded surface, followed by consolidation/transfer/elimination only if validation parity and runtime non-interference are proven. Otherwise record `KEEP_STANDALONE_EXCEPTION` with technical necessity.
+The preferred 0/1/2 workflow target is satisfied without converting hosted CI into runtime authority.
 
 ## 2026-08-26 test-lanes consolidation
 
@@ -177,6 +178,24 @@ PR-only workflows: 1
 
 The remaining non-dispatcher is `stegfin-early-adopter-contribution-validator-source.yml`, whose source lane is separately owner-bound. It must be reconciled with that canonical owner before removal or recorded as an explicit standalone exception.
 
+## 2026-08-27 stable target reached
+
+The final standalone StegFin source-validation workflow was consolidated into the stable heartbeat-worker dispatcher after converting its public worker boundary tests to dependency-free `unittest`.
+
+```text
+initial workflow denominator: 18
+current workflow count: 2
+stable dispatchers: 2
+non-dispatchers: 0
+standalone workflows removed/consolidated: 16
+preferred target 0/1/2: SATISFIED
+target repository registry: COMPLETE_STABLE_TWO_DISPATCHERS
+runtime authority effect: NONE
+credential authority: TV/TVC
+```
+
+The remaining machine-owned StegFin private-source validation task remains blocked on `AUTHORIZED_LOCAL_PRIVATE_SOURCE_PATH_NOT_YET_OBSERVED`; its runtime outcome is not claimed complete by this workflow reduction.
+
 ## Site cost dependency — reconciled current state
 
 GitHub billing evidence supplied during the Actions cost session identified `StegVerse-Labs/Site` as the largest observed Actions repository cost center. Canonical Site authority remains `StegVerse-Labs/Site/docs/ACTIONS_COST_CONTAINMENT_MIRROR_HANDOFF.md` / Site #268.
@@ -215,6 +234,6 @@ Do not create a second scheduler/runtime lane. Once the existing durable-runtime
 
 ## Completion gate
 
-This hygiene goal is not complete. Three `.github` workflows remain; the single non-dispatcher is the active StegFin early-adopter validation source lane, Site cost work remains active, the sovereign scheduler has no live receipt, and count >2 cannot be accepted without explicit exception evidence.
+The `.github` workflow-surface hygiene goal is complete at the preferred two-dispatcher target. Separate Site cost, scheduler, runtime, ERL, B27, and publication lanes remain governed by their own handoffs and do not reopen this completed repository-hygiene goal.
 
 Current status: `DO NOT ARCHIVE THIS SESSION — UNIQUE ACTIVE WORK REMAINS.`
