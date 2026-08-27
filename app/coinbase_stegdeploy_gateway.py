@@ -41,6 +41,15 @@ def digest(value: Any) -> str:
     return "sha256:" + hashlib.sha256(canonical(value)).hexdigest()
 
 
+def valid_sha256(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and value.startswith("sha256:")
+        and len(value) == 71
+        and all(ch in "0123456789abcdef" for ch in value[7:])
+    )
+
+
 def load_roots(raw_override: str | None = None) -> dict[str, Path]:
     raw = (raw_override if raw_override is not None else os.getenv("STEGVERSE_REPO_ROOTS_JSON", "")).strip()
     if not raw:
@@ -65,7 +74,7 @@ def validate_decision(receipt: dict[str, Any]) -> None:
         raise GatewayActivationError("TVC_DECISION_RECEIPT_DIGEST_INVALID")
     for field in ("policy_hash", "decision_id"):
         value = receipt.get(field)
-        if not isinstance(value, str) or not value.startswith("sha256:") or len(value) != 71:
+        if not valid_sha256(value):
             raise GatewayActivationError(f"TVC_DECISION_{field.upper()}_INVALID")
     if receipt.get("role") != ROLE:
         raise GatewayActivationError("TVC_DECISION_ROLE_INVALID")
