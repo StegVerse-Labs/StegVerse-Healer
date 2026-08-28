@@ -21,6 +21,10 @@ TLS_CERT_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_CERT_FILE"
 TLS_KEY_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_KEY_FILE"
 TLS_BIND_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_BIND_ADDRESS"
 TLS_PORT_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_PORT"
+TLS_ADOPTION_RECEIPT_ENV = "STEGVERSE_TVC_SERVICE_GATEWAY_TLS_ADOPTION_RECEIPT"
+TLS_ADOPTION_RECEIPT_DEFAULT = Path("/var/lib/stegverse/tvc/service-gateway-tls/latest.json")
+TVC_TLS_CREDENTIAL_ROOT = Path("/run/stegverse/tv-tvc-credentials")
+TLS_ADOPTION_SCHEMA = "stegverse.tvc.service_gateway_tls_material_adoption/v1"
 FORBIDDEN_ENV = (
     "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "HEALER_GH_TOKEN", "HEALER_PAT",
     "GH_STEGVERSE_AI_TOKEN", "ACTIONS_RUNTIME_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
@@ -55,21 +59,7 @@ def valid_sha256(value: Any) -> bool:
     )
 
 
-def resolve_tls_request() -> dict[str, Any] | None:
-    cert_raw = os.getenv(TLS_CERT_ENV, "").strip()
-    key_raw = os.getenv(TLS_KEY_ENV, "").strip()
-    if bool(cert_raw) != bool(key_raw):
-        raise GatewayActivationError("TLS_CERT_AND_KEY_LOCATORS_MUST_BE_PAIRED")
-    if not cert_raw:
-        return None
-
-    cert_file = Path(cert_raw).expanduser().resolve()
-    key_file = Path(key_raw).expanduser().resolve()
-    if not cert_file.is_file():
-        raise GatewayActivationError("TLS_CERT_FILE_NOT_MATERIALIZED")
-    if not key_file.is_file():
-        raise GatewayActivationError("TLS_KEY_FILE_NOT_MATERIALIZED")
-
+def _tls_bind_port() -> tuple[str, int]:
     bind_address = os.getenv(TLS_BIND_ENV, "0.0.0.0").strip() or "0.0.0.0"
     try:
         port = int(os.getenv(TLS_PORT_ENV, "443"))
@@ -77,14 +67,126 @@ def resolve_tls_request() -> dict[str, Any] | None:
         raise GatewayActivationError("TLS_PORT_INVALID") from exc
     if not (1 <= port <= 65535):
         raise GatewayActivationError("TLS_PORT_INVALID")
+    return bind_address, port
 
+
+def _validate_tvc_tls_locator(raw: Any, label: str) -> Path:
+    if not isinstance(raw, str) or not raw.strip():
+        raise GatewayActivationError(f"TVC_TLS_ADOPTION_{label}_LOCATOR_MISSING")
+    path = Path(raw).expanduser()
+    if not path.is_absolute():
+        raise GatewayActivationError(f"TVC_TLS_ADOPTION_{label}_LOCATOR_NOT_ABSOLUTE")
+    if path.is_symlink():
+        raise GatewayActivationError(f"TVC_TLS_ADOPTION_{label}_LOCATOR_SYMLINK_FORBIDDEN")
+    resolved = path.resolve()
+    try:
+        resolved.relative_to(TVC_TLS_CREDENTIAL_ROOT.resolve())
+    except ValueError as exc:
+        raise GatewayActivationError(f"TVC_TLS_ADOPTION_{label}_LOCATOR_OUTSIDE_TVC_ROOT") from exc
+    if not resolved.is_file():
+        raise GatewayActivationError(f"TVC_TLS_ADOPTION_{label}_FILE_NOT_MATERIALIZED")
+    return resolved
+
+
+def validate_tls_adoption_receipt(receipt: dict[str, Any]) -> dict[str, Any]:
+    expected = {
+        "schema": TLS_ADOPTION_SCHEMA,
+        "state": "READY_FOR_STEGDEPLOY_TLS",
+        "credential_authority": "TV/TVC",
+        "gateway_credential_authority": "NONE",
+        "provider_operation_authority": "NONE",
+        "certificate_material_present": True,
+        "private_key_material_present": True,
+        "private_key_bytes_recorded": False,
+        "private_key_exported": False,
+        "credential_material_exported": False,
+        "certificate_pair_verified": True,
+        "certificate_hostname_verified": True,
+        "certificate_time_valid": True,
+        "certificate_acquisition_performed": False,
+        "certificate_issuance_performed": False,
+        "certificate_renewal_performed": False,
+        "certificate_revocation_performed": False,
+        "generalized_certificate_manager_created": False,
+        "github_token_required": False,
+        "production_public_route_observed": False,
+        "ready_for_owner_ingress": False,
+        "authority_effect": "TVC_RESIDENT_TLS_MATERIAL_ADOPTION_ONLY",
+    }
+    failed = [key for key, value in expected.items() if receipt.get(key) != value]
+    if failed:
+        raise GatewayActivationError("TVC_TLS_ADOPTION_BOUNDARY_INVALID:" + ",".join(sorted(failed)))
+    if not valid_sha256(receipt.get("certificate_sha256")):
+        raise GatewayActivationError("TVC_TLS_ADOPTION_CERTIFICATE_SHA256_INVALID")
+    body = {k: v for k, v in receipt.items() if k != "receipt_sha256"}
+    if receipt.get("receipt_sha256") != digest(body):
+        raise GatewayActivationError("TVC_TLS_ADOPTION_RECEIPT_DIGEST_INVALID")
+    hostname = receipt.get("hostname")
+    if not isinstance(hostname, str) or not hostname or "/" in hostname or ":" in hostname:
+        raise GatewayActivationError("TVC_TLS_ADOPTION_HOSTNAME_INVALID")
+    cert_file = _validate_tvc_tls_locator(receipt.get("certificate_file_locator"), "CERT")
+    key_file = _validate_tvc_tls_locator(receipt.get("private_key_file_locator"), "KEY")
     return {
         "cert_file": cert_file,
         "key_file": key_file,
-        "bind_address": bind_address,
-        "port": port,
+        "hostname": hostname,
+        "certificate_sha256": receipt["certificate_sha256"],
+        "receipt_sha256": receipt["receipt_sha256"],
     }
 
+
+def locate_tls_adoption_receipt() -> tuple[Path, dict[str, Any]] | None:
+    explicit = os.getenv(TLS_ADOPTION_RECEIPT_ENV, "").strip()
+    path = Path(explicit).expanduser().resolve() if explicit else TLS_ADOPTION_RECEIPT_DEFAULT
+    if not path.is_file():
+        if explicit:
+            raise GatewayActivationError("TVC_TLS_ADOPTION_RECEIPT_NOT_MATERIALIZED")
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise GatewayActivationError("TVC_TLS_ADOPTION_RECEIPT_UNREADABLE") from exc
+    if not isinstance(value, dict):
+        raise GatewayActivationError("TVC_TLS_ADOPTION_RECEIPT_OBJECT_REQUIRED")
+    return path, value
+
+
+def resolve_tls_request() -> dict[str, Any] | None:
+    cert_raw = os.getenv(TLS_CERT_ENV, "").strip()
+    key_raw = os.getenv(TLS_KEY_ENV, "").strip()
+    if bool(cert_raw) != bool(key_raw):
+        raise GatewayActivationError("TLS_CERT_AND_KEY_LOCATORS_MUST_BE_PAIRED")
+
+    bind_address, port = _tls_bind_port()
+    if cert_raw:
+        cert_file = Path(cert_raw).expanduser().resolve()
+        key_file = Path(key_raw).expanduser().resolve()
+        if not cert_file.is_file():
+            raise GatewayActivationError("TLS_CERT_FILE_NOT_MATERIALIZED")
+        if not key_file.is_file():
+            raise GatewayActivationError("TLS_KEY_FILE_NOT_MATERIALIZED")
+        return {
+            "cert_file": cert_file,
+            "key_file": key_file,
+            "bind_address": bind_address,
+            "port": port,
+            "locator_source": "EXPLICIT_TV_TVC_RUNTIME_FILE_PATHS",
+            "adoption_receipt_sha256": None,
+        }
+
+    located = locate_tls_adoption_receipt()
+    if located is None:
+        return None
+    _path, receipt = located
+    adopted = validate_tls_adoption_receipt(receipt)
+    return {
+        "cert_file": adopted["cert_file"],
+        "key_file": adopted["key_file"],
+        "bind_address": bind_address,
+        "port": port,
+        "locator_source": "TVC_TLS_ADOPTION_RECEIPT",
+        "adoption_receipt_sha256": adopted["receipt_sha256"],
+    }
 
 def build_deploy_command(tls_request: dict[str, Any] | None) -> tuple[list[str], str, bool]:
     if tls_request is None:
@@ -285,7 +387,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "github_token_required": False,
         "render_required": False,
         "tls_enabled": tls_enabled,
-        "tls_locator_source": "TV_TVC_RUNTIME_FILE_PATHS" if tls_enabled else "NONE",
+        "tls_locator_source": str(tls_request.get("locator_source")) if tls_enabled and tls_request else "NONE",
+        "tls_adoption_receipt_sha256": tls_request.get("adoption_receipt_sha256") if tls_enabled and tls_request else None,
         "tls_private_key_material_recorded": False,
         "public_certificate_hostname_verified": False,
         "network_source_fetch_performed": False,
