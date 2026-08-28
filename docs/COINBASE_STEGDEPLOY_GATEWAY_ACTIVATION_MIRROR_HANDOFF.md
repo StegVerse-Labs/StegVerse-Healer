@@ -269,3 +269,28 @@ else
 Healer reads no certificate/private-key bytes. The LLM-adapter native TLS bootstrap remains responsible for final pair/permissions verification immediately before local TLS execution.
 
 This source integration does not claim that an authentic TVC adoption receipt currently exists, that native TLS executed, or that a production public HTTPS route is observed.
+
+
+## Healer PR #44 merged — TVC TLS adoption receipt auto-discovery active in source
+
+```text
+Healer PR #44
+merge: 4685956871cb03cf16d9b4416c4d0880534353cf
+Test Readiness: 33139437849 SUCCESS
+
+StegVerse-Labs/.github PR #354
+merge: 77e5b1baeb6874fe40daa02ae8775cae0db7cfaf
+Heartbeat Worker Project: 33141696924 SUCCESS
+Organization control plane: 33141696917 SUCCESS
+```
+
+The WorkerCoordinator no longer propagates Gateway TLS locator environment values. The canonical path is now same-host TVC adoption-receipt discovery by Healer itself. This narrows cross-process configuration and preserves TV/TVC credential-root confinement.
+
+Runtime state remains unchanged:
+
+```text
+real TVC TLS adoption receipt: NOT OBSERVED
+local native-TLS Gateway execution: NOT OBSERVED
+public HTTPS route: NOT OBSERVED
+G18 resident request consumption: NOT OBSERVED
+```
