@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 from app import coinbase_stegdeploy_gateway as mod
@@ -89,12 +90,158 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
                 os.environ[mod.TLS_KEY_ENV] = str(key)
                 os.environ[mod.TLS_BIND_ENV] = "0.0.0.0"
                 os.environ[mod.TLS_PORT_ENV] = "443"
-                request = mod.resolve_tls_request()
+                with mock.patch.object(mod, "TVC_TLS_CREDENTIAL_ROOT", root):
+                    request = mod.resolve_tls_request()
                 self.assertIsNotNone(request)
                 self.assertEqual(request["cert_file"], cert.resolve())
                 self.assertEqual(request["key_file"], key.resolve())
                 self.assertEqual(request["bind_address"], "0.0.0.0")
                 self.assertEqual(request["port"], 443)
+            finally:
+                os.environ.clear()
+                os.environ.update(old)
+
+    def tls_adoption_receipt(self, cert: Path, key: Path) -> dict:
+        body = {
+            "schema": mod.TLS_ADOPTION_SCHEMA,
+            "state": "READY_FOR_STEGDEPLOY_TLS",
+            "hostname": "gateway.stegverse.org",
+            "certificate_sha256": "sha256:" + "c" * 64,
+            "certificate_not_before": "Aug 27 00:00:00 2026 GMT",
+            "certificate_not_after": "Aug 27 00:00:00 2027 GMT",
+            "certificate_hostname": "gateway.stegverse.org",
+            "certificate_file_locator": str(cert),
+            "private_key_file_locator": str(key),
+            "certificate_material_present": True,
+            "private_key_material_present": True,
+            "private_key_bytes_recorded": False,
+            "private_key_exported": False,
+            "credential_material_exported": False,
+            "certificate_pair_verified": True,
+            "certificate_hostname_verified": True,
+            "certificate_time_valid": True,
+            "certificate_acquisition_performed": False,
+            "certificate_issuance_performed": False,
+            "certificate_renewal_performed": False,
+            "certificate_revocation_performed": False,
+            "generalized_certificate_manager_created": False,
+            "credential_authority": "TV/TVC",
+            "gateway_credential_authority": "NONE",
+            "provider_operation_authority": "NONE",
+            "github_token_required": False,
+            "production_public_route_observed": False,
+            "ready_for_owner_ingress": False,
+            "authority_effect": "TVC_RESIDENT_TLS_MATERIAL_ADOPTION_ONLY",
+        }
+        return {**body, "receipt_sha256": mod.digest(body)}
+
+    def test_tls_auto_discovers_valid_tvc_adoption_receipt(self) -> None:
+        import os
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            credential_root = root / "credentials"
+            credential_root.mkdir()
+            cert = credential_root / "cert.pem"
+            key = credential_root / "key.pem"
+            cert.write_text("cert", encoding="utf-8")
+            key.write_text("key", encoding="utf-8")
+            receipt_path = root / "adoption.json"
+            receipt = self.tls_adoption_receipt(cert, key)
+            receipt_path.write_text(json.dumps(receipt) + "\n", encoding="utf-8")
+
+            old = dict(os.environ)
+            try:
+                os.environ.pop(mod.TLS_CERT_ENV, None)
+                os.environ.pop(mod.TLS_KEY_ENV, None)
+                os.environ[mod.TLS_ADOPTION_RECEIPT_ENV] = str(receipt_path)
+                with mock.patch.object(mod, "TVC_TLS_CREDENTIAL_ROOT", credential_root):
+                    request = mod.resolve_tls_request()
+            finally:
+                os.environ.clear()
+                os.environ.update(old)
+
+            self.assertIsNotNone(request)
+            self.assertEqual(request["cert_file"], cert.resolve())
+            self.assertEqual(request["key_file"], key.resolve())
+            self.assertEqual(request["locator_source"], "TVC_TLS_ADOPTION_RECEIPT")
+            self.assertEqual(request["adoption_receipt_sha256"], receipt["receipt_sha256"])
+            self.assertEqual(request["port"], 443)
+
+    def test_tls_adoption_receipt_tamper_or_issuance_claim_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            credential_root = root / "credentials"
+            credential_root.mkdir()
+            cert = credential_root / "cert.pem"
+            key = credential_root / "key.pem"
+            cert.write_text("cert", encoding="utf-8")
+            key.write_text("key", encoding="utf-8")
+            with mock.patch.object(mod, "TVC_TLS_CREDENTIAL_ROOT", credential_root):
+                tampered = self.tls_adoption_receipt(cert, key)
+                tampered["hostname"] = "evil.example"
+                with self.assertRaisesRegex(mod.GatewayActivationError, "DIGEST_INVALID"):
+                    mod.validate_tls_adoption_receipt(tampered)
+
+                issuance = self.tls_adoption_receipt(cert, key)
+                issuance["certificate_issuance_performed"] = True
+                body = {k: v for k, v in issuance.items() if k != "receipt_sha256"}
+                issuance["receipt_sha256"] = mod.digest(body)
+                with self.assertRaisesRegex(mod.GatewayActivationError, "BOUNDARY_INVALID"):
+                    mod.validate_tls_adoption_receipt(issuance)
+
+    def test_tls_adoption_locator_must_remain_inside_tvc_credential_root(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            credential_root = root / "credentials"
+            credential_root.mkdir()
+            cert = credential_root / "cert.pem"
+            cert.write_text("cert", encoding="utf-8")
+            outside = root / "outside-key.pem"
+            outside.write_text("key", encoding="utf-8")
+            receipt = self.tls_adoption_receipt(cert, outside)
+            with mock.patch.object(mod, "TVC_TLS_CREDENTIAL_ROOT", credential_root):
+                with self.assertRaisesRegex(mod.GatewayActivationError, "OUTSIDE_TVC_ROOT"):
+                    mod.validate_tls_adoption_receipt(receipt)
+
+    def test_explicit_tls_locators_override_adoption_receipt_discovery(self) -> None:
+        import os
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            cert = root / "explicit-cert.pem"
+            key = root / "explicit-key.pem"
+            cert.write_text("cert", encoding="utf-8")
+            key.write_text("key", encoding="utf-8")
+            old = dict(os.environ)
+            try:
+                os.environ[mod.TLS_CERT_ENV] = str(cert)
+                os.environ[mod.TLS_KEY_ENV] = str(key)
+                os.environ[mod.TLS_ADOPTION_RECEIPT_ENV] = str(root / "missing-adoption.json")
+                with mock.patch.object(mod, "TVC_TLS_CREDENTIAL_ROOT", root):
+                    request = mod.resolve_tls_request()
+            finally:
+                os.environ.clear()
+                os.environ.update(old)
+
+            self.assertEqual(request["locator_source"], "EXPLICIT_TV_TVC_RUNTIME_FILE_PATHS")
+            self.assertIsNone(request["adoption_receipt_sha256"])
+
+    def test_explicit_tls_locator_outside_tvc_root_is_rejected(self) -> None:
+        import os
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            credential_root = root / "credentials"
+            credential_root.mkdir()
+            cert = root / "outside-cert.pem"
+            key = root / "outside-key.pem"
+            cert.write_text("cert", encoding="utf-8")
+            key.write_text("key", encoding="utf-8")
+            old = dict(os.environ)
+            try:
+                os.environ[mod.TLS_CERT_ENV] = str(cert)
+                os.environ[mod.TLS_KEY_ENV] = str(key)
+                with mock.patch.object(mod, "TVC_TLS_CREDENTIAL_ROOT", credential_root):
+                    with self.assertRaisesRegex(mod.GatewayActivationError, "OUTSIDE_TVC_ROOT"):
+                        mod.resolve_tls_request()
             finally:
                 os.environ.clear()
                 os.environ.update(old)
