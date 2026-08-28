@@ -90,7 +90,8 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
                 os.environ[mod.TLS_KEY_ENV] = str(key)
                 os.environ[mod.TLS_BIND_ENV] = "0.0.0.0"
                 os.environ[mod.TLS_PORT_ENV] = "443"
-                request = mod.resolve_tls_request()
+                with mock.patch.object(mod, "TVC_TLS_CREDENTIAL_ROOT", root):
+                    request = mod.resolve_tls_request()
                 self.assertIsNotNone(request)
                 self.assertEqual(request["cert_file"], cert.resolve())
                 self.assertEqual(request["key_file"], key.resolve())
@@ -215,13 +216,35 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
                 os.environ[mod.TLS_CERT_ENV] = str(cert)
                 os.environ[mod.TLS_KEY_ENV] = str(key)
                 os.environ[mod.TLS_ADOPTION_RECEIPT_ENV] = str(root / "missing-adoption.json")
-                request = mod.resolve_tls_request()
+                with mock.patch.object(mod, "TVC_TLS_CREDENTIAL_ROOT", root):
+                    request = mod.resolve_tls_request()
             finally:
                 os.environ.clear()
                 os.environ.update(old)
 
             self.assertEqual(request["locator_source"], "EXPLICIT_TV_TVC_RUNTIME_FILE_PATHS")
             self.assertIsNone(request["adoption_receipt_sha256"])
+
+    def test_explicit_tls_locator_outside_tvc_root_is_rejected(self) -> None:
+        import os
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            credential_root = root / "credentials"
+            credential_root.mkdir()
+            cert = root / "outside-cert.pem"
+            key = root / "outside-key.pem"
+            cert.write_text("cert", encoding="utf-8")
+            key.write_text("key", encoding="utf-8")
+            old = dict(os.environ)
+            try:
+                os.environ[mod.TLS_CERT_ENV] = str(cert)
+                os.environ[mod.TLS_KEY_ENV] = str(key)
+                with mock.patch.object(mod, "TVC_TLS_CREDENTIAL_ROOT", credential_root):
+                    with self.assertRaisesRegex(mod.GatewayActivationError, "OUTSIDE_TVC_ROOT"):
+                        mod.resolve_tls_request()
+            finally:
+                os.environ.clear()
+                os.environ.update(old)
 
     def test_tls_deploy_command_uses_existing_bootstrap_without_secret_values(self) -> None:
         request = {
