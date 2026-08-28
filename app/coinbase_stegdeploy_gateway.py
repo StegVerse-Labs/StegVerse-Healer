@@ -159,12 +159,8 @@ def resolve_tls_request() -> dict[str, Any] | None:
 
     bind_address, port = _tls_bind_port()
     if cert_raw:
-        cert_file = Path(cert_raw).expanduser().resolve()
-        key_file = Path(key_raw).expanduser().resolve()
-        if not cert_file.is_file():
-            raise GatewayActivationError("TLS_CERT_FILE_NOT_MATERIALIZED")
-        if not key_file.is_file():
-            raise GatewayActivationError("TLS_KEY_FILE_NOT_MATERIALIZED")
+        cert_file = _validate_tvc_tls_locator(cert_raw, "CERT")
+        key_file = _validate_tvc_tls_locator(key_raw, "KEY")
         return {
             "cert_file": cert_file,
             "key_file": key_file,
