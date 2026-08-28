@@ -235,3 +235,37 @@ public HTTPS route: NOT OBSERVED
 user action required: false
 heartbeat dependency: false
 ```
+
+
+## TVC TLS adoption receipt auto-discovery
+
+The upstream TVC lane now has a bounded, credential-model-approved adoption/validation step for already-materialized Service Gateway TLS files:
+
+```text
+StegVerse-Labs/TVC PR #202
+merge: 0ca30b7806d2a96d9a256a7cd9fa0702f718a5e2
+TVC Credential Model Consistency Validation: 33139239831 SUCCESS
+Coinbase Gateway Stage Drain Validation: 33139239828 SUCCESS
+receipt schema: stegverse.tvc.service_gateway_tls_material_adoption/v1
+default resident receipt: /var/lib/stegverse/tvc/service-gateway-tls/latest.json
+classification: CONSISTENT_TARGET_UNPROVEN_RUNTIME
+```
+
+Healer may now discover that same-host receipt automatically when explicit TLS path locators are absent. It requires the exact TVC schema/state/digest, TV/TVC credential authority, Gateway/provider authority NONE, verified certificate pair/hostname/time validity, all acquisition/issuance/renewal/revocation flags false, and both locators confined beneath the TV/TVC resident credential root.
+
+Resolution precedence:
+
+```text
+paired explicit TV/TVC path locators
+  -> bounded compatibility override
+
+else valid TVC resident TLS adoption receipt
+  -> automatic native-TLS locator discovery
+
+else
+  -> existing local HTTP readiness mode only
+```
+
+Healer reads no certificate/private-key bytes. The LLM-adapter native TLS bootstrap remains responsible for final pair/permissions verification immediately before local TLS execution.
+
+This source integration does not claim that an authentic TVC adoption receipt currently exists, that native TLS executed, or that a production public HTTPS route is observed.
