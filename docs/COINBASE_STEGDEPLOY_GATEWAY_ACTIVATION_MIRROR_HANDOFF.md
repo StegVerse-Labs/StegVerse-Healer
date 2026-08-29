@@ -294,3 +294,41 @@ local native-TLS Gateway execution: NOT OBSERVED
 public HTTPS route: NOT OBSERVED
 G18 resident request consumption: NOT OBSERVED
 ```
+
+
+## Host-native shared Gateway activation topology — 2026-08-29
+
+Downstream of `StegVerse-org/LLM-adapter#224/#225`, the fixed Healer Service Gateway target now requires the host-native launcher:
+
+```text
+scripts/stegdeploy_native_gateway.py
+```
+
+The prior Docker bootstrap remains a repository compatibility surface but is no longer used by this machine-owned sovereign activation target.
+
+Reason:
+
+```text
+Docker container 127.0.0.1 != sovereign host 127.0.0.1
+```
+
+The evaluator READ_REVIEW runtime is intentionally same-host loopback. The activation target therefore uses:
+
+```text
+host-native deployed_gateway
+-> optional explicitly materialized evaluator enablement
+-> http://127.0.0.1:8765/intr/evaluator
+```
+
+Evaluator configuration remains fail-closed:
+
+- default `STEGVERSE_EVALUATOR_INTR_ENABLED=false`;
+- when enabled, upstream must equal the exact canonical loopback URI;
+- no remote evaluator proxy target is accepted;
+- configuration is non-secret and does not grant authority.
+
+TLS paths remain confined to TV/TVC and are delivered to the native launcher through the child environment rather than embedded in the launcher command. Receipt/result state does not serialize the private-key path or bytes.
+
+The Healer result now records `runtime_topology=HOST_NATIVE_PYTHON_UVICORN` and `docker_required=false`. It still records public reachability and hostname verification as false until independently observed.
+
+This source change does not establish a live native Gateway, TLS adoption, public route, or evaluator resident execution.
