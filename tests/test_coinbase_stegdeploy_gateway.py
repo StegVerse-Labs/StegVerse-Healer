@@ -246,7 +246,7 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
                 os.environ.clear()
                 os.environ.update(old)
 
-    def test_tls_deploy_command_uses_existing_bootstrap_without_secret_values(self) -> None:
+    def test_tls_deploy_command_uses_native_gateway_without_secret_values(self) -> None:
         request = {
             "cert_file": Path("/runtime/tvc/gateway-cert.pem"),
             "key_file": Path("/runtime/tvc/gateway-key.pem"),
@@ -255,9 +255,10 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
         }
         command, readiness_url, tls_enabled = mod.build_deploy_command(request)
         self.assertTrue(tls_enabled)
-        self.assertIn("deploy-tls", command)
-        self.assertIn("/runtime/tvc/gateway-cert.pem", command)
-        self.assertIn("/runtime/tvc/gateway-key.pem", command)
+        self.assertIn("scripts/stegdeploy_native_gateway.py", command)
+        self.assertIn("start", command)
+        self.assertNotIn("/runtime/tvc/gateway-cert.pem", command)
+        self.assertNotIn("/runtime/tvc/gateway-key.pem", command)
         self.assertIn("0.0.0.0", command)
         self.assertIn("443", command)
         self.assertEqual(readiness_url, "https://127.0.0.1:443/api/coinbase/skap/readiness")
@@ -267,9 +268,49 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
     def test_http_mode_remains_local_and_non_public(self) -> None:
         command, readiness_url, tls_enabled = mod.build_deploy_command(None)
         self.assertFalse(tls_enabled)
-        self.assertIn("deploy", command)
+        self.assertIn("scripts/stegdeploy_native_gateway.py", command)
+        self.assertIn("start", command)
         self.assertEqual(readiness_url, mod.READINESS_URL)
         self.assertTrue(readiness_url.startswith("http://127.0.0.1:"))
+
+
+    def test_evaluator_runtime_config_is_fail_closed_and_loopback_only(self) -> None:
+        import os
+        old = dict(os.environ)
+        try:
+            os.environ.pop(mod.EVALUATOR_ENABLED_ENV, None)
+            os.environ.pop(mod.EVALUATOR_UPSTREAM_ENV, None)
+            disabled = mod.evaluator_runtime_config()
+            self.assertFalse(disabled["enabled"])
+
+            os.environ[mod.EVALUATOR_ENABLED_ENV] = "true"
+            os.environ[mod.EVALUATOR_UPSTREAM_ENV] = mod.EVALUATOR_LOOPBACK_UPSTREAM
+            enabled = mod.evaluator_runtime_config()
+            self.assertTrue(enabled["enabled"])
+            self.assertEqual(enabled["upstream"], mod.EVALUATOR_LOOPBACK_UPSTREAM)
+
+            os.environ[mod.EVALUATOR_UPSTREAM_ENV] = "http://192.0.2.9:8765/intr/evaluator"
+            with self.assertRaisesRegex(mod.GatewayActivationError, "NOT_CANONICAL_LOOPBACK"):
+                mod.evaluator_runtime_config()
+        finally:
+            os.environ.clear()
+            os.environ.update(old)
+
+    def test_clean_env_carries_tls_paths_and_evaluator_only_as_runtime_config(self) -> None:
+        request = {
+            "cert_file": Path("/run/stegverse/tv-tvc-credentials/cert.pem"),
+            "key_file": Path("/run/stegverse/tv-tvc-credentials/key.pem"),
+        }
+        env = mod._clean_env(
+            self.decision(),
+            tls_request=request,
+            evaluator={"enabled": True, "upstream": mod.EVALUATOR_LOOPBACK_UPSTREAM},
+        )
+        self.assertEqual(env["STEGDEPLOY_NATIVE_TLS_CERT_FILE"], str(request["cert_file"]))
+        self.assertEqual(env["STEGDEPLOY_NATIVE_TLS_KEY_FILE"], str(request["key_file"]))
+        self.assertEqual(env[mod.EVALUATOR_ENABLED_ENV], "true")
+        self.assertEqual(env[mod.EVALUATOR_UPSTREAM_ENV], mod.EVALUATOR_LOOPBACK_UPSTREAM)
+        self.assertNotIn("GITHUB_TOKEN", env)
 
     def test_scheduler_target_is_registered_and_bounded(self) -> None:
         root = Path(__file__).resolve().parents[1]

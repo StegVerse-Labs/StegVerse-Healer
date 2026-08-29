@@ -25,6 +25,9 @@ TLS_ADOPTION_RECEIPT_ENV = "STEGVERSE_TVC_SERVICE_GATEWAY_TLS_ADOPTION_RECEIPT"
 TLS_ADOPTION_RECEIPT_DEFAULT = Path("/var/lib/stegverse/tvc/service-gateway-tls/latest.json")
 TVC_TLS_CREDENTIAL_ROOT = Path("/run/stegverse/tv-tvc-credentials")
 TLS_ADOPTION_SCHEMA = "stegverse.tvc.service_gateway_tls_material_adoption/v1"
+EVALUATOR_ENABLED_ENV = "STEGVERSE_EVALUATOR_INTR_ENABLED"
+EVALUATOR_UPSTREAM_ENV = "STEGVERSE_EVALUATOR_INTR_UPSTREAM"
+EVALUATOR_LOOPBACK_UPSTREAM = "http://127.0.0.1:8765/intr/evaluator"
 FORBIDDEN_ENV = (
     "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "HEALER_GH_TOKEN", "HEALER_PAT",
     "GH_STEGVERSE_AI_TOKEN", "ACTIONS_RUNTIME_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
@@ -184,10 +187,29 @@ def resolve_tls_request() -> dict[str, Any] | None:
         "adoption_receipt_sha256": adopted["receipt_sha256"],
     }
 
+def evaluator_runtime_config() -> dict[str, Any]:
+    raw = os.getenv(EVALUATOR_ENABLED_ENV, "false").strip().lower()
+    if raw not in {"true", "false", "1", "0", "yes", "no"}:
+        raise GatewayActivationError("EVALUATOR_INTR_ENABLED_INVALID")
+    enabled = raw in {"true", "1", "yes"}
+    upstream = os.getenv(EVALUATOR_UPSTREAM_ENV, EVALUATOR_LOOPBACK_UPSTREAM).strip()
+    if enabled and upstream != EVALUATOR_LOOPBACK_UPSTREAM:
+        raise GatewayActivationError("EVALUATOR_INTR_UPSTREAM_NOT_CANONICAL_LOOPBACK")
+    return {"enabled": enabled, "upstream": upstream if enabled else ""}
+
+
 def build_deploy_command(tls_request: dict[str, Any] | None) -> tuple[list[str], str, bool]:
     if tls_request is None:
         return (
-            [sys.executable, "scripts/stegdeploy_bootstrap.py", "deploy", "--health-url", "http://127.0.0.1:8000/health"],
+            [
+                sys.executable,
+                "scripts/stegdeploy_native_gateway.py",
+                "start",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                "8000",
+            ],
             READINESS_URL,
             False,
         )
@@ -195,13 +217,9 @@ def build_deploy_command(tls_request: dict[str, Any] | None) -> tuple[list[str],
     return (
         [
             sys.executable,
-            "scripts/stegdeploy_bootstrap.py",
-            "deploy-tls",
-            "--tls-cert-file",
-            str(tls_request["cert_file"]),
-            "--tls-key-file",
-            str(tls_request["key_file"]),
-            "--bind-address",
+            "scripts/stegdeploy_native_gateway.py",
+            "start",
+            "--host",
             str(tls_request["bind_address"]),
             "--port",
             str(port),
@@ -285,7 +303,12 @@ def validate_readiness(payload: dict[str, Any], decision: dict[str, Any]) -> Non
         raise GatewayActivationError("READINESS_BOUNDARY_INVALID:" + ",".join(sorted(failed)))
 
 
-def _clean_env(decision: dict[str, Any]) -> dict[str, str]:
+def _clean_env(
+    decision: dict[str, Any],
+    *,
+    tls_request: dict[str, Any] | None = None,
+    evaluator: dict[str, Any] | None = None,
+) -> dict[str, str]:
     present = [name for name in FORBIDDEN_ENV if os.getenv(name)]
     if present:
         raise GatewayActivationError("FORBIDDEN_CREDENTIAL_ENV:" + ",".join(sorted(present)))
@@ -298,9 +321,18 @@ def _clean_env(decision: dict[str, Any]) -> dict[str, str]:
         "STEGVERSE_PROVIDER_ENABLED": "false",
         "STEGVERSE_EXTERNAL_MUTATION_ENABLED": "false",
     }
-    for name in ("XDG_STATE_HOME", "XDG_CONFIG_HOME"):
+    for name in ("XDG_STATE_HOME", "XDG_CONFIG_HOME", "STEGVERSE_SERVICE_GATEWAY_NATIVE_STATE_ROOT"):
         if os.getenv(name):
             env[name] = os.environ[name]
+    if tls_request is not None:
+        env["STEGDEPLOY_NATIVE_TLS_CERT_FILE"] = str(tls_request["cert_file"])
+        env["STEGDEPLOY_NATIVE_TLS_KEY_FILE"] = str(tls_request["key_file"])
+    if evaluator and evaluator.get("enabled") is True:
+        env[EVALUATOR_ENABLED_ENV] = "true"
+        env[EVALUATOR_UPSTREAM_ENV] = str(evaluator["upstream"])
+    else:
+        env[EVALUATOR_ENABLED_ENV] = "false"
+        env[EVALUATOR_UPSTREAM_ENV] = ""
     return env
 
 
@@ -315,19 +347,17 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
 
     tls_request = resolve_tls_request()
     required = [
-        llm_root / "scripts/stegdeploy_bootstrap.py",
-        llm_root / "compose.stegdeploy.yaml",
+        llm_root / "scripts/stegdeploy_native_gateway.py",
         llm_root / "llm_adapter/deployed_gateway.py",
         llm_root / "llm_adapter/service_gateway_composed.py",
     ]
-    if tls_request is not None:
-        required.append(llm_root / "compose.stegdeploy.tls.yaml")
     missing = [str(path.relative_to(llm_root)) for path in required if not path.is_file()]
     if missing:
         raise GatewayActivationError("LLM_ADAPTER_STEGDEPLOY_SOURCE_INCOMPLETE:" + ",".join(missing))
 
     decision_path, decision = locate_decision(tvc_root)
-    env = _clean_env(decision)
+    evaluator = evaluator_runtime_config()
+    env = _clean_env(decision, tls_request=tls_request, evaluator=evaluator)
 
     head = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=llm_root, env={"PATH": env["PATH"]},
@@ -356,6 +386,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             "provider_operation_started": False,
             "production_public_route_observed": False,
             "tls_enabled": tls_enabled,
+            "runtime_topology": "HOST_NATIVE_PYTHON_UVICORN",
+            "evaluator_intr_enabled": evaluator["enabled"],
             "authority_effect": "NONE",
         }
 
@@ -383,6 +415,10 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "github_token_required": False,
         "render_required": False,
         "tls_enabled": tls_enabled,
+        "runtime_topology": "HOST_NATIVE_PYTHON_UVICORN",
+        "docker_required": False,
+        "evaluator_intr_enabled": evaluator["enabled"],
+        "evaluator_intr_upstream": evaluator["upstream"] if evaluator["enabled"] else None,
         "tls_locator_source": str(tls_request.get("locator_source")) if tls_enabled and tls_request else "NONE",
         "tls_adoption_receipt_sha256": tls_request.get("adoption_receipt_sha256") if tls_enabled and tls_request else None,
         "tls_private_key_material_recorded": False,
