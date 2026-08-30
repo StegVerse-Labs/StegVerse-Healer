@@ -344,6 +344,48 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
         self.assertEqual(env[mod.SV002_OBSERVE_UPSTREAM_ENV], mod.SV002_OBSERVE_LOOPBACK_UPSTREAM)
         self.assertNotIn("GITHUB_TOKEN", env)
 
+
+    def test_sv002_gateway_readiness_requires_exact_authority_neutral_projection(self) -> None:
+        payload = {
+            "schema": "stegverse.service-gateway.sv002-observation-readiness/v1",
+            "enabled": True,
+            "loopback_upstream_configured": True,
+            "state": "READY",
+            "transport": "InTr",
+            "credential_authority": "TV/TVC",
+            "gateway_receipt_authority": False,
+            "gateway_experiment_authority": False,
+            "authority_effect": "NONE",
+        }
+        mod.validate_sv002_gateway_readiness(payload)
+        bad = dict(payload)
+        bad["gateway_experiment_authority"] = True
+        with self.assertRaisesRegex(
+            mod.GatewayActivationError,
+            "SV002_OBSERVATION_GATEWAY_READINESS_INVALID",
+        ):
+            mod.validate_sv002_gateway_readiness(bad)
+
+    def test_sv002_gateway_readiness_url_tracks_existing_native_gateway_mode(self) -> None:
+        self.assertEqual(
+            mod._sv002_gateway_readiness_url(tls_enabled=False, tls_request=None),
+            "http://127.0.0.1:8000/intr/sv002-observe/readiness",
+        )
+        self.assertEqual(
+            mod._sv002_gateway_readiness_url(
+                tls_enabled=True,
+                tls_request={"port": 443},
+            ),
+            "https://127.0.0.1:443/intr/sv002-observe/readiness",
+        )
+
+    def test_sv002_readiness_is_required_only_when_observation_route_enabled(self) -> None:
+        source = Path(mod.__file__).read_text(encoding="utf-8")
+        self.assertIn('if sv002_observe["enabled"]:', source)
+        self.assertIn("validate_sv002_gateway_readiness(sv002_readiness)", source)
+        self.assertIn("LOCAL_SV002_OBSERVATION_GATEWAY_READINESS_UNAVAILABLE", source)
+
+
     def test_scheduler_target_is_registered_and_bounded(self) -> None:
         root = Path(__file__).resolve().parents[1]
         config = json.loads((root / "data/orchestrator_targets.json").read_text(encoding="utf-8"))
