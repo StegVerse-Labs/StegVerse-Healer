@@ -31,6 +31,7 @@ EVALUATOR_LOOPBACK_UPSTREAM = "http://127.0.0.1:8765/intr/evaluator"
 SV002_OBSERVE_ENABLED_ENV = "STEGVERSE_SV002_OBSERVE_ENABLED"
 SV002_OBSERVE_UPSTREAM_ENV = "STEGVERSE_SV002_OBSERVE_UPSTREAM"
 SV002_OBSERVE_LOOPBACK_UPSTREAM = "http://127.0.0.1:8766/intr/sv002-observe"
+SV002_GATEWAY_READINESS_PATH = "/intr/sv002-observe/readiness"
 FORBIDDEN_ENV = (
     "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "HEALER_GH_TOKEN", "HEALER_PAT",
     "GH_STEGVERSE_AI_TOKEN", "ACTIONS_RUNTIME_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
@@ -317,6 +318,33 @@ def validate_readiness(payload: dict[str, Any], decision: dict[str, Any]) -> Non
         raise GatewayActivationError("READINESS_BOUNDARY_INVALID:" + ",".join(sorted(failed)))
 
 
+def validate_sv002_gateway_readiness(payload: dict[str, Any]) -> None:
+    expected = {
+        "schema": "stegverse.service-gateway.sv002-observation-readiness/v1",
+        "enabled": True,
+        "loopback_upstream_configured": True,
+        "state": "READY",
+        "transport": "InTr",
+        "credential_authority": "TV/TVC",
+        "gateway_receipt_authority": False,
+        "gateway_experiment_authority": False,
+        "authority_effect": "NONE",
+    }
+    failed = [key for key, value in expected.items() if payload.get(key) != value]
+    if failed:
+        raise GatewayActivationError(
+            "SV002_OBSERVATION_GATEWAY_READINESS_INVALID:" + ",".join(sorted(failed))
+        )
+
+
+def _sv002_gateway_readiness_url(*, tls_enabled: bool, tls_request: dict[str, Any] | None) -> str:
+    if tls_enabled:
+        if tls_request is None:
+            raise GatewayActivationError("SV002_OBSERVATION_TLS_REQUEST_MISSING")
+        return f"https://127.0.0.1:{int(tls_request['port'])}{SV002_GATEWAY_READINESS_PATH}"
+    return "http://127.0.0.1:8000" + SV002_GATEWAY_READINESS_PATH
+
+
 def _clean_env(
     decision: dict[str, Any],
     *,
@@ -424,6 +452,28 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         raise GatewayActivationError("LOCAL_COINBASE_READINESS_OBJECT_REQUIRED")
     validate_readiness(payload, decision)
 
+    sv002_readiness = None
+    sv002_readiness_url = None
+    if sv002_observe["enabled"]:
+        sv002_readiness_url = _sv002_gateway_readiness_url(
+            tls_enabled=tls_enabled,
+            tls_request=tls_request,
+        )
+        try:
+            with urllib.request.urlopen(
+                sv002_readiness_url,
+                timeout=5,
+                context=context,
+            ) as response:
+                sv002_readiness = json.loads(response.read().decode("utf-8"))
+        except Exception as exc:
+            raise GatewayActivationError(
+                "LOCAL_SV002_OBSERVATION_GATEWAY_READINESS_UNAVAILABLE:" + type(exc).__name__
+            ) from exc
+        if not isinstance(sv002_readiness, dict):
+            raise GatewayActivationError("LOCAL_SV002_OBSERVATION_GATEWAY_READINESS_OBJECT_REQUIRED")
+        validate_sv002_gateway_readiness(sv002_readiness)
+
     return {
         "schema": "stegverse.healer.coinbase_stegdeploy_gateway_activation/v1",
         "state": "COMPLETE",
@@ -433,6 +483,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "decision_id": decision["decision_id"],
         "readiness_url": readiness_url,
         "readiness": payload,
+        "sv002_observation_readiness_url": sv002_readiness_url,
+        "sv002_observation_readiness": sv002_readiness,
         "credential_authority": "TV/TVC",
         "credential_material_present": False,
         "github_token_required": False,
