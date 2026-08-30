@@ -312,6 +312,38 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
         self.assertEqual(env[mod.EVALUATOR_UPSTREAM_ENV], mod.EVALUATOR_LOOPBACK_UPSTREAM)
         self.assertNotIn("GITHUB_TOKEN", env)
 
+    def test_sv002_observation_runtime_config_is_fail_closed_and_loopback_only(self) -> None:
+        import os
+        old = dict(os.environ)
+        try:
+            os.environ.pop(mod.SV002_OBSERVE_ENABLED_ENV, None)
+            os.environ.pop(mod.SV002_OBSERVE_UPSTREAM_ENV, None)
+            disabled = mod.sv002_observation_runtime_config()
+            self.assertFalse(disabled["enabled"])
+
+            os.environ[mod.SV002_OBSERVE_ENABLED_ENV] = "true"
+            os.environ[mod.SV002_OBSERVE_UPSTREAM_ENV] = mod.SV002_OBSERVE_LOOPBACK_UPSTREAM
+            enabled = mod.sv002_observation_runtime_config()
+            self.assertTrue(enabled["enabled"])
+            self.assertEqual(enabled["upstream"], mod.SV002_OBSERVE_LOOPBACK_UPSTREAM)
+
+            os.environ[mod.SV002_OBSERVE_UPSTREAM_ENV] = "http://192.0.2.9:8766/intr/sv002-observe"
+            with self.assertRaisesRegex(mod.GatewayActivationError, "NOT_CANONICAL_LOOPBACK"):
+                mod.sv002_observation_runtime_config()
+        finally:
+            os.environ.clear()
+            os.environ.update(old)
+
+    def test_clean_env_carries_sv002_observation_only_as_runtime_config(self) -> None:
+        env = mod._clean_env(
+            self.decision(),
+            evaluator={"enabled": False, "upstream": ""},
+            sv002_observe={"enabled": True, "upstream": mod.SV002_OBSERVE_LOOPBACK_UPSTREAM},
+        )
+        self.assertEqual(env[mod.SV002_OBSERVE_ENABLED_ENV], "true")
+        self.assertEqual(env[mod.SV002_OBSERVE_UPSTREAM_ENV], mod.SV002_OBSERVE_LOOPBACK_UPSTREAM)
+        self.assertNotIn("GITHUB_TOKEN", env)
+
     def test_scheduler_target_is_registered_and_bounded(self) -> None:
         root = Path(__file__).resolve().parents[1]
         config = json.loads((root / "data/orchestrator_targets.json").read_text(encoding="utf-8"))
