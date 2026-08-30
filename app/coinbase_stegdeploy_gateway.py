@@ -28,6 +28,9 @@ TLS_ADOPTION_SCHEMA = "stegverse.tvc.service_gateway_tls_material_adoption/v1"
 EVALUATOR_ENABLED_ENV = "STEGVERSE_EVALUATOR_INTR_ENABLED"
 EVALUATOR_UPSTREAM_ENV = "STEGVERSE_EVALUATOR_INTR_UPSTREAM"
 EVALUATOR_LOOPBACK_UPSTREAM = "http://127.0.0.1:8765/intr/evaluator"
+SV002_OBSERVE_ENABLED_ENV = "STEGVERSE_SV002_OBSERVE_ENABLED"
+SV002_OBSERVE_UPSTREAM_ENV = "STEGVERSE_SV002_OBSERVE_UPSTREAM"
+SV002_OBSERVE_LOOPBACK_UPSTREAM = "http://127.0.0.1:8766/intr/sv002-observe"
 FORBIDDEN_ENV = (
     "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "HEALER_GH_TOKEN", "HEALER_PAT",
     "GH_STEGVERSE_AI_TOKEN", "ACTIONS_RUNTIME_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
@@ -198,6 +201,17 @@ def evaluator_runtime_config() -> dict[str, Any]:
     return {"enabled": enabled, "upstream": upstream if enabled else ""}
 
 
+def sv002_observation_runtime_config() -> dict[str, Any]:
+    raw = os.getenv(SV002_OBSERVE_ENABLED_ENV, "false").strip().lower()
+    if raw not in {"true", "false", "1", "0", "yes", "no"}:
+        raise GatewayActivationError("SV002_OBSERVE_ENABLED_INVALID")
+    enabled = raw in {"true", "1", "yes"}
+    upstream = os.getenv(SV002_OBSERVE_UPSTREAM_ENV, SV002_OBSERVE_LOOPBACK_UPSTREAM).strip()
+    if enabled and upstream != SV002_OBSERVE_LOOPBACK_UPSTREAM:
+        raise GatewayActivationError("SV002_OBSERVE_UPSTREAM_NOT_CANONICAL_LOOPBACK")
+    return {"enabled": enabled, "upstream": upstream if enabled else ""}
+
+
 def build_deploy_command(tls_request: dict[str, Any] | None) -> tuple[list[str], str, bool]:
     if tls_request is None:
         return (
@@ -308,6 +322,7 @@ def _clean_env(
     *,
     tls_request: dict[str, Any] | None = None,
     evaluator: dict[str, Any] | None = None,
+    sv002_observe: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     present = [name for name in FORBIDDEN_ENV if os.getenv(name)]
     if present:
@@ -333,6 +348,12 @@ def _clean_env(
     else:
         env[EVALUATOR_ENABLED_ENV] = "false"
         env[EVALUATOR_UPSTREAM_ENV] = ""
+    if sv002_observe and sv002_observe.get("enabled") is True:
+        env[SV002_OBSERVE_ENABLED_ENV] = "true"
+        env[SV002_OBSERVE_UPSTREAM_ENV] = str(sv002_observe["upstream"])
+    else:
+        env[SV002_OBSERVE_ENABLED_ENV] = "false"
+        env[SV002_OBSERVE_UPSTREAM_ENV] = ""
     return env
 
 
@@ -357,7 +378,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
 
     decision_path, decision = locate_decision(tvc_root)
     evaluator = evaluator_runtime_config()
-    env = _clean_env(decision, tls_request=tls_request, evaluator=evaluator)
+    sv002_observe = sv002_observation_runtime_config()
+    env = _clean_env(decision, tls_request=tls_request, evaluator=evaluator, sv002_observe=sv002_observe)
 
     head = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=llm_root, env={"PATH": env["PATH"]},
@@ -388,6 +410,7 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             "tls_enabled": tls_enabled,
             "runtime_topology": "HOST_NATIVE_PYTHON_UVICORN",
             "evaluator_intr_enabled": evaluator["enabled"],
+            "sv002_observation_enabled": sv002_observe["enabled"],
             "authority_effect": "NONE",
         }
 
@@ -419,6 +442,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "docker_required": False,
         "evaluator_intr_enabled": evaluator["enabled"],
         "evaluator_intr_upstream": evaluator["upstream"] if evaluator["enabled"] else None,
+        "sv002_observation_enabled": sv002_observe["enabled"],
+        "sv002_observation_upstream": sv002_observe["upstream"] if sv002_observe["enabled"] else None,
         "tls_locator_source": str(tls_request.get("locator_source")) if tls_enabled and tls_request else "NONE",
         "tls_adoption_receipt_sha256": tls_request.get("adoption_receipt_sha256") if tls_enabled and tls_request else None,
         "tls_private_key_material_recorded": False,
