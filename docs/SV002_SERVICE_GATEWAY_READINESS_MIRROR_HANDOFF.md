@@ -61,3 +61,22 @@ No second Gateway, scheduler, heartbeat, TLS authority, or credential surface ma
 ## Completion
 
 Source completion requires deterministic tests, repository validation, merge to main, and issue reconciliation. Runtime activation remains separately evidence-gated.
+
+
+## Universal InTr public-profile runtime binding — 2026-08-31
+
+Public observation from `StegVerse-Labs/Site#860` established that `https://stegverse.org/intr/profile` returned HTTP 404 on eight independent attempts. LLM-adapter source already contains the route through PR #244 / merge `49676d20cff32ee346f22cfd79726b0127d80b33`, so the observed failure is runtime publication/binding drift rather than missing Gateway router source.
+
+The fixed sovereign Gateway handler now consumes the existing resident Universal InTr route projection:
+
+```text
+STEGVERSE_HIL_INTR_ENABLED=true
+STEGVERSE_HIL_INTR_UPSTREAM=http://127.0.0.1:8765/intr/materialization
+```
+
+When enabled it requires:
+- the exact canonical same-host upstream;
+- local LLM-adapter HEAD to contain merge `49676d20cff32ee346f22cfd79726b0127d80b33` as an ancestor;
+- `/intr/materialization/readiness` to report READY, event-triggered, G18-independent, TV/TVC-bound, no GitHub authority, and no receipt/execution/custody authority.
+
+The binding is configuration/transport only. Local readiness remains distinct from public HTTPS observation. A source merge or local READY result does not establish `https://stegverse.org/intr/profile`; that route must be re-observed independently after authentic resident publication.
