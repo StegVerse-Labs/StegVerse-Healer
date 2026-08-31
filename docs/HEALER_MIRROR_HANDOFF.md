@@ -12,7 +12,7 @@ credential_authority: TV/TVC
 non_tv_tvc_secret_or_token_allowed: false
 github_token_production_authority: NONE
 github_actions_production_role: NONE
-heartbeat_owner: StegVerse-Labs/.github G18
+heartbeat_owner: StegVerse-Labs/.github independent oscillator reference; G18 not downstream scheduler gate
 ordinary_scheduler_owner: SHWP-HEALER-SOVEREIGN-SCHEDULER-001
 wallet_signing_and_broadcast: USER_ONLY
 state: SOURCE_CONTROL_RELEASED_LIVE_SCHEDULER_ACTIVATION_MACHINE_OWNED
@@ -237,7 +237,7 @@ Canonical machine handoff:
 
 `StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json`
 
-Current scheduler task state remains `HANDOFF_READY`, executor `AUTHORIZED`, worker available. The scheduler depends on `SHWP-DURABLE-RUNTIME-ACTIVATION`.
+Current scheduler task state remains `HANDOFF_READY`, executor `AUTHORIZED`, worker available. The scheduler is independently admitted and does not depend on G18 terminalization or `SHWP-DURABLE-RUNTIME-ACTIVATION` as a downstream gate.
 
 The upstream physical heartbeat handoff `StegVerse-Labs/.github/handoffs/SHWP-IPHONE-HB30-INLINE-CAPSULE-002.json` is source-released but remains at `HUMAN_PHYSICAL_EXECUTION_BOUNDARY` / `PHYSICAL_RECEIPT_NOT_YET_OBSERVED` on the current iPhone. No credential is required for that physical step; G18 and WorkerCoordinator own subsequent materialization and observation.
 
@@ -283,3 +283,21 @@ TVC PR #173 merged as `e8813e81494deb8e8563763675b5123e360397e6`, supplying the 
 Healer PR #42 merged as `a60e9d6717b4784591dffca8147b0b4afda2d468` with Test Readiness `33118760520 SUCCESS`, requiring canonical decision schema, receipt digest and SHA-256 policy/decision bindings before local StegDeploy execution.
 
 This closes the remaining source dependency for the Gateway scheduler target. Runtime execution, loopback readiness, public HTTPS route, TVC recipient liveness and owner ingress remain separate unobserved predicates.
+
+## 2026-08-31 resident scheduler gate correction
+
+The current organization handoff and `.github` PR #707 supersede older Healer prose that treated `SHWP-DURABLE-RUNTIME-ACTIVATION` / G18 as an upstream scheduler dependency.
+
+Current machine path:
+
+```text
+native resident WorkerCoordinator
+-> local canonical source refresh
+-> resident request sweep
+-> RESIDENT-EXEC-HEALER-SOVEREIGN-SCHEDULER-001
+-> fresh independent task admission / claim / fence
+-> fixed Healer handlers
+-> no-token scheduler receipt
+```
+
+G18/fence18 is retained only as stale housekeeping in the durable-runtime lane and must not delay the Healer scheduler. The next required goal is authentic resident consumption of the existing Healer request and production of the scheduler receipt.

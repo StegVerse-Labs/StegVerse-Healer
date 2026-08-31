@@ -84,7 +84,7 @@ At this handoff revision that required scheduler receipt is absent. Therefore th
 
 Heartbeat activation is already terminal and the historical HB30 iPhone capsule is satisfied/superseded. There is no current iPhone action required for this ERL migration.
 
-The scheduler's unresolved dependency is the separate machine-owned `SHWP-DURABLE-RUNTIME-ACTIVATION` substrate, currently blocked because no eligible StegVerse-owned/federated sovereign node declaration is present. The existing scheduler lane must consume that runtime when available; no second scheduler or hosted substitute is authorized.
+The former `SHWP-DURABLE-RUNTIME-ACTIVATION` / G18 dependency is superseded as a downstream gate. The existing scheduler lane is independently admitted on the native resident WorkerCoordinator and must consume `RESIDENT-EXEC-HEALER-SOVEREIGN-SCHEDULER-001` under its own fresh claim/fence. No second scheduler or hosted substitute is authorized.
 
 ## Site retirement gate
 
