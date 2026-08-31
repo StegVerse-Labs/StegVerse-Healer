@@ -301,3 +301,21 @@ native resident WorkerCoordinator
 ```
 
 G18/fence18 is retained only as stale housekeeping in the durable-runtime lane and must not delay the Healer scheduler. The next required goal is authentic resident consumption of the existing Healer request and production of the scheduler receipt.
+
+## 2026-08-31 local resident source discovery closure
+
+The canonical `.github` Healer worker now performs fail-closed local source discovery rather than requiring session-prepopulated source variables before it can attempt the scheduler.
+
+Current behavior:
+
+```text
+explicit non-secret STEGVERSE_HEALER_ROOT / STEGVERSE_REPO_ROOTS_JSON when present
+else
+unique canonical local StegVerse-Healer tree + canonical local repository map discovery
+-> merge safe named local roots already retained by the native WorkerCoordinator service
+-> run fixed Healer targets
+```
+
+Canonical search locations are local-only and perform no clone/fetch/pull. Missing or ambiguous Healer source remains BLOCKED. The heartbeat carrier receives none of these repository locators.
+
+This removes declaration-only source-root blockers from the resident scheduler path. The next required goal remains authentic consumption of `RESIDENT-EXEC-HEALER-SOVEREIGN-SCHEDULER-001` and production of the no-token scheduler/Gateway receipts.
