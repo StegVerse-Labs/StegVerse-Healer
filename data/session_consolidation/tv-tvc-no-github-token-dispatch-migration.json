@@ -96,10 +96,11 @@
     "organization_handoff": "StegVerse-Labs/.github/docs/ORG_MIRROR_HANDOFF.md",
     "worker_handoff": "StegVerse-Labs/.github/handoffs/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json",
     "worker_registry_fragment": "StegVerse-Labs/.github/control/worker-registry.d/healer-sovereign-scheduler-001.json",
-    "runtime_activation_handoff": "StegVerse-Labs/.github/handoffs/SHWP-DURABLE-RUNTIME-ACTIVATION.json",
-    "execution_owner": "resident sovereign heartbeat",
-    "next_executable_action": "Resident carrier admits and executes the Healer sovereign scheduler under the current heartbeat claim/fence; persist its no-token receipt and continue fail-closed target reconciliation.",
-    "manual_session_execution_allowed": false
+    "runtime_activation_handoff": "StegVerse-Labs/.github/handoffs/SHWP-DURABLE-RUNTIME-ACTIVATION.json#release-complete-housekeeping-only",
+    "execution_owner": "native resident WorkerCoordinator under independent task control",
+    "next_executable_action": "Consume RESIDENT-EXEC-HEALER-SOVEREIGN-SCHEDULER-001 through the native resident request sweep; acquire a fresh independent WorkerCoordinator admission/claim/fence; persist the no-token scheduler receipt; continue fail-closed target reconciliation. Do not wait on G18 terminalization.",
+    "manual_session_execution_allowed": false,
+    "g18_terminalization_required": false
   },
   "archive_dependency": false,
   "propagation_after_activation": [
