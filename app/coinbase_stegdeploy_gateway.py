@@ -36,6 +36,7 @@ HIL_INTR_ENABLED_ENV = "STEGVERSE_HIL_INTR_ENABLED"
 HIL_INTR_UPSTREAM_ENV = "STEGVERSE_HIL_INTR_UPSTREAM"
 HIL_INTR_LOOPBACK_UPSTREAM = "http://127.0.0.1:8765/intr/materialization"
 HIL_INTR_GATEWAY_READINESS_PATH = "/intr/materialization/readiness"
+MINIMUM_UNIVERSAL_INTR_GATEWAY_COMMIT = "49676d20cff32ee346f22cfd79726b0127d80b33"
 FORBIDDEN_ENV = (
     "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "HEALER_GH_TOKEN", "HEALER_PAT",
     "GH_STEGVERSE_AI_TOKEN", "ACTIONS_RUNTIME_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
@@ -473,6 +474,12 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
     source_head = head.stdout.strip().lower()
     if head.returncode != 0 or len(source_head) != 40:
         raise GatewayActivationError("LLM_ADAPTER_SOURCE_HEAD_UNPROVEN")
+    ancestry = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", MINIMUM_UNIVERSAL_INTR_GATEWAY_COMMIT, "HEAD"],
+        cwd=llm_root, env={"PATH": env["PATH"]}, text=True, capture_output=True, check=False, timeout=30,
+    )
+    if ancestry.returncode != 0:
+        raise GatewayActivationError("LLM_ADAPTER_UNIVERSAL_INTR_GATEWAY_SOURCE_STALE")
 
     deploy_command, readiness_url, tls_enabled = build_deploy_command(tls_request)
     deploy = subprocess.run(
@@ -496,6 +503,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             "runtime_topology": "HOST_NATIVE_PYTHON_UVICORN",
             "evaluator_intr_enabled": evaluator["enabled"],
             "sv002_observation_enabled": sv002_observe["enabled"],
+            "hil_intr_enabled": hil_intr["enabled"],
+            "minimum_universal_intr_gateway_commit": MINIMUM_UNIVERSAL_INTR_GATEWAY_COMMIT,
             "authority_effect": "NONE",
         }
 
@@ -531,6 +540,28 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             raise GatewayActivationError("LOCAL_SV002_OBSERVATION_GATEWAY_READINESS_OBJECT_REQUIRED")
         validate_sv002_gateway_readiness(sv002_readiness)
 
+    hil_intr_readiness = None
+    hil_intr_readiness_url = None
+    if hil_intr["enabled"]:
+        hil_intr_readiness_url = _hil_intr_gateway_readiness_url(
+            tls_enabled=tls_enabled,
+            tls_request=tls_request,
+        )
+        try:
+            with urllib.request.urlopen(
+                hil_intr_readiness_url,
+                timeout=5,
+                context=context,
+            ) as response:
+                hil_intr_readiness = json.loads(response.read().decode("utf-8"))
+        except Exception as exc:
+            raise GatewayActivationError(
+                "LOCAL_HIL_INTR_GATEWAY_READINESS_UNAVAILABLE:" + type(exc).__name__
+            ) from exc
+        if not isinstance(hil_intr_readiness, dict):
+            raise GatewayActivationError("LOCAL_HIL_INTR_GATEWAY_READINESS_OBJECT_REQUIRED")
+        validate_hil_intr_gateway_readiness(hil_intr_readiness)
+
     return {
         "schema": "stegverse.healer.coinbase_stegdeploy_gateway_activation/v1",
         "state": "COMPLETE",
@@ -542,6 +573,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "readiness": payload,
         "sv002_observation_readiness_url": sv002_readiness_url,
         "sv002_observation_readiness": sv002_readiness,
+        "hil_intr_readiness_url": hil_intr_readiness_url,
+        "hil_intr_readiness": hil_intr_readiness,
         "credential_authority": "TV/TVC",
         "credential_material_present": False,
         "github_token_required": False,
@@ -553,6 +586,10 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "evaluator_intr_upstream": evaluator["upstream"] if evaluator["enabled"] else None,
         "sv002_observation_enabled": sv002_observe["enabled"],
         "sv002_observation_upstream": sv002_observe["upstream"] if sv002_observe["enabled"] else None,
+        "hil_intr_enabled": hil_intr["enabled"],
+        "hil_intr_upstream": hil_intr["upstream"] if hil_intr["enabled"] else None,
+        "minimum_universal_intr_gateway_commit": MINIMUM_UNIVERSAL_INTR_GATEWAY_COMMIT,
+        "minimum_universal_intr_gateway_commit_ancestor": True,
         "tls_locator_source": str(tls_request.get("locator_source")) if tls_enabled and tls_request else "NONE",
         "tls_adoption_receipt_sha256": tls_request.get("adoption_receipt_sha256") if tls_enabled and tls_request else None,
         "tls_private_key_material_recorded": False,
