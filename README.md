@@ -14,6 +14,7 @@ Healer dispatch does not itself grant provider execution, deployment, custody, p
 - Data-driven reusable-task scheduling through `data/reusable_task_schedule.json` inside that same sovereign scheduler path; schedule slots are receipt-idempotent so an hourly reusable task runs at most once per UTC hour.
 - Scheduled reusable tasks keep source and resident runtime distinct: task source comes from the already-materialized local repository map, execution state and reusable-task receipts live under the resident runtime identified by `STEGVERSE_HEARTBEAT_ROOT`, and a missing resident runtime blocks rather than falling back to the source checkout.
 - `RT-NATIVE-EMAIL-ACTION-MONITOR-001` is scheduled hourly through the existing reusable-task trigger and canonical `STEGVERSE-NATIVE-EMAIL-ACTION-MONITOR-001` path; no second mailbox monitor or scheduler is created.
+- The native-email reusable slot may receive the already-materialized KnowledgeVault path through `STEGVERSE_KV_ROOT` or `STEGVERSE_KV_PROVIDER_MATERIALIZED_ROOT`. These are non-secret local path bindings only; Healer does not mount a provider or acquire credentials. Missing KV materialization is handled by the downstream native-email consumer and blocks failure-email archival rather than bypassing KV persistence.
 - Unauthorized downstream schedule auditing.
 - Configured cross-repository workflow dispatch.
 - YAML correction and reusable repair workflows.
