@@ -19,6 +19,7 @@ import sovereign_scheduler as base
 SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "reusable_task_schedule.json"
 RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
 RUNTIME_REQUIRED_REL = Path("control/resident-execution-request.d/native-email-action-monitor-001.json")
+KV_PATH_ENV_NAMES = ("STEGVERSE_KV_ROOT", "STEGVERSE_KV_PROVIDER_MATERIALIZED_ROOT")
 
 
 def _load_schedule(path: Path) -> list[dict[str, Any]]:
@@ -77,6 +78,15 @@ def _resident_runtime_root() -> tuple[Path | None, str]:
     if len(unique) > 1:
         return None, "CANONICAL_RUNTIME_AMBIGUOUS"
     return None, "CANONICAL_RUNTIME_NOT_FOUND"
+
+
+def _kv_path_env() -> dict[str, str]:
+    values: dict[str, str] = {}
+    for name in KV_PATH_ENV_NAMES:
+        raw = str(os.getenv(name) or "").strip()
+        if raw:
+            values[name] = raw
+    return values
 
 
 def _execute_reusable_task(
@@ -142,15 +152,12 @@ def _execute_reusable_task(
         "--receipt",
         str(receipt_path),
     ]
-    result = base._run(
-        command,
-        root,
-        {
-            "STEGVERSE_REPO_ROOTS_JSON": roots_json,
-            RUNTIME_ROOT_ENV: str(runtime_root),
-        },
-        timeout=1500,
-    )
+    child_env = {
+        "STEGVERSE_REPO_ROOTS_JSON": roots_json,
+        RUNTIME_ROOT_ENV: str(runtime_root),
+        **_kv_path_env(),
+    }
+    result = base._run(command, root, child_env, timeout=1500)
     receipt = base._load_json(receipt_path) if receipt_path.is_file() else None
     ok = result["returncode"] == 0 and isinstance(receipt, dict)
     return {
@@ -162,6 +169,7 @@ def _execute_reusable_task(
         "receipt_state": receipt.get("state") if isinstance(receipt, dict) else None,
         "source_root": str(root),
         "runtime_root": str(runtime_root),
+        "kv_path_env_forwarded": sorted(name for name in KV_PATH_ENV_NAMES if name in child_env),
         "execution": result,
     }
 
@@ -189,6 +197,7 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     receipt["reusable_task_schedule"] = scheduled
     receipt["resident_runtime_root"] = str(runtime_root) if runtime_root is not None else None
     receipt["resident_runtime_root_source"] = runtime_root_source
+    receipt["kv_path_env_available"] = sorted(_kv_path_env())
     if receipt.get("state") == "COMPLETE" and any(row.get("state") == "BLOCKED" for row in scheduled):
         receipt["state"] = "BLOCKED"
     return receipt
