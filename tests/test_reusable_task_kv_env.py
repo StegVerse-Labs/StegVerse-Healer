@@ -2,13 +2,19 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from app import reusable_task_scheduler as scheduler
+ROOT = Path(__file__).resolve().parents[1]
+APP = ROOT / "app"
+if str(APP) not in sys.path:
+    sys.path.insert(0, str(APP))
+
+import reusable_task_scheduler as scheduler  # noqa: E402
 
 
 class ReusableTaskKVEnvTests(unittest.TestCase):
