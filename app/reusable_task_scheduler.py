@@ -4,8 +4,8 @@ from __future__ import annotations
 
 This module is not a second scheduler. It is the single Healer scheduler entrypoint
 with an additional data-driven reusable-task schedule pass. Each schedule slot is
-idempotent by invocation id + retained local receipt, so an hourly entry runs at
-most once per UTC hour even if the resident scheduler is visited repeatedly.
+idempotent by invocation id + retained resident-runtime receipt, so an hourly entry
+runs at most once per UTC hour even if the resident scheduler is visited repeatedly.
 """
 
 import json
@@ -17,6 +17,8 @@ from typing import Any
 import sovereign_scheduler as base
 
 SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "reusable_task_schedule.json"
+RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
+RUNTIME_REQUIRED_REL = Path("control/resident-execution-request.d/native-email-action-monitor-001.json")
 
 
 def _load_schedule(path: Path) -> list[dict[str, Any]]:
@@ -43,7 +45,48 @@ def _slot_id(task_id: str, now) -> str:
     return f"{compact}-{now.strftime('%Y%m%dT%H')}Z"
 
 
-def _execute_reusable_task(task: dict[str, Any], roots: dict[str, Path], roots_json: str, now) -> dict[str, Any]:
+def _valid_runtime_root(root: Path) -> bool:
+    return root.is_dir() and (root / RUNTIME_REQUIRED_REL).is_file()
+
+
+def _resident_runtime_root() -> tuple[Path | None, str]:
+    raw = str(os.getenv(RUNTIME_ROOT_ENV) or "").strip()
+    if raw:
+        root = Path(raw).expanduser().resolve()
+        return (root, "EXPLICIT_NONSECRET_RUNTIME_ROOT") if _valid_runtime_root(root) else (None, "EXPLICIT_RUNTIME_ROOT_INVALID")
+
+    home = Path.home()
+    candidates = [
+        home / ".local" / "state" / "stegverse" / "heartbeat-runtime",
+        home / "Library" / "Application Support" / "stegverse" / "heartbeat-runtime",
+        home / ".stegverse" / "heartbeat-runtime",
+        Path("/var/lib/stegverse/heartbeat-runtime"),
+        Path("/srv/stegverse/heartbeat-runtime"),
+    ]
+    valid = []
+    for candidate in candidates:
+        try:
+            resolved = candidate.expanduser().resolve()
+        except Exception:
+            continue
+        if _valid_runtime_root(resolved):
+            valid.append(resolved)
+    unique = list(dict.fromkeys(str(path) for path in valid))
+    if len(unique) == 1:
+        return Path(unique[0]), "CANONICAL_LOCAL_RUNTIME_DISCOVERY"
+    if len(unique) > 1:
+        return None, "CANONICAL_RUNTIME_AMBIGUOUS"
+    return None, "CANONICAL_RUNTIME_NOT_FOUND"
+
+
+def _execute_reusable_task(
+    task: dict[str, Any],
+    roots: dict[str, Path],
+    roots_json: str,
+    runtime_root: Path | None,
+    runtime_root_source: str,
+    now,
+) -> dict[str, Any]:
     reusable_task_id = str(task.get("reusable_task_id") or "")
     tracking_task_id = str(task.get("tracking_task_id") or "")
     cosv = str(task.get("cosv_task_vector") or "")
@@ -53,17 +96,20 @@ def _execute_reusable_task(task: dict[str, Any], roots: dict[str, Path], roots_j
         "tracking_task_id": tracking_task_id,
         "cosv_task_vector": cosv,
         "repository": repository,
+        "runtime_root_source": runtime_root_source,
     }
 
     root = roots.get(repository)
     if root is None:
         return {**base_result, "state": "BLOCKED", "outcome": "LOCAL_REPOSITORY_NOT_MATERIALIZED"}
+    if runtime_root is None:
+        return {**base_result, "state": "BLOCKED", "outcome": "RESIDENT_RUNTIME_ROOT_NOT_MATERIALIZED"}
     trigger = root / "scripts" / "trigger_reusable_task.py"
     if not trigger.is_file():
         return {**base_result, "state": "BLOCKED", "outcome": "REUSABLE_TASK_TRIGGER_NOT_MATERIALIZED"}
 
     invocation_id = _slot_id(reusable_task_id, now)
-    receipt_path = root / "receipts" / "reusable-task" / f"{invocation_id}.latest.json"
+    receipt_path = runtime_root / "receipts" / "reusable-task" / f"{invocation_id}.latest.json"
     if receipt_path.is_file():
         prior = base._load_json(receipt_path)
         return {
@@ -73,11 +119,13 @@ def _execute_reusable_task(task: dict[str, Any], roots: dict[str, Path], roots_j
             "invocation_id": invocation_id,
             "receipt_ref": str(receipt_path),
             "receipt_state": prior.get("state"),
+            "source_root": str(root),
+            "runtime_root": str(runtime_root),
         }
 
     parameters = dict(task.get("parameters") or {})
     parameters["source_root"] = str(root)
-    parameters["runtime_root"] = str(root)
+    parameters["runtime_root"] = str(runtime_root)
     command = [
         sys.executable,
         str(trigger),
@@ -97,7 +145,10 @@ def _execute_reusable_task(task: dict[str, Any], roots: dict[str, Path], roots_j
     result = base._run(
         command,
         root,
-        {"STEGVERSE_REPO_ROOTS_JSON": roots_json},
+        {
+            "STEGVERSE_REPO_ROOTS_JSON": roots_json,
+            RUNTIME_ROOT_ENV: str(runtime_root),
+        },
         timeout=1500,
     )
     receipt = base._load_json(receipt_path) if receipt_path.is_file() else None
@@ -109,6 +160,8 @@ def _execute_reusable_task(task: dict[str, Any], roots: dict[str, Path], roots_j
         "invocation_id": invocation_id,
         "receipt_ref": str(receipt_path),
         "receipt_state": receipt.get("state") if isinstance(receipt, dict) else None,
+        "source_root": str(root),
+        "runtime_root": str(runtime_root),
         "execution": result,
     }
 
@@ -120,6 +173,7 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     scope = (os.getenv("RUN_SCOPE") or "all").strip().lower()
     mode = (os.getenv("DISPATCH_MODE") or "schedule").strip().lower()
     now = base._now()
+    runtime_root, runtime_root_source = _resident_runtime_root()
 
     scheduled: list[dict[str, Any]] = []
     if schedule_path.is_file():
@@ -128,11 +182,13 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
                 continue
             if not base._due(task, now, mode):
                 continue
-            scheduled.append(_execute_reusable_task(task, roots, roots_json, now))
+            scheduled.append(_execute_reusable_task(task, roots, roots_json, runtime_root, runtime_root_source, now))
 
     receipt["reusable_task_schedule_schema"] = "stegverse.healer.reusable-task-schedule/v1"
     receipt["selected_reusable_tasks"] = len(scheduled)
     receipt["reusable_task_schedule"] = scheduled
+    receipt["resident_runtime_root"] = str(runtime_root) if runtime_root is not None else None
+    receipt["resident_runtime_root_source"] = runtime_root_source
     if receipt.get("state") == "COMPLETE" and any(row.get("state") == "BLOCKED" for row in scheduled):
         receipt["state"] = "BLOCKED"
     return receipt

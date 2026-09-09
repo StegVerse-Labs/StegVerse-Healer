@@ -12,6 +12,7 @@ Healer dispatch does not itself grant provider execution, deployment, custody, p
 
 - Central hourly scheduler driven by `data/orchestrator_targets.json`.
 - Data-driven reusable-task scheduling through `data/reusable_task_schedule.json` inside that same sovereign scheduler path; schedule slots are receipt-idempotent so an hourly reusable task runs at most once per UTC hour.
+- Scheduled reusable tasks keep source and resident runtime distinct: task source comes from the already-materialized local repository map, execution state and reusable-task receipts live under the resident runtime identified by `STEGVERSE_HEARTBEAT_ROOT`, and a missing resident runtime blocks rather than falling back to the source checkout.
 - `RT-NATIVE-EMAIL-ACTION-MONITOR-001` is scheduled hourly through the existing reusable-task trigger and canonical `STEGVERSE-NATIVE-EMAIL-ACTION-MONITOR-001` path; no second mailbox monitor or scheduler is created.
 - Unauthorized downstream schedule auditing.
 - Configured cross-repository workflow dispatch.
