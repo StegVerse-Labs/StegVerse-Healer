@@ -49,7 +49,10 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
                 }],
             }), encoding="utf-8")
 
-            with mock.patch.object(subject.base, "build_and_execute", return_value={"schema":"stegverse.healer.sovereign_scheduler_receipt/v0.1","state":"COMPLETE"}), \
+            def fresh_base_receipt(_config_path: Path) -> dict[str, object]:
+                return {"schema":"stegverse.healer.sovereign_scheduler_receipt/v0.1","state":"COMPLETE"}
+
+            with mock.patch.object(subject.base, "build_and_execute", side_effect=fresh_base_receipt), \
                  mock.patch.object(subject.base, "_repo_roots", return_value={"StegVerse-Labs/.github": github_root}), \
                  mock.patch.object(subject.base, "_now", return_value=now), \
                  mock.patch.dict("os.environ", {"RUN_SCOPE":"all","DISPATCH_MODE":"schedule"}, clear=False):
