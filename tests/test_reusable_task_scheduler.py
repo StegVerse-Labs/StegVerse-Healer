@@ -51,13 +51,19 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
         )
         return github_root
 
+    def _runtime_root(self, path: Path) -> Path:
+        runtime_root = path
+        request = runtime_root / subject.RUNTIME_REQUIRED_REL
+        request.parent.mkdir(parents=True, exist_ok=True)
+        request.write_text("{}\n", encoding="utf-8")
+        return runtime_root
+
     def test_hourly_slot_executes_once_then_reuses_resident_receipt(self) -> None:
         now = dt.datetime(2026, 9, 9, 9, 15, tzinfo=dt.timezone.utc)
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
             github_root = self._github_root(tmp_root)
-            runtime_root = tmp_root / "heartbeat-runtime"
-            runtime_root.mkdir()
+            runtime_root = self._runtime_root(tmp_root / "heartbeat-runtime")
             schedule = tmp_root / "schedule.json"
             self._schedule(schedule)
 
@@ -78,6 +84,7 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             self.assertEqual(first["state"], "COMPLETE")
             self.assertEqual(first["selected_reusable_tasks"], 1)
             self.assertEqual(first["resident_runtime_root"], str(runtime_root.resolve()))
+            self.assertEqual(first["resident_runtime_root_source"], "EXPLICIT_NONSECRET_RUNTIME_ROOT")
             first_row = first["reusable_task_schedule"][0]
             self.assertEqual(first_row["outcome"], "REUSABLE_TASK_SCHEDULE_SLOT_EXECUTED")
             self.assertEqual(first_row["invocation_id"], "rt-native-email-action-monitor-001-20260909T09Z")
@@ -91,6 +98,16 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             self.assertEqual(second_row["outcome"], "ALREADY_RAN_THIS_SCHEDULE_SLOT")
             self.assertEqual(second_row["invocation_id"], first_row["invocation_id"])
 
+    def test_canonical_local_runtime_discovery_without_forwarded_env(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            runtime_root = self._runtime_root(home / ".local" / "state" / "stegverse" / "heartbeat-runtime")
+            with mock.patch.object(subject.Path, "home", return_value=home), \
+                 mock.patch.dict("os.environ", {"STEGVERSE_HEARTBEAT_ROOT": ""}, clear=False):
+                resolved, source = subject._resident_runtime_root()
+            self.assertEqual(resolved, runtime_root.resolve())
+            self.assertEqual(source, "CANONICAL_LOCAL_RUNTIME_DISCOVERY")
+
     def test_missing_resident_runtime_blocks_instead_of_using_source_as_runtime(self) -> None:
         now = dt.datetime(2026, 9, 9, 9, 15, tzinfo=dt.timezone.utc)
         with tempfile.TemporaryDirectory() as tmp:
@@ -102,6 +119,7 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             with mock.patch.object(subject.base, "build_and_execute", return_value={"schema":"stegverse.healer.sovereign_scheduler_receipt/v0.1","state":"COMPLETE"}), \
                  mock.patch.object(subject.base, "_repo_roots", return_value={"StegVerse-Labs/.github": github_root}), \
                  mock.patch.object(subject.base, "_now", return_value=now), \
+                 mock.patch.object(subject.Path, "home", return_value=tmp_root / "no-home-runtime"), \
                  mock.patch.dict("os.environ", {"RUN_SCOPE":"all","DISPATCH_MODE":"schedule","STEGVERSE_HEARTBEAT_ROOT":""}, clear=False):
                 result = subject.build_and_execute(tmp_root / "targets.json", schedule)
 
@@ -109,6 +127,7 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             row = result["reusable_task_schedule"][0]
             self.assertEqual(row["outcome"], "RESIDENT_RUNTIME_ROOT_NOT_MATERIALIZED")
             self.assertIsNone(result["resident_runtime_root"])
+            self.assertEqual(result["resident_runtime_root_source"], "CANONICAL_RUNTIME_NOT_FOUND")
 
     def test_config_binds_email_monitor_every_utc_hour(self) -> None:
         config = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
