@@ -17,37 +17,49 @@ import reusable_task_scheduler as subject  # noqa: E402
 
 
 class ReusableTaskSchedulerTests(unittest.TestCase):
-    def test_hourly_slot_executes_once_then_reuses_receipt(self) -> None:
+    def _schedule(self, path: Path) -> None:
+        path.write_text(json.dumps({
+            "schema": "stegverse.healer.reusable-task-schedule/v1",
+            "tasks": [{
+                "reusable_task_id": "RT-NATIVE-EMAIL-ACTION-MONITOR-001",
+                "tracking_task_id": "STEGVERSE-NATIVE-EMAIL-ACTION-MONITOR-001",
+                "cosv_task_vector": "10100000100000",
+                "repository": "StegVerse-Labs/.github",
+                "enabled": True,
+                "run_hours_utc": list(range(24)),
+                "parameters": {"bounded_mailbox_scope": "github"},
+            }],
+        }), encoding="utf-8")
+
+    def _github_root(self, tmp_root: Path) -> Path:
+        github_root = tmp_root / ".github"
+        trigger = github_root / "scripts" / "trigger_reusable_task.py"
+        trigger.parent.mkdir(parents=True)
+        trigger.write_text(
+            "#!/usr/bin/env python3\n"
+            "import argparse,json\n"
+            "from pathlib import Path\n"
+            "p=argparse.ArgumentParser()\n"
+            "p.add_argument('--reusable-task-id');p.add_argument('--invocation-id');p.add_argument('--parameters-json');p.add_argument('--task-id');p.add_argument('--cosv-task-vector');p.add_argument('--receipt')\n"
+            "a=p.parse_args()\n"
+            "params=json.loads(a.parameters_json)\n"
+            "assert Path(params['source_root']).resolve()==Path.cwd().resolve()\n"
+            "assert Path(params['runtime_root']).resolve()!=Path.cwd().resolve()\n"
+            "Path(a.receipt).parent.mkdir(parents=True,exist_ok=True)\n"
+            "Path(a.receipt).write_text(json.dumps({'schema':'stegverse.reusable-task-trigger-receipt/v1','state':'AUTOMATABLE_STEPS_EXHAUSTED','invocation_id':a.invocation_id,'parameters':params})+'\\n')\n",
+            encoding="utf-8",
+        )
+        return github_root
+
+    def test_hourly_slot_executes_once_then_reuses_resident_receipt(self) -> None:
         now = dt.datetime(2026, 9, 9, 9, 15, tzinfo=dt.timezone.utc)
         with tempfile.TemporaryDirectory() as tmp:
             tmp_root = Path(tmp)
-            github_root = tmp_root / ".github"
-            trigger = github_root / "scripts" / "trigger_reusable_task.py"
-            trigger.parent.mkdir(parents=True)
-            trigger.write_text(
-                "#!/usr/bin/env python3\n"
-                "import argparse,json\n"
-                "from pathlib import Path\n"
-                "p=argparse.ArgumentParser()\n"
-                "p.add_argument('--reusable-task-id');p.add_argument('--invocation-id');p.add_argument('--parameters-json');p.add_argument('--task-id');p.add_argument('--cosv-task-vector');p.add_argument('--receipt')\n"
-                "a=p.parse_args()\n"
-                "Path(a.receipt).parent.mkdir(parents=True,exist_ok=True)\n"
-                "Path(a.receipt).write_text(json.dumps({'schema':'stegverse.reusable-task-trigger-receipt/v1','state':'AUTOMATABLE_STEPS_EXHAUSTED','invocation_id':a.invocation_id})+'\\n')\n",
-                encoding="utf-8",
-            )
+            github_root = self._github_root(tmp_root)
+            runtime_root = tmp_root / "heartbeat-runtime"
+            runtime_root.mkdir()
             schedule = tmp_root / "schedule.json"
-            schedule.write_text(json.dumps({
-                "schema": "stegverse.healer.reusable-task-schedule/v1",
-                "tasks": [{
-                    "reusable_task_id": "RT-NATIVE-EMAIL-ACTION-MONITOR-001",
-                    "tracking_task_id": "STEGVERSE-NATIVE-EMAIL-ACTION-MONITOR-001",
-                    "cosv_task_vector": "10100000100000",
-                    "repository": "StegVerse-Labs/.github",
-                    "enabled": True,
-                    "run_hours_utc": list(range(24)),
-                    "parameters": {"bounded_mailbox_scope": "github"},
-                }],
-            }), encoding="utf-8")
+            self._schedule(schedule)
 
             def fresh_base_receipt(_config_path: Path) -> dict[str, object]:
                 return {"schema":"stegverse.healer.sovereign_scheduler_receipt/v0.1","state":"COMPLETE"}
@@ -55,20 +67,48 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             with mock.patch.object(subject.base, "build_and_execute", side_effect=fresh_base_receipt), \
                  mock.patch.object(subject.base, "_repo_roots", return_value={"StegVerse-Labs/.github": github_root}), \
                  mock.patch.object(subject.base, "_now", return_value=now), \
-                 mock.patch.dict("os.environ", {"RUN_SCOPE":"all","DISPATCH_MODE":"schedule"}, clear=False):
+                 mock.patch.dict("os.environ", {
+                     "RUN_SCOPE":"all",
+                     "DISPATCH_MODE":"schedule",
+                     "STEGVERSE_HEARTBEAT_ROOT": str(runtime_root),
+                 }, clear=False):
                 first = subject.build_and_execute(tmp_root / "targets.json", schedule)
                 second = subject.build_and_execute(tmp_root / "targets.json", schedule)
 
             self.assertEqual(first["state"], "COMPLETE")
             self.assertEqual(first["selected_reusable_tasks"], 1)
+            self.assertEqual(first["resident_runtime_root"], str(runtime_root.resolve()))
             first_row = first["reusable_task_schedule"][0]
             self.assertEqual(first_row["outcome"], "REUSABLE_TASK_SCHEDULE_SLOT_EXECUTED")
             self.assertEqual(first_row["invocation_id"], "rt-native-email-action-monitor-001-20260909T09Z")
-            self.assertTrue(Path(first_row["receipt_ref"]).is_file())
+            receipt = Path(first_row["receipt_ref"])
+            self.assertTrue(receipt.is_file())
+            self.assertTrue(str(receipt).startswith(str(runtime_root.resolve())))
+            self.assertEqual(Path(first_row["source_root"]), github_root.resolve())
+            self.assertEqual(Path(first_row["runtime_root"]), runtime_root.resolve())
 
             second_row = second["reusable_task_schedule"][0]
             self.assertEqual(second_row["outcome"], "ALREADY_RAN_THIS_SCHEDULE_SLOT")
             self.assertEqual(second_row["invocation_id"], first_row["invocation_id"])
+
+    def test_missing_resident_runtime_blocks_instead_of_using_source_as_runtime(self) -> None:
+        now = dt.datetime(2026, 9, 9, 9, 15, tzinfo=dt.timezone.utc)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            github_root = self._github_root(tmp_root)
+            schedule = tmp_root / "schedule.json"
+            self._schedule(schedule)
+
+            with mock.patch.object(subject.base, "build_and_execute", return_value={"schema":"stegverse.healer.sovereign_scheduler_receipt/v0.1","state":"COMPLETE"}), \
+                 mock.patch.object(subject.base, "_repo_roots", return_value={"StegVerse-Labs/.github": github_root}), \
+                 mock.patch.object(subject.base, "_now", return_value=now), \
+                 mock.patch.dict("os.environ", {"RUN_SCOPE":"all","DISPATCH_MODE":"schedule","STEGVERSE_HEARTBEAT_ROOT":""}, clear=False):
+                result = subject.build_and_execute(tmp_root / "targets.json", schedule)
+
+            self.assertEqual(result["state"], "BLOCKED")
+            row = result["reusable_task_schedule"][0]
+            self.assertEqual(row["outcome"], "RESIDENT_RUNTIME_ROOT_NOT_MATERIALIZED")
+            self.assertIsNone(result["resident_runtime_root"])
 
     def test_config_binds_email_monitor_every_utc_hour(self) -> None:
         config = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
