@@ -24,6 +24,7 @@ Healer dispatch does not itself grant provider execution, deployment, custody, p
 Read these before modifying scheduling or dispatch behavior:
 
 - `docs/HEALER_MIRROR_HANDOFF.md`
+- `docs/NATIVE_EMAIL_REUSABLE_SCHEDULE_MIRROR_HANDOFF.md`
 - `docs/HEALER_ACTIVATION_PLAN.md`
 - `data/orchestrator_targets.json`
 - `data/reusable_task_schedule.json`
