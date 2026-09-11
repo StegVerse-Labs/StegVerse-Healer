@@ -8,6 +8,12 @@ This repository is the only managed StegVerse repository permitted to own schedu
 
 Healer dispatch does not itself grant provider execution, deployment, custody, publication, release, Site activation, admissibility, or receipt-minting authority.
 
+## Ecosystem Continuity Evaluator intake
+
+StegVerse-Healer consumes non-PASS findings from the canonical Ecosystem Continuity Evaluator as read-only repair-dispatch input. `app/ece_finding_intake.py` preserves the exact finding/evaluation identity, hashes the accepted snapshot, starts Healer state at `DETECTED`, and carries `authority_effect=NONE_INTAKE_ONLY`.
+
+ECE remains continuity-evaluation truth. Healer must not rewrite the underlying observation or claim recovery because work was acknowledged, queued, dispatched, retried, or completed. Recovery requires a later independent ECE evaluation that observes the predicate `PASS` with acceptable evidence and freshness. ECE scheduling, when introduced, must reuse the existing sovereign Healer scheduler and may not create a second scheduler.
+
 ## Current capabilities
 
 - Central hourly scheduler driven by `data/orchestrator_targets.json`.
@@ -29,6 +35,7 @@ Read these before modifying scheduling or dispatch behavior:
 - `docs/HEALER_MIRROR_HANDOFF.md`
 - `docs/NATIVE_EMAIL_REUSABLE_SCHEDULE_MIRROR_HANDOFF.md`
 - `docs/HEALER_ACTIVATION_PLAN.md`
+- `docs/ECOSYSTEM_CONTINUITY_HEALER_INTAKE_MIRROR_HANDOFF.md`
 - `data/orchestrator_targets.json`
 - `data/reusable_task_schedule.json`
 - `data/summary/single_scheduler_migration.json`
