@@ -3,9 +3,9 @@ from __future__ import annotations
 """Extend the existing sovereign Healer scheduler with reusable-task schedules.
 
 This module is not a second scheduler. It is the single Healer scheduler entrypoint
-with an additional data-driven reusable-task schedule pass. Each schedule slot is
-idempotent by invocation id + retained resident-runtime receipt, so an hourly entry
-runs at most once per UTC hour even if the resident scheduler is visited repeatedly.
+with an additional data-driven reusable-task schedule pass. Each successful schedule
+slot is idempotent by invocation id + retained resident-runtime receipt. Failed or
+boundary-only attempts remain retryable within the same UTC hour.
 """
 
 import json
@@ -20,6 +20,7 @@ SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "reusable_task_sc
 RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
 RUNTIME_REQUIRED_REL = Path("control/resident-execution-request.d/native-email-action-monitor-001.json")
 KV_PATH_ENV_NAMES = ("STEGVERSE_KV_ROOT", "STEGVERSE_KV_PROVIDER_MATERIALIZED_ROOT")
+SUCCESSFUL_TRIGGER_STATE = "AUTOMATABLE_STEPS_EXHAUSTED"
 
 
 def _load_schedule(path: Path) -> list[dict[str, Any]]:
@@ -89,6 +90,10 @@ def _kv_path_env() -> dict[str, str]:
     return values
 
 
+def _receipt_satisfies_slot(receipt: dict[str, Any] | None) -> bool:
+    return bool(isinstance(receipt, dict) and receipt.get("state") == SUCCESSFUL_TRIGGER_STATE)
+
+
 def _execute_reusable_task(
     task: dict[str, Any],
     roots: dict[str, Path],
@@ -120,8 +125,8 @@ def _execute_reusable_task(
 
     invocation_id = _slot_id(reusable_task_id, now)
     receipt_path = runtime_root / "receipts" / "reusable-task" / f"{invocation_id}.latest.json"
-    if receipt_path.is_file():
-        prior = base._load_json(receipt_path)
+    prior = base._load_json(receipt_path) if receipt_path.is_file() else None
+    if _receipt_satisfies_slot(prior):
         return {
             **base_result,
             "state": "COMPLETE",
@@ -159,14 +164,16 @@ def _execute_reusable_task(
     }
     result = base._run(command, root, child_env, timeout=1500)
     receipt = base._load_json(receipt_path) if receipt_path.is_file() else None
-    ok = result["returncode"] == 0 and isinstance(receipt, dict)
+    ok = result["returncode"] == 0 and _receipt_satisfies_slot(receipt)
     return {
         **base_result,
         "state": "COMPLETE" if ok else "BLOCKED",
-        "outcome": "REUSABLE_TASK_SCHEDULE_SLOT_EXECUTED" if ok else "REUSABLE_TASK_SCHEDULE_SLOT_BLOCKED",
+        "outcome": "REUSABLE_TASK_SCHEDULE_SLOT_EXECUTED" if ok else "REUSABLE_TASK_SCHEDULE_SLOT_RETRYABLE",
         "invocation_id": invocation_id,
         "receipt_ref": str(receipt_path),
         "receipt_state": receipt.get("state") if isinstance(receipt, dict) else None,
+        "prior_receipt_state": prior.get("state") if isinstance(prior, dict) else None,
+        "same_slot_retry_permitted": not ok,
         "source_root": str(root),
         "runtime_root": str(runtime_root),
         "kv_path_env_forwarded": sorted(name for name in KV_PATH_ENV_NAMES if name in child_env),
