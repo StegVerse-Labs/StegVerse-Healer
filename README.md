@@ -12,7 +12,9 @@ Healer dispatch does not itself grant provider execution, deployment, custody, p
 
 StegVerse-Healer consumes non-PASS findings from the canonical Ecosystem Continuity Evaluator as read-only repair-dispatch input. `app/ece_finding_intake.py` preserves the exact finding/evaluation identity, hashes the accepted snapshot, starts Healer state at `DETECTED`, and carries `authority_effect=NONE_INTAKE_ONLY`.
 
-ECE remains continuity-evaluation truth. Healer must not rewrite the underlying observation or claim recovery because work was acknowledged, queued, dispatched, retried, or completed. Recovery requires a later independent ECE evaluation that observes the predicate `PASS` with acceptable evidence and freshness. ECE scheduling, when introduced, must reuse the existing sovereign Healer scheduler and may not create a second scheduler.
+ECE remains continuity-evaluation truth. Healer must not rewrite the underlying observation or claim recovery because work was acknowledged, queued, dispatched, retried, or completed. Recovery requires a later independent ECE evaluation that observes the predicate `PASS` with acceptable evidence and freshness.
+
+The bounded periodic cycle implementation is `app/ece_periodic_evaluation.py`, with CLI entrypoint `app/run_ece_periodic_evaluation.py`. It consumes only already-local canonical source roots plus the resident runtime root. When a resident observation bundle is absent, it supplies an empty observation set to the canonical evaluator so continuity degrades to explicit `NOT_OBSERVED` findings rather than inventing green state. Generated evaluation, exact-byte Master Records custody/reconstruction, Healer intake, Site-safe projection, and cycle receipts are written under the resident runtime root; source repositories remain read-only. Scheduling for this cycle must use the existing reusable-task scheduler extension and must not create another scheduler.
 
 ## Current capabilities
 
@@ -36,6 +38,7 @@ Read these before modifying scheduling or dispatch behavior:
 - `docs/NATIVE_EMAIL_REUSABLE_SCHEDULE_MIRROR_HANDOFF.md`
 - `docs/HEALER_ACTIVATION_PLAN.md`
 - `docs/ECOSYSTEM_CONTINUITY_HEALER_INTAKE_MIRROR_HANDOFF.md`
+- `docs/ECOSYSTEM_CONTINUITY_PERIODIC_CYCLE_MIRROR_HANDOFF.md`
 - `data/orchestrator_targets.json`
 - `data/reusable_task_schedule.json`
 - `data/summary/single_scheduler_migration.json`
