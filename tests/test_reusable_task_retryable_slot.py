@@ -33,54 +33,134 @@ def _schedule(path: Path) -> None:
             "repository": "StegVerse-Labs/.github",
             "enabled": True,
             "run_hours_utc": list(range(24)),
+            "retry_interval_minutes": 15,
+            "max_attempts_per_slot": 4,
             "parameters": {},
         }],
     }), encoding="utf-8")
 
 
-def test_boundary_receipt_does_not_poison_hourly_slot_and_is_retried():
+def _github_root(base: Path) -> Path:
+    root = base / ".github"
+    trigger = root / "scripts" / "trigger_reusable_task.py"
+    trigger.parent.mkdir(parents=True)
+    trigger.write_text("print('placeholder')\n", encoding="utf-8")
+    return root
+
+
+def _task():
+    return {
+        "reusable_task_id": "RT-NATIVE-EMAIL-ACTION-MONITOR-001",
+        "tracking_task_id": "STEGVERSE-NATIVE-EMAIL-ACTION-MONITOR-001",
+        "cosv_task_vector": "10100000100000",
+        "repository": "StegVerse-Labs/.github",
+        "retry_interval_minutes": 15,
+        "max_attempts_per_slot": 4,
+        "parameters": {},
+    }
+
+
+def test_boundary_receipt_retries_when_backoff_is_due():
     now = dt.datetime(2026, 9, 10, 21, 15, tzinfo=dt.timezone.utc)
     with tempfile.TemporaryDirectory() as td:
         base = Path(td)
-        github_root = base / ".github"
-        trigger = github_root / "scripts" / "trigger_reusable_task.py"
-        trigger.parent.mkdir(parents=True)
-        trigger.write_text("print('placeholder')\n", encoding="utf-8")
+        github_root = _github_root(base)
         runtime = _runtime_root(base)
-        schedule = base / "schedule.json"
-        _schedule(schedule)
         invocation = "rt-native-email-action-monitor-001-20260910T21Z"
         receipt = runtime / "receipts" / "reusable-task" / f"{invocation}.latest.json"
+        retry = subject._retry_state_path(runtime, invocation)
         receipt.parent.mkdir(parents=True)
-        receipt.write_text(json.dumps({
-            "schema": "stegverse.reusable-task-trigger-receipt/v1",
-            "state": "BOUNDARY_RECORDED",
-            "boundary": {"kind": "DECLARED_RUNNER_STOPPED_BEFORE_COMPLETION"},
-        }) + "\n", encoding="utf-8")
+        receipt.write_text(json.dumps({"state": "BOUNDARY_RECORDED"}) + "\n", encoding="utf-8")
+        subject._write_retry_state(retry, {
+            "schema": subject.RETRY_STATE_SCHEMA,
+            "invocation_id": invocation,
+            "attempt_count": 1,
+            "last_attempt_at": "2026-09-10T21:00:00Z",
+            "last_receipt_state": "BOUNDARY_RECORDED",
+            "last_returncode": 3,
+            "slot_satisfied": False,
+        })
 
         calls = []
         def fake_run(command, cwd, env, timeout):
             calls.append(command)
-            receipt.write_text(json.dumps({
-                "schema": "stegverse.reusable-task-trigger-receipt/v1",
-                "state": "AUTOMATABLE_STEPS_EXHAUSTED",
-                "invocation_id": invocation,
-            }) + "\n", encoding="utf-8")
+            receipt.write_text(json.dumps({"state": "AUTOMATABLE_STEPS_EXHAUSTED"}) + "\n", encoding="utf-8")
             return {"returncode": 0, "stdout_tail": "", "stderr_tail": ""}
 
-        with mock.patch.object(subject.base, "build_and_execute", return_value={"schema":"stegverse.healer.sovereign_scheduler_receipt/v0.1","state":"COMPLETE"}), \
-             mock.patch.object(subject.base, "_repo_roots", return_value={"StegVerse-Labs/.github": github_root}), \
-             mock.patch.object(subject.base, "_now", return_value=now), \
-             mock.patch.object(subject.base, "_run", side_effect=fake_run), \
-             mock.patch.dict("os.environ", {"RUN_SCOPE":"all","DISPATCH_MODE":"schedule","STEGVERSE_HEARTBEAT_ROOT":str(runtime)}, clear=False):
-            result = subject.build_and_execute(base / "targets.json", schedule)
+        with mock.patch.object(subject.base, "_run", side_effect=fake_run):
+            row = subject._execute_reusable_task(
+                _task(), {"StegVerse-Labs/.github": github_root},
+                json.dumps({"StegVerse-Labs/.github": str(github_root)}),
+                runtime, "EXPLICIT_NONSECRET_RUNTIME_ROOT", now,
+            )
 
         assert len(calls) == 1
-        row = result["reusable_task_schedule"][0]
-        assert row["prior_receipt_state"] == "BOUNDARY_RECORDED"
-        assert row["receipt_state"] == "AUTOMATABLE_STEPS_EXHAUSTED"
         assert row["outcome"] == "REUSABLE_TASK_SCHEDULE_SLOT_EXECUTED"
+        assert row["attempt_count"] == 2
+        assert row["slot_satisfied"] is True
         assert row["same_slot_retry_permitted"] is False
+
+
+def test_failed_slot_is_deferred_until_15_minute_backoff_expires():
+    now = dt.datetime(2026, 9, 10, 21, 10, tzinfo=dt.timezone.utc)
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td)
+        github_root = _github_root(base)
+        runtime = _runtime_root(base)
+        invocation = "rt-native-email-action-monitor-001-20260910T21Z"
+        retry = subject._retry_state_path(runtime, invocation)
+        subject._write_retry_state(retry, {
+            "schema": subject.RETRY_STATE_SCHEMA,
+            "invocation_id": invocation,
+            "attempt_count": 1,
+            "last_attempt_at": "2026-09-10T21:00:00Z",
+            "last_receipt_state": "BOUNDARY_RECORDED",
+            "last_returncode": 3,
+            "slot_satisfied": False,
+        })
+        with mock.patch.object(subject.base, "_run") as run:
+            row = subject._execute_reusable_task(
+                _task(), {"StegVerse-Labs/.github": github_root}, "{}",
+                runtime, "EXPLICIT_NONSECRET_RUNTIME_ROOT", now,
+            )
+        run.assert_not_called()
+        assert row["outcome"] == "RETRY_BACKOFF_ACTIVE"
+        assert row["attempt_count"] == 1
+        assert row["next_retry_at"] == "2026-09-10T21:15:00Z"
+        assert row["retry_deferred"] is True
+        assert row["slot_satisfied"] is False
+
+
+def test_four_failed_attempts_stop_provider_retries_until_next_hour_slot():
+    now = dt.datetime(2026, 9, 10, 21, 50, tzinfo=dt.timezone.utc)
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td)
+        github_root = _github_root(base)
+        runtime = _runtime_root(base)
+        invocation = "rt-native-email-action-monitor-001-20260910T21Z"
+        retry = subject._retry_state_path(runtime, invocation)
+        subject._write_retry_state(retry, {
+            "schema": subject.RETRY_STATE_SCHEMA,
+            "invocation_id": invocation,
+            "attempt_count": 4,
+            "last_attempt_at": "2026-09-10T21:45:00Z",
+            "last_receipt_state": "BOUNDARY_RECORDED",
+            "last_returncode": 3,
+            "slot_satisfied": False,
+        })
+        with mock.patch.object(subject.base, "_run") as run:
+            row = subject._execute_reusable_task(
+                _task(), {"StegVerse-Labs/.github": github_root}, "{}",
+                runtime, "EXPLICIT_NONSECRET_RUNTIME_ROOT", now,
+            )
+        run.assert_not_called()
+        assert row["outcome"] == "MAX_ATTEMPTS_REACHED_FOR_SLOT"
+        assert row["attempt_count"] == 4
+        assert row["slot_satisfied"] is False
+
+        next_id = subject._slot_id(_task()["reusable_task_id"], dt.datetime(2026, 9, 10, 22, 0, tzinfo=dt.timezone.utc))
+        assert next_id == "rt-native-email-action-monitor-001-20260910T22Z"
+        assert subject._retry_state_path(runtime, next_id) != retry
 
 
 def test_successful_receipt_is_the_only_slot_idempotency_terminal():

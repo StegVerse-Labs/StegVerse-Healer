@@ -9,11 +9,13 @@
       "enabled": true,
       "aliases": ["native-email", "github-mail", "email-monitor"],
       "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+      "retry_interval_minutes": 15,
+      "max_attempts_per_slot": 4,
       "parameters": {
         "bounded_mailbox_scope": "canonical GitHub/[Task Update] operational slice",
         "observation_window": "since previous scheduled invocation"
       },
-      "status": "hourly-existing-reusable-task-trigger-no-second-monitor-no-second-scheduler"
+      "status": "hourly-existing-reusable-task-trigger-bounded-retry-no-second-monitor-no-second-scheduler"
     }
   ]
 }

@@ -5,9 +5,12 @@ from __future__ import annotations
 This module is not a second scheduler. It is the single Healer scheduler entrypoint
 with an additional data-driven reusable-task schedule pass. Each successful schedule
 slot is idempotent by invocation id + retained resident-runtime receipt. Failed or
-boundary-only attempts remain retryable within the same UTC hour.
+boundary-only attempts remain retryable within the same UTC hour, but only through a
+bounded schedule-local retry cadence so a transient dependency cannot create a tight
+provider loop.
 """
 
+from datetime import datetime, timedelta
 import json
 import os
 from pathlib import Path
@@ -21,6 +24,7 @@ RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
 RUNTIME_REQUIRED_REL = Path("control/resident-execution-request.d/native-email-action-monitor-001.json")
 KV_PATH_ENV_NAMES = ("STEGVERSE_KV_ROOT", "STEGVERSE_KV_PROVIDER_MATERIALIZED_ROOT")
 SUCCESSFUL_TRIGGER_STATE = "AUTOMATABLE_STEPS_EXHAUSTED"
+RETRY_STATE_SCHEMA = "stegverse.healer.reusable-task-slot-attempt-state/v1"
 
 
 def _load_schedule(path: Path) -> list[dict[str, Any]]:
@@ -94,6 +98,62 @@ def _receipt_satisfies_slot(receipt: dict[str, Any] | None) -> bool:
     return bool(isinstance(receipt, dict) and receipt.get("state") == SUCCESSFUL_TRIGGER_STATE)
 
 
+def _retry_policy(task: dict[str, Any]) -> tuple[int, int]:
+    interval = task.get("retry_interval_minutes", 15)
+    maximum = task.get("max_attempts_per_slot", 4)
+    if not isinstance(interval, int) or interval < 1 or interval > 60:
+        raise ValueError("retry_interval_minutes must be integer 1..60")
+    if not isinstance(maximum, int) or maximum < 1 or maximum > 12:
+        raise ValueError("max_attempts_per_slot must be integer 1..12")
+    return interval, maximum
+
+
+def _retry_state_path(runtime_root: Path, invocation_id: str) -> Path:
+    return runtime_root / "receipts" / "reusable-task" / f"{invocation_id}.attempt-state.json"
+
+
+def _load_retry_state(path: Path, invocation_id: str) -> dict[str, Any]:
+    if not path.is_file():
+        return {
+            "schema": RETRY_STATE_SCHEMA,
+            "invocation_id": invocation_id,
+            "attempt_count": 0,
+            "last_attempt_at": None,
+        }
+    value = base._load_json(path)
+    if value.get("schema") != RETRY_STATE_SCHEMA or value.get("invocation_id") != invocation_id:
+        raise ValueError("reusable task retry state identity mismatch")
+    count = value.get("attempt_count")
+    if not isinstance(count, int) or count < 0:
+        raise ValueError("reusable task retry attempt_count invalid")
+    last = value.get("last_attempt_at")
+    if last is not None and not isinstance(last, str):
+        raise ValueError("reusable task retry last_attempt_at invalid")
+    return value
+
+
+def _write_retry_state(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name("." + path.name + ".tmp")
+    tmp.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def _retry_gate(task: dict[str, Any], state: dict[str, Any], now) -> tuple[bool, str | None, str | None]:
+    interval_minutes, max_attempts = _retry_policy(task)
+    count = int(state.get("attempt_count") or 0)
+    if count >= max_attempts:
+        return False, "MAX_ATTEMPTS_REACHED_FOR_SLOT", None
+    last = state.get("last_attempt_at")
+    if not last:
+        return True, None, None
+    parsed = datetime.fromisoformat(str(last).replace("Z", "+00:00"))
+    retry_at = parsed + timedelta(minutes=interval_minutes)
+    if now < retry_at:
+        return False, "RETRY_BACKOFF_ACTIVE", retry_at.isoformat().replace("+00:00", "Z")
+    return True, None, retry_at.isoformat().replace("+00:00", "Z")
+
+
 def _execute_reusable_task(
     task: dict[str, Any],
     roots: dict[str, Path],
@@ -106,12 +166,15 @@ def _execute_reusable_task(
     tracking_task_id = str(task.get("tracking_task_id") or "")
     cosv = str(task.get("cosv_task_vector") or "")
     repository = str(task.get("repository") or "")
+    retry_interval_minutes, max_attempts_per_slot = _retry_policy(task)
     base_result = {
         "reusable_task_id": reusable_task_id,
         "tracking_task_id": tracking_task_id,
         "cosv_task_vector": cosv,
         "repository": repository,
         "runtime_root_source": runtime_root_source,
+        "retry_interval_minutes": retry_interval_minutes,
+        "max_attempts_per_slot": max_attempts_per_slot,
     }
 
     root = roots.get(repository)
@@ -125,6 +188,7 @@ def _execute_reusable_task(
 
     invocation_id = _slot_id(reusable_task_id, now)
     receipt_path = runtime_root / "receipts" / "reusable-task" / f"{invocation_id}.latest.json"
+    retry_path = _retry_state_path(runtime_root, invocation_id)
     prior = base._load_json(receipt_path) if receipt_path.is_file() else None
     if _receipt_satisfies_slot(prior):
         return {
@@ -134,6 +198,26 @@ def _execute_reusable_task(
             "invocation_id": invocation_id,
             "receipt_ref": str(receipt_path),
             "receipt_state": prior.get("state"),
+            "slot_satisfied": True,
+            "source_root": str(root),
+            "runtime_root": str(runtime_root),
+        }
+
+    retry_state = _load_retry_state(retry_path, invocation_id)
+    may_attempt, deferred_reason, retry_at = _retry_gate(task, retry_state, now)
+    if not may_attempt:
+        return {
+            **base_result,
+            "state": "COMPLETE",
+            "outcome": deferred_reason,
+            "invocation_id": invocation_id,
+            "receipt_ref": str(receipt_path),
+            "receipt_state": prior.get("state") if isinstance(prior, dict) else None,
+            "retry_state_ref": str(retry_path),
+            "attempt_count": retry_state["attempt_count"],
+            "next_retry_at": retry_at,
+            "slot_satisfied": False,
+            "retry_deferred": True,
             "source_root": str(root),
             "runtime_root": str(runtime_root),
         }
@@ -165,6 +249,17 @@ def _execute_reusable_task(
     result = base._run(command, root, child_env, timeout=1500)
     receipt = base._load_json(receipt_path) if receipt_path.is_file() else None
     ok = result["returncode"] == 0 and _receipt_satisfies_slot(receipt)
+    attempt_count = int(retry_state.get("attempt_count") or 0) + 1
+    attempt_state = {
+        "schema": RETRY_STATE_SCHEMA,
+        "invocation_id": invocation_id,
+        "attempt_count": attempt_count,
+        "last_attempt_at": now.isoformat().replace("+00:00", "Z"),
+        "last_receipt_state": receipt.get("state") if isinstance(receipt, dict) else None,
+        "last_returncode": result["returncode"],
+        "slot_satisfied": ok,
+    }
+    _write_retry_state(retry_path, attempt_state)
     return {
         **base_result,
         "state": "COMPLETE" if ok else "BLOCKED",
@@ -173,7 +268,11 @@ def _execute_reusable_task(
         "receipt_ref": str(receipt_path),
         "receipt_state": receipt.get("state") if isinstance(receipt, dict) else None,
         "prior_receipt_state": prior.get("state") if isinstance(prior, dict) else None,
-        "same_slot_retry_permitted": not ok,
+        "retry_state_ref": str(retry_path),
+        "attempt_count": attempt_count,
+        "slot_satisfied": ok,
+        "same_slot_retry_permitted": not ok and attempt_count < max_attempts_per_slot,
+        "next_retry_at": None if ok or attempt_count >= max_attempts_per_slot else (now + timedelta(minutes=retry_interval_minutes)).isoformat().replace("+00:00", "Z"),
         "source_root": str(root),
         "runtime_root": str(runtime_root),
         "kv_path_env_forwarded": sorted(name for name in KV_PATH_ENV_NAMES if name in child_env),
