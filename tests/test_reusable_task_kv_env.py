@@ -45,7 +45,10 @@ class ReusableTaskKVEnvTests(unittest.TestCase):
                 captured.update(env)
                 receipt_path = Path(command[command.index("--receipt") + 1])
                 receipt_path.parent.mkdir(parents=True, exist_ok=True)
-                receipt_path.write_text(json.dumps({"state": "HANDOFF_READY"}) + "\n", encoding="utf-8")
+                receipt_path.write_text(json.dumps({
+                    "schema": "stegverse.reusable-task-trigger-receipt/v1",
+                    "state": "AUTOMATABLE_STEPS_EXHAUSTED",
+                }) + "\n", encoding="utf-8")
                 return {"returncode": 0, "stdout": "", "stderr": ""}
 
             task = {
