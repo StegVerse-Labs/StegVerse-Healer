@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import json
 import os
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -25,6 +26,16 @@ RUNTIME_REQUIRED_REL = Path("control/resident-execution-request.d/native-email-a
 KV_PATH_ENV_NAMES = ("STEGVERSE_KV_ROOT", "STEGVERSE_KV_PROVIDER_MATERIALIZED_ROOT")
 SUCCESSFUL_TRIGGER_STATE = "AUTOMATABLE_STEPS_EXHAUSTED"
 RETRY_STATE_SCHEMA = "stegverse.healer.reusable-task-slot-attempt-state/v1"
+SOURCE_PREP_SCHEMA = "stegverse.sv-dn1.production-source-prep-receipt/v2"
+SOURCE_PREP_RECEIPT_ENV = "STEGVERSE_SV_DN1_SOURCE_PREP_RECEIPT"
+SOURCE_PREP_DEFAULT = Path.home() / ".stegverse" / "state" / "sv-dn1-production-source-prep" / "receipts" / "latest.json"
+SOURCE_PREP_COMPONENTS = {
+    "stegverse.sdk": ("StegVerse-org/StegVerse-SDK", Path("stegverse/sovereign_validation_runtime.py")),
+    "stegverse.stegcore": ("StegVerse-Labs/StegCore", Path("src/stegcore/steggate_runtime.py")),
+    "stegverse.core-lite": ("Data-Continuation/core-lite", Path("core_lite/transaction_route.py")),
+    "stegverse.master-records": ("master-records/orchestration", Path("services/manifest_receipt_custody.py")),
+}
+SHA256_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 def _load_schedule(path: Path) -> list[dict[str, Any]]:
@@ -92,6 +103,55 @@ def _kv_path_env() -> dict[str, str]:
         if raw:
             values[name] = raw
     return values
+
+
+def _source_prep_receipt_path() -> Path:
+    raw = str(os.getenv(SOURCE_PREP_RECEIPT_ENV) or "").strip()
+    return Path(raw).expanduser().resolve() if raw else SOURCE_PREP_DEFAULT.expanduser().resolve()
+
+
+def _verified_governance_component_roots() -> tuple[dict[str, Path], str]:
+    """Resolve only roots already verified by the existing SV-DN1 source-prep lane."""
+    path = _source_prep_receipt_path()
+    if not path.is_file():
+        return {}, "SV_DN1_SOURCE_PREP_RECEIPT_NOT_PRESENT"
+    try:
+        value = base._load_json(path)
+    except Exception:
+        return {}, "SV_DN1_SOURCE_PREP_RECEIPT_INVALID_JSON"
+    required = {
+        "schema": SOURCE_PREP_SCHEMA,
+        "state": "COMPLETE",
+        "transition_id": "SV_DN1_PRODUCTION_SOURCE_PREPARATION_COMPLETE",
+        "migration_anchors_verified": True,
+        "network_source_fetch_performed": False,
+        "github_platform_required": False,
+        "credential_used": False,
+        "github_token_used": False,
+        "repository_writeback_performed": False,
+    }
+    if any(value.get(key) != expected for key, expected in required.items()):
+        return {}, "SV_DN1_SOURCE_PREP_RECEIPT_NOT_ADMISSIBLE"
+    roots = value.get("source_roots")
+    identities = value.get("source_identities")
+    if not isinstance(roots, dict) or not isinstance(identities, dict):
+        return {}, "SV_DN1_SOURCE_PREP_ROOTS_OR_IDENTITIES_MISSING"
+    if set(roots) != set(SOURCE_PREP_COMPONENTS) or set(identities) != set(SOURCE_PREP_COMPONENTS):
+        return {}, "SV_DN1_SOURCE_PREP_COMPONENT_SET_MISMATCH"
+
+    resolved: dict[str, Path] = {}
+    for component_id, (repository, marker) in SOURCE_PREP_COMPONENTS.items():
+        identity = identities.get(component_id)
+        raw_root = roots.get(component_id)
+        if not isinstance(identity, str) or not SHA256_ID.fullmatch(identity):
+            return {}, f"SV_DN1_SOURCE_PREP_IDENTITY_INVALID:{component_id}"
+        if not isinstance(raw_root, str) or not raw_root.strip():
+            return {}, f"SV_DN1_SOURCE_PREP_ROOT_INVALID:{component_id}"
+        root = Path(raw_root).expanduser().resolve()
+        if not root.is_dir() or not (root / marker).is_file():
+            return {}, f"SV_DN1_SOURCE_PREP_ROOT_NOT_MATERIALIZED:{component_id}"
+        resolved[repository] = root
+    return resolved, "SV_DN1_SOURCE_PREP_RECEIPT_VERIFIED"
 
 
 def _receipt_satisfies_slot(receipt: dict[str, Any] | None) -> bool:
@@ -283,6 +343,9 @@ def _execute_reusable_task(
 def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) -> dict[str, Any]:
     receipt = base.build_and_execute(config_path)
     roots = base._repo_roots()
+    prepared_roots, source_prep_state = _verified_governance_component_roots()
+    for repository, path in prepared_roots.items():
+        roots.setdefault(repository, path)
     roots_json = json.dumps({repo: str(path) for repo, path in sorted(roots.items())}, sort_keys=True)
     scope = (os.getenv("RUN_SCOPE") or "all").strip().lower()
     mode = (os.getenv("DISPATCH_MODE") or "schedule").strip().lower()
@@ -304,6 +367,8 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     receipt["resident_runtime_root"] = str(runtime_root) if runtime_root is not None else None
     receipt["resident_runtime_root_source"] = runtime_root_source
     receipt["kv_path_env_available"] = sorted(_kv_path_env())
+    receipt["sv_dn1_source_prep_state"] = source_prep_state
+    receipt["sv_dn1_governance_component_roots_added"] = sorted(prepared_roots)
     if receipt.get("state") == "COMPLETE" and any(row.get("state") == "BLOCKED" for row in scheduled):
         receipt["state"] = "BLOCKED"
     return receipt
