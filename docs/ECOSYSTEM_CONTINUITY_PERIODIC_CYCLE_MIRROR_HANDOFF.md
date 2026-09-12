@@ -1,13 +1,15 @@
 # Ecosystem Continuity Periodic Cycle Mirror Handoff
 
-Updated: 2026-09-11
+Updated: 2026-09-12
 
 ```text
 Parent Goal Task ID: ECOSYSTEM-CONTINUITY-EVALUATOR-001
-COSV: 71000000100111
+Child Goal Task ID: SDK-ECOSYSTEM-DIAGNOSTIC-PROCESSOR-001
+Parent COSV: 71000000100111
+Child COSV: 71000000101000
 Repository: StegVerse-Labs/StegVerse-Healer
-Branch: feature/ece-periodic-sovereign-schedule-001
-State: CYCLE_SOURCE + HOURLY REUSABLE SCHEDULE BINDING IMPLEMENTED / VALIDATION PENDING
+Branch: feature/ece-sdk-diagnostic-bridge-001
+State: SDK DIAGNOSTIC BRIDGE SOURCE IMPLEMENTED / VALIDATION PENDING
 Authority effect: NONE
 Scheduler owner: existing StegVerse-Healer sovereign reusable-task scheduler extension
 Cross-repo reusable identity: StegVerse-Labs/.github RT-ECOSYSTEM-CONTINUITY-EVALUATION-001
@@ -15,54 +17,84 @@ Cross-repo reusable identity: StegVerse-Labs/.github RT-ECOSYSTEM-CONTINUITY-EVA
 
 ## Purpose
 
-Provide one bounded periodic continuity cycle that consumes already-local ECE, Site, Healer, and Master Records source, evaluates resident observations, retains exact evaluation bytes, reconstructs them, creates immutable Healer intake, and produces the Site-safe projection without source-repository writeback or a second scheduler.
+Provide one bounded periodic continuity cycle that routes registered ecosystem diagnostic tests through the installed StegVerse SDK `ecosystem_diagnostic` processor before ECE interprets continuity. The SDK returns diagnostic observations only; ECE remains the sole continuity interpreter; Master Records retains/reconstructs the resulting ECE evaluation; Healer consumes findings; Site receives a safe projection.
 
-## Source
+## Runtime chain
 
 ```text
-app/ece_periodic_evaluation.py
-app/run_ece_periodic_evaluation.py
-data/reusable_task_schedule.json
-tests/test_ece_periodic_evaluation.py
-tests/test_ece_reusable_schedule.py
-README.md
+existing Healer hourly reusable slot
+-> canonical ECE registry + optional resident observation bundle
+-> SDK diagnostic request
+-> stegverse.ingress-manifest.v1
+-> processing.capability = ecosystem_diagnostic
+-> stegverse.route.ecosystem-diagnostic.v1
+-> exact SDK diagnostic result bytes + SHA-256 retained in resident runtime
+-> SDK result translated to ECE observation input
+-> canonical ECE continuity evaluation
+-> exact Master Records custody/reconstruction
+-> Healer intake
+-> Site-safe projection
 ```
 
-## Schedule binding
-
-The existing Healer reusable-task scheduler now contains one enabled row for `RT-ECOSYSTEM-CONTINUITY-EVALUATION-001`, tracked by canonical task `ECOSYSTEM-CONTINUITY-EVALUATOR-001` / COSV `71000000100111`. The initial cadence is hourly UTC, using the existing deterministic UTC-hour slot ID, 15-minute retry interval, and maximum four attempts per slot. This adds no scheduler, timer, heartbeat, polling service, or WorkerCoordinator.
-
-The cross-repository `.github` reusable-task definition and runner bridge are being implemented under the same parent ECE goal. The schedule is executable only when that canonical identity/runner and all required already-local source roots are materialized.
-
-## Runtime contract
-
-Required already-local source roots:
+## Required already-local source roots
 
 ```text
 StegVerse-Labs/.github
 StegVerse-Labs/Site
 StegVerse-Labs/StegVerse-Healer
+StegVerse-org/StegVerse-SDK
 master-records/orchestration
 ```
 
-Required resident root:
+No source is fetched from GitHub/network during resident execution. Missing required local source blocks fail-closed.
+
+## Diagnostic request construction
+
+The cycle expands every registered ECE component/predicate into one SDK diagnostic test with stable identity `ece:<component_id>:<predicate_id>`. Existing resident observations are carried as source observation packets; missing observations remain `null` and therefore become SDK `NOT_OBSERVED` results. The request pre-registers expected evidence fields:
 
 ```text
-STEGVERSE_HEARTBEAT_ROOT
+evidence_refs
+observed_at
 ```
 
-Optional authentic observation input:
+The SDK v1 request always declares `mutation_permitted=false`.
+
+## Exact SDK-result binding
+
+The exact SDK diagnostic result bytes are retained under the resident continuity receipt directory:
 
 ```text
-STEGVERSE_ECE_OBSERVATIONS
-or <resident>/receipts/ecosystem-continuity/observations.latest.json
+receipts/ecosystem-continuity/sdkdiag_<sha-prefix>.result.json
+receipts/ecosystem-continuity/sdk-diagnostic-result.latest.json
 ```
 
-If no observation bundle is present, the cycle uses an empty observation set. The canonical evaluator therefore emits `NOT_OBSERVED` findings and an appropriately degraded continuity classification instead of synthesizing PASS evidence.
+The cycle computes the exact SHA-256 of those bytes. Every translated ECE observation preserves its underlying SDK evidence references and also carries a result-envelope provenance reference:
+
+```text
+sdk-diagnostic-result-sha256:<exact-result-sha256>
+```
+
+This binds the ECE finding/evaluation chain back to the exact SDK diagnostic artifact without treating the envelope hash as proof that the underlying predicate passed.
+
+## Fail-closed SDK boundary
+
+Before ECE executes, the cycle rejects an SDK result when any of the following occurs:
+
+- result schema is not `stegverse.ecosystem-diagnostic-result.v1`;
+- processing capability is not `ecosystem_diagnostic`;
+- route is not `stegverse.route.ecosystem-diagnostic.v1`;
+- `authority_effect` is not `NONE_DIAGNOSTIC_ONLY`;
+- `mutation_performed` is not false;
+- `continuity_state_present` is not false;
+- any `continuity_state` value is supplied by the SDK result.
+
+The SDK diagnoses; ECE interprets continuity. That boundary is structural, not advisory.
 
 ## Resident outputs
 
 ```text
+receipts/ecosystem-continuity/sdkdiag_<sha-prefix>.result.json
+receipts/ecosystem-continuity/sdk-diagnostic-result.latest.json
 receipts/ecosystem-continuity/<evaluation_id>.evaluation.json
 receipts/ecosystem-continuity/evaluation.latest.json
 master-records/ecosystem-continuity/<evaluation_id>.evaluation.json
@@ -72,20 +104,26 @@ receipts/ecosystem-continuity/site-projection.latest.json
 receipts/ecosystem-continuity/cycle.latest.json
 ```
 
+`cycle.latest.json` records the SDK diagnostic request ID, deterministic result ID, exact result ref/SHA-256, and `sdk_diagnostic_result_bound_into_ece=true` when the chain completes.
+
 ## Invariants
 
 - Source repositories remain read-only during a cycle.
 - Missing required local source blocks rather than fetching from GitHub/network.
-- Master Records custody/reconstruction must round-trip exact evaluation bytes before downstream intake/projection completes.
-- Healer intake remains `NONE_INTAKE_ONLY` and cannot verify recovery.
+- SDK diagnostic mutation is forbidden in v1.
+- SDK diagnostic results cannot supply continuity state.
+- Missing observation stays `NOT_OBSERVED`; unsupported claimed evidence remains subject to SDK `PROBE_REQUIRED` semantics.
+- Exact SDK diagnostic result identity is retained into ECE evidence provenance.
+- Master Records custody/reconstruction must round-trip exact ECE evaluation bytes before downstream intake/projection completes.
+- Healer intake remains non-authorizing and cannot verify recovery.
 - Site projection remains read-only/fail-closed.
 - `recovery_verified` is always false for this cycle; a later independent ECE PASS is required.
 - Scheduling reuses the existing reusable-task scheduler extension and creates no second scheduler.
 
 ## Current proof boundary
 
-Source implementation and schedule configuration are not runtime activation evidence. No authentic ECE schedule slot, resident evaluation, Master Records runtime custody, Healer runtime intake, Site runtime projection, or recovery loop is claimed until retained resident evidence exists.
+The SDK processor source is merged+validated, and this bridge source is implemented on the current Healer branch. No authentic resident SDK diagnostic request/result, resident ECE evaluation, Master Records runtime custody, Healer runtime intake, Site runtime projection, or recovery loop is claimed until retained resident evidence exists.
 
 ## Next
 
-Pass exact-head Healer validation; merge only together with a validated canonical `.github` reusable identity/runner contract. Then observe the existing resident scheduler consuming one ECE slot before claiming periodic execution.
+Pass exact-head Healer validation and merge this bridge only if green. Then reconcile the child SDK task and parent ECE handoffs. After merge, observe one authentic resident `RT-ECOSYSTEM-CONTINUITY-EVALUATION-001` slot producing the SDK diagnostic result + ECE + custody/intake/projection chain before claiming the SDK diagnostic continuity lane operational.
