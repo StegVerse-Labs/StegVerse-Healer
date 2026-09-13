@@ -15,7 +15,7 @@
         "bounded_mailbox_scope": "canonical GitHub/[Task Update] operational slice",
         "observation_window": "since previous scheduled invocation"
       },
-      "status": "healer-consumer-config-neutral-reusable-task-scheduler"
+      "status": "healer-consumer-config-neutral-reusable-task-scheduler-no-second-scheduler"
     },
     {
       "reusable_task_id": "RT-ECOSYSTEM-CONTINUITY-EVALUATION-001",
@@ -32,7 +32,7 @@
         "resident_output_scope": "receipts/ecosystem-continuity + master-records/ecosystem-continuity",
         "cadence": "hourly UTC through neutral reusable-task scheduler"
       },
-      "status": "healer-consumer-config-neutral-reusable-task-scheduler"
+      "status": "healer-consumer-config-neutral-reusable-task-scheduler-no-second-scheduler"
     }
   ]
 }
