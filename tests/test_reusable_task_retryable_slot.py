@@ -163,8 +163,9 @@ def test_four_failed_attempts_stop_provider_retries_until_next_hour_slot():
         assert subject._retry_state_path(runtime, next_id) != retry
 
 
-def test_successful_receipt_is_the_only_slot_idempotency_terminal():
+def test_successful_receipt_states_are_slot_idempotency_terminals():
     assert subject._receipt_satisfies_slot({"state": "AUTOMATABLE_STEPS_EXHAUSTED"}) is True
+    assert subject._receipt_satisfies_slot({"state": "ENTROPY_RECOVERY_RECORDED"}) is True
     assert subject._receipt_satisfies_slot({"state": "BOUNDARY_RECORDED"}) is False
     assert subject._receipt_satisfies_slot({"state": "FAILED"}) is False
     assert subject._receipt_satisfies_slot(None) is False

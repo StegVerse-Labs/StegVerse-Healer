@@ -8,8 +8,8 @@ Child Goal Task ID: SDK-ECOSYSTEM-DIAGNOSTIC-PROCESSOR-001
 Parent COSV: 71000000100111
 Child COSV: 71000000101000
 Repository: StegVerse-Labs/StegVerse-Healer
-Branch: feature/ece-sdk-diagnostic-bridge-001
-State: SDK DIAGNOSTIC BRIDGE SOURCE IMPLEMENTED / VALIDATION PENDING
+Branch: main
+State: SOURCE MERGED / AUTHENTIC RESIDENT LIFECYCLE EVIDENCE PENDING
 Authority effect: NONE
 Scheduler owner: existing StegVerse-Healer sovereign reusable-task scheduler extension
 Cross-repo reusable identity: StegVerse-Labs/.github RT-ECOSYSTEM-CONTINUITY-EVALUATION-001
@@ -31,9 +31,16 @@ existing Healer hourly reusable slot
 -> exact SDK diagnostic result bytes + SHA-256 retained in resident runtime
 -> SDK result translated to ECE observation input
 -> canonical ECE continuity evaluation
--> exact Master Records custody/reconstruction
+-> exact ECE Master Records custody/reconstruction
 -> Healer intake
 -> Site-safe projection
+-> manifest-bound reusable runner result
+-> runner expiry observation
+-> residual non-executing reusable construct
+-> reusable lifecycle Master Records request
+-> destination-owned lifecycle custody + exact request reconstruction
+-> entropy-recovery receipt
+-> scheduler slot satisfied by ENTROPY_RECOVERY_RECORDED
 ```
 
 ## Required already-local source roots
@@ -102,9 +109,30 @@ master-records/ecosystem-continuity/<evaluation_id>.custody.json
 receipts/ecosystem-continuity/healer-intake.latest.json
 receipts/ecosystem-continuity/site-projection.latest.json
 receipts/ecosystem-continuity/cycle.latest.json
+receipts/reusable-task/<invocation>.manifest.json
+receipts/reusable-task/<invocation>.runner-result.json
+receipts/reusable-task/<invocation>.runner-expiry.json
+receipts/reusable-task/<invocation>.residual-recording.json
+receipts/reusable-task/<invocation>.master-records-request.json
+receipts/reusable-task/<invocation>.entropy-recovery.json
 ```
 
-`cycle.latest.json` records the SDK diagnostic request ID, deterministic result ID, exact result ref/SHA-256, and `sdk_diagnostic_result_bound_into_ece=true` when the chain completes.
+`cycle.latest.json` records the SDK diagnostic request ID, deterministic result ID, exact result ref/SHA-256, and `sdk_diagnostic_result_bound_into_ece=true` when the ECE chain completes. The reusable-task receipt chain must remain bound to the same deterministic UTC-hour invocation ID.
+
+## Scheduler terminal-state reconciliation
+
+The reusable-task scheduler historically treated only `AUTOMATABLE_STEPS_EXHAUSTED` as a successful idempotency terminal. That remains valid for bounded reusable tasks that finish at evidence reconciliation.
+
+The reusable lifecycle closure merged in StegVerse-Labs/.github now has a stronger successful terminal: `ENTROPY_RECOVERY_RECORDED`. If the scheduler failed to recognize that state, a fully completed ECE lifecycle would be misclassified as retryable and could be executed again within the same UTC-hour slot.
+
+The scheduler therefore recognizes both successful states:
+
+```text
+AUTOMATABLE_STEPS_EXHAUSTED
+ENTROPY_RECOVERY_RECORDED
+```
+
+`BOUNDARY_RECORDED`, `FAILED`, missing receipts, and other nonterminal states remain unsatisfied and subject only to the existing bounded retry policy.
 
 ## Invariants
 
@@ -115,15 +143,17 @@ receipts/ecosystem-continuity/cycle.latest.json
 - Missing observation stays `NOT_OBSERVED`; unsupported claimed evidence remains subject to SDK `PROBE_REQUIRED` semantics.
 - Exact SDK diagnostic result identity is retained into ECE evidence provenance.
 - Master Records custody/reconstruction must round-trip exact ECE evaluation bytes before downstream intake/projection completes.
+- Reusable lifecycle Master Records custody/reconstruction must round-trip the exact lifecycle request bytes before entropy recovery.
 - Healer intake remains non-authorizing and cannot verify recovery.
 - Site projection remains read-only/fail-closed.
 - `recovery_verified` is always false for this cycle; a later independent ECE PASS is required.
 - Scheduling reuses the existing reusable-task scheduler extension and creates no second scheduler.
+- A successful `ENTROPY_RECOVERY_RECORDED` receipt closes the UTC-hour slot and must not be retried.
 
 ## Current proof boundary
 
-The SDK processor source is merged+validated, and this bridge source is implemented on the current Healer branch. No authentic resident SDK diagnostic request/result, resident ECE evaluation, Master Records runtime custody, Healer runtime intake, Site runtime projection, or recovery loop is claimed until retained resident evidence exists.
+The SDK diagnostic processor, ECE bridge, reusable lifecycle closure, resident Master Records lifecycle round trip, and scheduler terminal-state compatibility are source-level integrations. No authentic post-merge resident invocation is claimed until retained evidence exists for the same invocation across SDK diagnostic output, ECE evaluation, Master Records custody/reconstruction, Healer intake, Site projection, reusable runner evidence, runner expiry, residual recording, lifecycle custody/reconstruction, and entropy recovery.
 
 ## Next
 
-Pass exact-head Healer validation and merge this bridge only if green. Then reconcile the child SDK task and parent ECE handoffs. After merge, observe one authentic resident `RT-ECOSYSTEM-CONTINUITY-EVALUATION-001` slot producing the SDK diagnostic result + ECE + custody/intake/projection chain before claiming the SDK diagnostic continuity lane operational.
+Validate and merge the scheduler terminal-state compatibility change. Then observe one authentic resident `RT-ECOSYSTEM-CONTINUITY-EVALUATION-001` UTC-hour slot using the merged source and retain the complete same-invocation chain. Only after that chain exists should the reusable-task performance/load assessment be repeated.
