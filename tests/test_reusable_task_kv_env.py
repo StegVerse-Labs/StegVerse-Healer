@@ -28,48 +28,45 @@ class ReusableTaskKVEnvTests(unittest.TestCase):
                 "STEGVERSE_KV_PROVIDER_MATERIALIZED_ROOT": "/provider/KnowledgeVault",
             })
 
-    def test_scheduled_reusable_task_receives_kv_root(self):
+    def test_neutral_scheduler_delegation_receives_kv_root(self):
         with tempfile.TemporaryDirectory() as td:
             base = Path(td)
             source = base / ".github"
             runtime = base / "heartbeat-runtime"
+            schedule = base / "schedule.json"
             (source / "scripts").mkdir(parents=True)
             (source / "scripts" / "trigger_reusable_task.py").write_text("# trigger\n", encoding="utf-8")
             (runtime / scheduler.RUNTIME_REQUIRED_REL).parent.mkdir(parents=True)
             (runtime / scheduler.RUNTIME_REQUIRED_REL).write_text("{}\n", encoding="utf-8")
+            schedule.write_text(json.dumps({"schema": scheduler.SCHEDULE_SCHEMA, "tasks": []}) + "\n", encoding="utf-8")
             kv_root = base / "KnowledgeVault"
             kv_root.mkdir()
             captured = {}
 
             def fake_run(command, cwd, env, timeout):
                 captured.update(env)
-                receipt_path = Path(command[command.index("--receipt") + 1])
-                receipt_path.parent.mkdir(parents=True, exist_ok=True)
-                receipt_path.write_text(json.dumps({
-                    "schema": "stegverse.reusable-task-trigger-receipt/v1",
-                    "state": "AUTOMATABLE_STEPS_EXHAUSTED",
-                }) + "\n", encoding="utf-8")
-                return {"returncode": 0, "stdout": "", "stderr": ""}
+                receipt = Path(command[command.index("--receipt") + 1])
+                invocation = command[command.index("--invocation-id") + 1]
+                result = receipt.with_name(f"{invocation}.runner-result.json")
+                receipt.parent.mkdir(parents=True, exist_ok=True)
+                receipt.write_text(json.dumps({"state": "AUTOMATABLE_STEPS_EXHAUSTED"}) + "\n", encoding="utf-8")
+                result.write_text(json.dumps({"schema": "stegverse.reusable-task-runner-result/v1", "due_task_count": 0, "outcomes": []}) + "\n", encoding="utf-8")
+                return {"returncode": 0, "stdout_tail": "", "stderr_tail": ""}
 
-            task = {
-                "reusable_task_id": "RT-NATIVE-EMAIL-ACTION-MONITOR-001",
-                "tracking_task_id": "STEGVERSE-NATIVE-EMAIL-ACTION-MONITOR-001",
-                "cosv_task_vector": "10100000100000",
-                "repository": "StegVerse-Labs/.github",
-                "parameters": {},
-            }
             with patch.dict(os.environ, {"STEGVERSE_KV_ROOT": str(kv_root)}, clear=False), patch.object(scheduler.base, "_run", side_effect=fake_run):
-                result = scheduler._execute_reusable_task(
-                    task,
-                    {"StegVerse-Labs/.github": source},
-                    json.dumps({"StegVerse-Labs/.github": str(source)}),
-                    runtime,
-                    "EXPLICIT_NONSECRET_RUNTIME_ROOT",
-                    datetime(2026, 9, 9, 14, 0, tzinfo=timezone.utc),
+                result = scheduler._invoke_neutral_scheduler(
+                    roots={"StegVerse-Labs/.github": source},
+                    runtime_root=runtime,
+                    runtime_root_source="EXPLICIT_NONSECRET_RUNTIME_ROOT",
+                    schedule_path=schedule,
+                    now=datetime(2026, 9, 13, 20, 30, tzinfo=timezone.utc),
+                    scope="all",
                 )
-            self.assertEqual(result["state"], "COMPLETE")
+
+            self.assertEqual(result["state"], "DELEGATED")
             self.assertEqual(captured["STEGVERSE_KV_ROOT"], str(kv_root))
-            self.assertIn("STEGVERSE_KV_ROOT", result["kv_path_env_forwarded"])
+            self.assertEqual(captured["STEGVERSE_HEARTBEAT_ROOT"], str(runtime))
+            self.assertIn("STEGVERSE_REPO_ROOTS_JSON", captured)
 
 
 if __name__ == "__main__":
