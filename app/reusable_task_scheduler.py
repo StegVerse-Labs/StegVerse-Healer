@@ -24,7 +24,7 @@ SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "reusable_task_sc
 RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
 RUNTIME_REQUIRED_REL = Path("control/resident-execution-request.d/native-email-action-monitor-001.json")
 KV_PATH_ENV_NAMES = ("STEGVERSE_KV_ROOT", "STEGVERSE_KV_PROVIDER_MATERIALIZED_ROOT")
-SUCCESSFUL_TRIGGER_STATE = "AUTOMATABLE_STEPS_EXHAUSTED"
+SUCCESSFUL_TRIGGER_STATES = frozenset({"AUTOMATABLE_STEPS_EXHAUSTED", "ENTROPY_RECOVERY_RECORDED"})
 RETRY_STATE_SCHEMA = "stegverse.healer.reusable-task-slot-attempt-state/v1"
 SOURCE_PREP_SCHEMA = "stegverse.sv-dn1.production-source-prep-receipt/v2"
 SOURCE_PREP_RECEIPT_ENV = "STEGVERSE_SV_DN1_SOURCE_PREP_RECEIPT"
@@ -155,7 +155,7 @@ def _verified_governance_component_roots() -> tuple[dict[str, Path], str]:
 
 
 def _receipt_satisfies_slot(receipt: dict[str, Any] | None) -> bool:
-    return bool(isinstance(receipt, dict) and receipt.get("state") == SUCCESSFUL_TRIGGER_STATE)
+    return bool(isinstance(receipt, dict) and receipt.get("state") in SUCCESSFUL_TRIGGER_STATES)
 
 
 def _retry_policy(task: dict[str, Any]) -> tuple[int, int]:
