@@ -1,5 +1,5 @@
 {
-  "schema": "stegverse.healer.reusable-task-schedule/v1",
+  "schema": "stegverse.reusable-task-schedule/v1",
   "tasks": [
     {
       "reusable_task_id": "RT-NATIVE-EMAIL-ACTION-MONITOR-001",
@@ -15,7 +15,7 @@
         "bounded_mailbox_scope": "canonical GitHub/[Task Update] operational slice",
         "observation_window": "since previous scheduled invocation"
       },
-      "status": "hourly-existing-reusable-task-trigger-bounded-retry-no-second-monitor-no-second-scheduler"
+      "status": "healer-consumer-config-neutral-reusable-task-scheduler"
     },
     {
       "reusable_task_id": "RT-ECOSYSTEM-CONTINUITY-EVALUATION-001",
@@ -30,9 +30,9 @@
       "parameters": {
         "observation_source": "resident receipts/ecosystem-continuity/observations.latest.json when present",
         "resident_output_scope": "receipts/ecosystem-continuity + master-records/ecosystem-continuity",
-        "cadence": "hourly UTC through existing reusable-task scheduler"
+        "cadence": "hourly UTC through neutral reusable-task scheduler"
       },
-      "status": "hourly-existing-reusable-task-trigger-ece-no-second-scheduler-no-synthetic-pass"
+      "status": "healer-consumer-config-neutral-reusable-task-scheduler"
     }
   ]
 }
