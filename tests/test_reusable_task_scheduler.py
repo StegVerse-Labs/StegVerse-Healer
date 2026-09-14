@@ -88,6 +88,17 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             self.assertEqual(result["selected_reusable_tasks"], 1)
             self.assertEqual(result["reusable_task_schedule"][0]["state"], "BOUNDARY_RECORDED")
             self.assertEqual(result["neutral_reusable_task_scheduler"]["state"], "DELEGATED")
+            observation = result["resident_custody_root_observation"]
+            self.assertEqual(observation["schema"], "stegverse.healer.resident-custody-root-observation/v1")
+            self.assertEqual(observation["task_id"], "STEG-BROWSER-RESIDENT-CUSTODY-ROOT-OBSERVATION-001")
+            self.assertEqual(observation["cosv_task_vector"], "40000100100000")
+            self.assertEqual(observation["state"], "RESIDENT_CUSTODY_ROOT_OBSERVED")
+            self.assertEqual(observation["github_runtime_authority"], "NONE")
+            self.assertEqual(observation["credential_authority"], "TV/TVC")
+            self.assertFalse(observation["runtime_completion_claimed"])
+            self.assertFalse(observation["second_scheduler_created"])
+            self.assertFalse(observation["second_user_operated_device_required"])
+            self.assertIn(str(subject.RUNTIME_REQUIRED_REL), observation["matched_marker_relative_paths"])
 
     def test_canonical_local_runtime_discovery_without_forwarded_env(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -127,6 +138,31 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             delegation = result["neutral_reusable_task_scheduler"]
             self.assertEqual(delegation["boundary"], "RESIDENT_RUNTIME_ROOT_NOT_MATERIALIZED")
             self.assertIsNone(result["resident_runtime_root"])
+            observation = result["resident_custody_root_observation"]
+            self.assertEqual(observation["state"], "RESIDENT_CUSTODY_ROOT_NOT_OBSERVED")
+            self.assertEqual(observation["task_id"], "STEG-BROWSER-RESIDENT-CUSTODY-ROOT-OBSERVATION-001")
+            self.assertEqual(observation["authority_effect"], "NONE_OBSERVATION_ONLY")
+            self.assertEqual(observation["matched_marker_relative_paths"], [])
+
+    def test_explicit_invalid_runtime_root_records_invalid_observation(self) -> None:
+        now = dt.datetime(2026, 9, 13, 20, 0, tzinfo=dt.timezone.utc)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            github_root = self._github_root(tmp_root)
+            schedule = tmp_root / "schedule.json"
+            self._schedule(schedule)
+            invalid_runtime_root = tmp_root / "empty-runtime-root"
+            invalid_runtime_root.mkdir()
+            with mock.patch.object(subject.base, "build_and_execute", return_value={"schema": "stegverse.healer.sovereign_scheduler_receipt/v0.1", "state": "COMPLETE"}), \
+                 mock.patch.object(subject.base, "_repo_roots", return_value={"StegVerse-Labs/.github": github_root}), \
+                 mock.patch.object(subject.base, "_now", return_value=now), \
+                 mock.patch.dict("os.environ", {"RUN_SCOPE": "all", "STEGVERSE_HEARTBEAT_ROOT": str(invalid_runtime_root)}, clear=False):
+                result = subject.build_and_execute(tmp_root / "targets.json", schedule)
+            self.assertEqual(result["state"], "BLOCKED")
+            observation = result["resident_custody_root_observation"]
+            self.assertEqual(observation["state"], "RESIDENT_CUSTODY_ROOT_INVALID")
+            self.assertIsNone(observation["resident_runtime_root"])
+            self.assertEqual(observation["resident_runtime_root_source"], "EXPLICIT_RUNTIME_ROOT_INVALID")
 
     def test_config_is_neutral_schedule_with_bounded_retry_parameters(self) -> None:
         config = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
