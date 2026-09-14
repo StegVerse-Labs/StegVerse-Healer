@@ -9,6 +9,7 @@ StegVerse-Labs/.github. This module discovers already-local inputs, invokes that
 neutral reusable task once per Healer cycle, and projects its authentic result.
 """
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -27,6 +28,7 @@ RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
 ROOT_OBSERVATION_SCHEMA = "stegverse.healer.resident-custody-root-observation/v1"
 ROOT_OBSERVATION_TASK_ID = "STEG-BROWSER-RESIDENT-CUSTODY-ROOT-OBSERVATION-001"
 ROOT_OBSERVATION_COSV = "40000100100000"
+ROOT_OBSERVATION_PACKET_REL = Path("receipts/healer/resident-custody-root-observation.latest.json")
 RUNTIME_REQUIRED_MARKERS = (
     Path("control/resident-execution-request.d/native-email-action-monitor-001.json"),
     Path("control/resident-execution-request.d/canonical-work-stegbrowser-runtime-consumption-001.json"),
@@ -155,6 +157,49 @@ def _resident_custody_root_observation(runtime_root: Path | None, runtime_root_s
         "second_scheduler_created": False,
         "second_user_operated_device_required": False,
         "runtime_completion_claimed": False,
+    }
+
+
+def _canonical_json_bytes(value: dict[str, Any]) -> bytes:
+    return (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+
+
+def _retain_root_observation_packet(retention_root: Path | None, observation: dict[str, Any]) -> dict[str, Any]:
+    """Retain the non-authorizing root observation at a stable task-bound path.
+
+    The retained packet is an observation/export surface only. It does not make a
+    candidate runtime root authentic and does not authorize task consumption.
+    """
+    packet = dict(observation)
+    packet["retained_packet_relative_path"] = str(ROOT_OBSERVATION_PACKET_REL)
+    packet["retention_authority_effect"] = "NONE_PACKET_EXPORT_ONLY"
+    packet["runtime_completion_claimed"] = False
+    packet["request_consumption_claimed"] = False
+
+    if retention_root is None:
+        return {
+            "retained": False,
+            "path": None,
+            "relative_path": str(ROOT_OBSERVATION_PACKET_REL),
+            "sha256": None,
+            "reason": "NO_RETENTION_ROOT_AVAILABLE",
+            "authority_effect": "NONE_PACKET_EXPORT_ONLY",
+        }
+
+    path = retention_root / ROOT_OBSERVATION_PACKET_REL
+    payload = _canonical_json_bytes(packet)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload)
+    return {
+        "retained": True,
+        "path": str(path),
+        "relative_path": str(ROOT_OBSERVATION_PACKET_REL),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "schema": packet.get("schema"),
+        "task_id": packet.get("task_id"),
+        "cosv_task_vector": packet.get("cosv_task_vector"),
+        "state": packet.get("state"),
+        "authority_effect": "NONE_PACKET_EXPORT_ONLY",
     }
 
 
@@ -317,6 +362,8 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
 
     runtime_root, runtime_root_source = _resident_runtime_root()
     root_observation = _resident_custody_root_observation(runtime_root, runtime_root_source)
+    retention_root = runtime_root or invocation_runtime_root
+    retained_root_observation = _retain_root_observation_packet(retention_root, root_observation)
     runner_result = delegation.get("runner_result") if isinstance(delegation, dict) else None
     outcomes = runner_result.get("outcomes", []) if isinstance(runner_result, dict) else []
 
@@ -327,6 +374,8 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     receipt["reusable_task_schedule"] = outcomes if isinstance(outcomes, list) else []
     receipt["neutral_reusable_task_scheduler"] = delegation
     receipt["resident_custody_root_observation"] = root_observation
+    receipt["resident_custody_root_observation_packet"] = retained_root_observation
+    receipt["resident_custody_root_observation_packet_relative_path"] = str(ROOT_OBSERVATION_PACKET_REL)
     receipt["resident_runtime_root"] = str(runtime_root) if runtime_root is not None else None
     receipt["resident_runtime_root_source"] = runtime_root_source
     receipt["resident_runtime_root_pre_delegation"] = str(pre_runtime_root) if pre_runtime_root is not None else None
@@ -374,6 +423,14 @@ def main() -> int:
                 "github_runtime_authority": "NONE",
                 "credential_authority": "TV/TVC",
                 "runtime_completion_claimed": False,
+            },
+            "resident_custody_root_observation_packet": {
+                "retained": False,
+                "path": None,
+                "relative_path": str(ROOT_OBSERVATION_PACKET_REL),
+                "sha256": None,
+                "reason": "CARRIER_EXCEPTION_BEFORE_PACKET_RETENTION",
+                "authority_effect": "NONE_PACKET_EXPORT_ONLY",
             },
             "error": str(exc),
         }
