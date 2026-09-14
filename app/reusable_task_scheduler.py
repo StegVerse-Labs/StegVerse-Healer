@@ -9,6 +9,7 @@ StegVerse-Labs/.github. This module discovers already-local inputs, invokes that
 neutral reusable task once per Healer cycle, and projects its authentic result.
 """
 
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -27,6 +28,7 @@ RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
 ROOT_OBSERVATION_SCHEMA = "stegverse.healer.resident-custody-root-observation/v1"
 ROOT_OBSERVATION_TASK_ID = "STEG-BROWSER-RESIDENT-CUSTODY-ROOT-OBSERVATION-001"
 ROOT_OBSERVATION_COSV = "40000100100000"
+ROOT_OBSERVATION_RECEIPT_REL = Path("receipts/sovereign-host/stegbrowser-resident-custody-root-observation.latest.json")
 RUNTIME_REQUIRED_MARKERS = (
     Path("control/resident-execution-request.d/native-email-action-monitor-001.json"),
     Path("control/resident-execution-request.d/canonical-work-stegbrowser-runtime-consumption-001.json"),
@@ -155,6 +157,54 @@ def _resident_custody_root_observation(runtime_root: Path | None, runtime_root_s
         "second_scheduler_created": False,
         "second_user_operated_device_required": False,
         "runtime_completion_claimed": False,
+    }
+
+
+def _retain_resident_custody_root_observation(
+    observation: dict[str, Any],
+    *,
+    retain_root: Path | None,
+    retain_root_source: str,
+    now,
+) -> dict[str, Any]:
+    base_result = {
+        "schema": "stegverse.healer.resident-custody-root-observation-retention/v1",
+        "task_id": ROOT_OBSERVATION_TASK_ID,
+        "cosv_task_vector": ROOT_OBSERVATION_COSV,
+        "packet_name": "resident_custody_root_observation",
+        "authority_effect": "NONE_RETENTION_ONLY",
+        "github_runtime_authority": "NONE",
+        "credential_authority": "TV/TVC",
+        "runtime_completion_claimed": False,
+        "request_consumption_claimed": False,
+        "workercoordinator_bypass_created": False,
+        "second_scheduler_created": False,
+        "second_user_operated_device_required": False,
+    }
+    if retain_root is None:
+        return {**base_result, "state": "NOT_RETAINED", "reason": "NO_RESIDENT_RUNTIME_ROOT_OR_MATERIALIZATION_TARGET"}
+
+    retained_packet = {
+        **observation,
+        "retained_packet": True,
+        "retained_at": now.isoformat().replace("+00:00", "Z"),
+        "retained_under_root_source": retain_root_source,
+        "retention_authority_effect": "NONE_RETENTION_ONLY",
+        "request_consumption_claimed": False,
+    }
+    payload = json.dumps(retained_packet, sort_keys=True, separators=(",", ":")) + "\n"
+    packet_path = retain_root / ROOT_OBSERVATION_RECEIPT_REL
+    packet_path.parent.mkdir(parents=True, exist_ok=True)
+    packet_path.write_text(payload, encoding="utf-8")
+    return {
+        **base_result,
+        "state": "RETAINED",
+        "packet_ref": str(packet_path),
+        "packet_relative_path": str(ROOT_OBSERVATION_RECEIPT_REL),
+        "packet_sha256": hashlib.sha256(payload.encode("utf-8")).hexdigest(),
+        "retained_under_root": str(retain_root),
+        "retained_under_root_source": retain_root_source,
+        "packet_state": observation.get("state"),
     }
 
 
@@ -317,6 +367,14 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
 
     runtime_root, runtime_root_source = _resident_runtime_root()
     root_observation = _resident_custody_root_observation(runtime_root, runtime_root_source)
+    retain_root = runtime_root if runtime_root is not None else invocation_runtime_root
+    retain_root_source = runtime_root_source if runtime_root is not None else invocation_runtime_root_source
+    retention = _retain_resident_custody_root_observation(
+        root_observation,
+        retain_root=retain_root,
+        retain_root_source=retain_root_source,
+        now=now,
+    )
     runner_result = delegation.get("runner_result") if isinstance(delegation, dict) else None
     outcomes = runner_result.get("outcomes", []) if isinstance(runner_result, dict) else []
 
@@ -327,6 +385,7 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     receipt["reusable_task_schedule"] = outcomes if isinstance(outcomes, list) else []
     receipt["neutral_reusable_task_scheduler"] = delegation
     receipt["resident_custody_root_observation"] = root_observation
+    receipt["resident_custody_root_observation_retention"] = retention
     receipt["resident_runtime_root"] = str(runtime_root) if runtime_root is not None else None
     receipt["resident_runtime_root_source"] = runtime_root_source
     receipt["resident_runtime_root_pre_delegation"] = str(pre_runtime_root) if pre_runtime_root is not None else None
@@ -371,6 +430,17 @@ def main() -> int:
                 "cosv_task_vector": ROOT_OBSERVATION_COSV,
                 "state": "RESIDENT_CUSTODY_ROOT_OBSERVATION_FAILED",
                 "authority_effect": "NONE_OBSERVATION_ONLY",
+                "github_runtime_authority": "NONE",
+                "credential_authority": "TV/TVC",
+                "runtime_completion_claimed": False,
+            },
+            "resident_custody_root_observation_retention": {
+                "schema": "stegverse.healer.resident-custody-root-observation-retention/v1",
+                "task_id": ROOT_OBSERVATION_TASK_ID,
+                "cosv_task_vector": ROOT_OBSERVATION_COSV,
+                "state": "NOT_RETAINED",
+                "reason": "CARRIER_EXCEPTION_BEFORE_RETENTION",
+                "authority_effect": "NONE_RETENTION_ONLY",
                 "github_runtime_authority": "NONE",
                 "credential_authority": "TV/TVC",
                 "runtime_completion_claimed": False,
