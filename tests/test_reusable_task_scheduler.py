@@ -33,6 +33,35 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             }],
         }), encoding="utf-8")
 
+    def _schedule_with_source_refresh(self, path: Path) -> None:
+        path.write_text(json.dumps({
+            "schema": "stegverse.reusable-task-schedule/v1",
+            "tasks": [
+                {
+                    "reusable_task_id": "RT-SOVEREIGN-SOURCE-REFRESH-001",
+                    "tracking_task_id": "SOVEREIGN-SOURCE-REFRESH-001",
+                    "cosv_task_vector": "40000100100000",
+                    "repository": "StegVerse-Labs/.github",
+                    "enabled": True,
+                    "run_hours_utc": list(range(24)),
+                    "retry_interval_minutes": 15,
+                    "max_attempts_per_slot": 4,
+                    "parameters": {},
+                },
+                {
+                    "reusable_task_id": "RT-STEGBROWSER-RUNTIME-CONSUMPTION-001",
+                    "tracking_task_id": "STEG-BROWSER-RUNTIME-CONSUMPTION-001",
+                    "cosv_task_vector": "40000100100000",
+                    "repository": "StegVerse-Labs/.github",
+                    "enabled": True,
+                    "run_hours_utc": list(range(24)),
+                    "retry_interval_minutes": 15,
+                    "max_attempts_per_slot": 4,
+                    "parameters": {},
+                },
+            ],
+        }), encoding="utf-8")
+
     def _github_root(self, tmp_root: Path) -> Path:
         github_root = tmp_root / ".github"
         trigger = github_root / "scripts" / "trigger_reusable_task.py"
@@ -99,6 +128,60 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             self.assertFalse(observation["second_scheduler_created"])
             self.assertFalse(observation["second_user_operated_device_required"])
             self.assertIn(str(subject.RUNTIME_REQUIRED_REL), observation["matched_marker_relative_paths"])
+            retention = result["resident_custody_root_observation_retention"]
+            self.assertEqual(retention["state"], "RETAINED")
+            self.assertEqual(retention["packet_relative_path"], str(subject.ROOT_OBSERVATION_RECEIPT_REL))
+            self.assertEqual(retention["packet_state"], "RESIDENT_CUSTODY_ROOT_OBSERVED")
+            self.assertEqual(retention["github_runtime_authority"], "NONE")
+            packet_path = Path(retention["packet_ref"])
+            retained_packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(retained_packet["state"], "RESIDENT_CUSTODY_ROOT_OBSERVED")
+            self.assertEqual(retained_packet["retention_authority_effect"], "NONE_RETENTION_ONLY")
+            self.assertFalse(retained_packet["runtime_completion_claimed"])
+            self.assertFalse(retained_packet["request_consumption_claimed"])
+
+    def test_retains_not_observed_packet_to_materialization_target_without_runtime_claim(self) -> None:
+        now = dt.datetime(2026, 9, 13, 20, 0, tzinfo=dt.timezone.utc)
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_root = Path(tmp)
+            github_root = self._github_root(tmp_root)
+            schedule = tmp_root / "schedule.json"
+            self._schedule_with_source_refresh(schedule)
+
+            def fake_run(command, cwd, env, timeout):
+                receipt = Path(command[command.index("--receipt") + 1])
+                invocation = command[command.index("--invocation-id") + 1]
+                result = receipt.with_name(f"{invocation}.runner-result.json")
+                receipt.parent.mkdir(parents=True, exist_ok=True)
+                receipt.write_text(json.dumps({"state": "AUTOMATABLE_STEPS_EXHAUSTED"}) + "\n")
+                result.write_text(json.dumps({
+                    "schema": "stegverse.reusable-task-runner-result/v1",
+                    "due_task_count": 0,
+                    "outcomes": [],
+                }) + "\n")
+                return {"returncode": 0, "stdout_tail": "", "stderr_tail": ""}
+
+            with mock.patch.object(subject.base, "build_and_execute", return_value={"schema": "stegverse.healer.sovereign_scheduler_receipt/v0.1", "state": "COMPLETE"}), \
+                 mock.patch.object(subject.base, "_repo_roots", return_value={"StegVerse-Labs/.github": github_root}), \
+                 mock.patch.object(subject.base, "_now", return_value=now), \
+                 mock.patch.object(subject.base, "_run", side_effect=fake_run), \
+                 mock.patch.object(subject.Path, "home", return_value=tmp_root / "home"), \
+                 mock.patch.dict("os.environ", {"RUN_SCOPE": "all", "STEGVERSE_HEARTBEAT_ROOT": ""}, clear=False):
+                result = subject.build_and_execute(tmp_root / "targets.json", schedule)
+
+            self.assertEqual(result["state"], "BLOCKED")
+            self.assertEqual(result["resident_custody_root_observation"]["state"], "RESIDENT_CUSTODY_ROOT_NOT_OBSERVED")
+            retention = result["resident_custody_root_observation_retention"]
+            self.assertEqual(retention["state"], "RETAINED")
+            self.assertEqual(retention["packet_state"], "RESIDENT_CUSTODY_ROOT_NOT_OBSERVED")
+            self.assertEqual(retention["retained_under_root_source"], "CANONICAL_LOCAL_RUNTIME_MATERIALIZATION_TARGET")
+            packet = json.loads(Path(retention["packet_ref"]).read_text(encoding="utf-8"))
+            self.assertEqual(packet["state"], "RESIDENT_CUSTODY_ROOT_NOT_OBSERVED")
+            self.assertEqual(packet["task_id"], "STEG-BROWSER-RESIDENT-CUSTODY-ROOT-OBSERVATION-001")
+            self.assertEqual(packet["cosv_task_vector"], "40000100100000")
+            self.assertEqual(packet["retained_under_root_source"], "CANONICAL_LOCAL_RUNTIME_MATERIALIZATION_TARGET")
+            self.assertFalse(packet["runtime_completion_claimed"])
+            self.assertFalse(packet["request_consumption_claimed"])
 
     def test_canonical_local_runtime_discovery_without_forwarded_env(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -143,6 +226,9 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             self.assertEqual(observation["task_id"], "STEG-BROWSER-RESIDENT-CUSTODY-ROOT-OBSERVATION-001")
             self.assertEqual(observation["authority_effect"], "NONE_OBSERVATION_ONLY")
             self.assertEqual(observation["matched_marker_relative_paths"], [])
+            retention = result["resident_custody_root_observation_retention"]
+            self.assertEqual(retention["state"], "NOT_RETAINED")
+            self.assertEqual(retention["reason"], "NO_RESIDENT_RUNTIME_ROOT_OR_MATERIALIZATION_TARGET")
 
     def test_explicit_invalid_runtime_root_records_invalid_observation(self) -> None:
         now = dt.datetime(2026, 9, 13, 20, 0, tzinfo=dt.timezone.utc)
@@ -163,6 +249,7 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
             self.assertEqual(observation["state"], "RESIDENT_CUSTODY_ROOT_INVALID")
             self.assertIsNone(observation["resident_runtime_root"])
             self.assertEqual(observation["resident_runtime_root_source"], "EXPLICIT_RUNTIME_ROOT_INVALID")
+            self.assertEqual(result["resident_custody_root_observation_retention"]["state"], "NOT_RETAINED")
 
     def test_config_is_neutral_schedule_with_bounded_retry_parameters(self) -> None:
         config = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
