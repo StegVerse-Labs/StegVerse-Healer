@@ -22,6 +22,7 @@ SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "reusable_task_sc
 SCHEDULE_SCHEMA = "stegverse.reusable-task-schedule/v1"
 NEUTRAL_SCHEDULER_ID = "RT-REUSABLE-TASK-SCHEDULER-001"
 NEUTRAL_TRIGGER_REL = Path("scripts/trigger_reusable_task.py")
+SOURCE_REFRESH_TASK_ID = "RT-SOVEREIGN-SOURCE-REFRESH-001"
 RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
 ROOT_OBSERVATION_SCHEMA = "stegverse.healer.resident-custody-root-observation/v1"
 ROOT_OBSERVATION_TASK_ID = "STEG-BROWSER-RESIDENT-CUSTODY-ROOT-OBSERVATION-001"
@@ -56,6 +57,13 @@ def _load_schedule(path: Path) -> list[dict[str, Any]]:
     return tasks
 
 
+def _schedule_enables_source_refresh(path: Path) -> bool:
+    return any(
+        row.get("reusable_task_id") == SOURCE_REFRESH_TASK_ID and row.get("enabled") is True
+        for row in _load_schedule(path)
+    )
+
+
 def _matched_runtime_markers(root: Path) -> list[str]:
     return [str(marker) for marker in RUNTIME_REQUIRED_MARKERS if (root / marker).is_file()]
 
@@ -64,22 +72,25 @@ def _valid_runtime_root(root: Path) -> bool:
     return root.is_dir() and bool(_matched_runtime_markers(root))
 
 
-def _resident_runtime_root() -> tuple[Path | None, str]:
-    raw = str(os.getenv(RUNTIME_ROOT_ENV) or "").strip()
-    if raw:
-        root = Path(raw).expanduser().resolve()
-        return (root, "EXPLICIT_NONSECRET_RUNTIME_ROOT") if _valid_runtime_root(root) else (None, "EXPLICIT_RUNTIME_ROOT_INVALID")
-
+def _runtime_root_candidates() -> list[Path]:
     home = Path.home()
-    candidates = [
+    return [
         home / ".local" / "state" / "stegverse" / "heartbeat-runtime",
         home / "Library" / "Application Support" / "stegverse" / "heartbeat-runtime",
         home / ".stegverse" / "heartbeat-runtime",
         Path("/var/lib/stegverse/heartbeat-runtime"),
         Path("/srv/stegverse/heartbeat-runtime"),
     ]
+
+
+def _resident_runtime_root() -> tuple[Path | None, str]:
+    raw = str(os.getenv(RUNTIME_ROOT_ENV) or "").strip()
+    if raw:
+        root = Path(raw).expanduser().resolve()
+        return (root, "EXPLICIT_NONSECRET_RUNTIME_ROOT") if _valid_runtime_root(root) else (None, "EXPLICIT_RUNTIME_ROOT_INVALID")
+
     valid: list[Path] = []
-    for candidate in candidates:
+    for candidate in _runtime_root_candidates():
         try:
             resolved = candidate.expanduser().resolve()
         except Exception:
@@ -92,6 +103,22 @@ def _resident_runtime_root() -> tuple[Path | None, str]:
     if len(unique) > 1:
         return None, "CANONICAL_RUNTIME_AMBIGUOUS"
     return None, "CANONICAL_RUNTIME_NOT_FOUND"
+
+
+def _resident_runtime_materialization_target(schedule_path: Path, runtime_root_source: str) -> tuple[Path | None, str]:
+    if runtime_root_source == "CANONICAL_RUNTIME_AMBIGUOUS":
+        return None, runtime_root_source
+    if not _schedule_enables_source_refresh(schedule_path):
+        return None, "SOURCE_REFRESH_NOT_ENABLED_FOR_MATERIALIZATION"
+
+    raw = str(os.getenv(RUNTIME_ROOT_ENV) or "").strip()
+    if raw:
+        return Path(raw).expanduser().resolve(), "EXPLICIT_NONSECRET_RUNTIME_ROOT_MATERIALIZATION_TARGET"
+
+    candidates = _runtime_root_candidates()
+    mac_parent = Path.home() / "Library" / "Application Support"
+    target = candidates[1] if mac_parent.is_dir() else candidates[0]
+    return target.expanduser().resolve(), "CANONICAL_LOCAL_RUNTIME_MATERIALIZATION_TARGET"
 
 
 def _resident_custody_root_observation(runtime_root: Path | None, runtime_root_source: str) -> dict[str, Any]:
@@ -266,17 +293,30 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
         roots.setdefault(repository, path)
     scope = (os.getenv("RUN_SCOPE") or "all").strip().lower()
     now = base._now()
-    runtime_root, runtime_root_source = _resident_runtime_root()
-    root_observation = _resident_custody_root_observation(runtime_root, runtime_root_source)
+
+    pre_runtime_root, pre_runtime_root_source = _resident_runtime_root()
+    invocation_runtime_root = pre_runtime_root
+    invocation_runtime_root_source = pre_runtime_root_source
+    if invocation_runtime_root is None:
+        materialization_target, materialization_source = _resident_runtime_materialization_target(
+            schedule_path,
+            pre_runtime_root_source,
+        )
+        if materialization_target is not None:
+            invocation_runtime_root = materialization_target
+            invocation_runtime_root_source = materialization_source
 
     delegation = _invoke_neutral_scheduler(
         roots=roots,
-        runtime_root=runtime_root,
-        runtime_root_source=runtime_root_source,
+        runtime_root=invocation_runtime_root,
+        runtime_root_source=invocation_runtime_root_source,
         schedule_path=schedule_path,
         now=now,
         scope=scope,
     )
+
+    runtime_root, runtime_root_source = _resident_runtime_root()
+    root_observation = _resident_custody_root_observation(runtime_root, runtime_root_source)
     runner_result = delegation.get("runner_result") if isinstance(delegation, dict) else None
     outcomes = runner_result.get("outcomes", []) if isinstance(runner_result, dict) else []
 
@@ -289,10 +329,25 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     receipt["resident_custody_root_observation"] = root_observation
     receipt["resident_runtime_root"] = str(runtime_root) if runtime_root is not None else None
     receipt["resident_runtime_root_source"] = runtime_root_source
+    receipt["resident_runtime_root_pre_delegation"] = str(pre_runtime_root) if pre_runtime_root is not None else None
+    receipt["resident_runtime_root_pre_delegation_source"] = pre_runtime_root_source
+    receipt["resident_runtime_materialization_target"] = (
+        str(invocation_runtime_root)
+        if pre_runtime_root is None and invocation_runtime_root is not None
+        else None
+    )
+    receipt["resident_runtime_materialization_target_source"] = (
+        invocation_runtime_root_source
+        if pre_runtime_root is None and invocation_runtime_root is not None
+        else None
+    )
     receipt["kv_path_env_available"] = sorted(_kv_path_env())
     receipt["sv_dn1_source_prep_state"] = source_prep_state
     receipt["sv_dn1_governance_component_roots_added"] = sorted(prepared_roots)
-    if receipt.get("state") == "COMPLETE" and delegation.get("state") == "BOUNDARY_RECORDED":
+    if receipt.get("state") == "COMPLETE" and (
+        delegation.get("state") == "BOUNDARY_RECORDED"
+        or root_observation.get("state") != "RESIDENT_CUSTODY_ROOT_OBSERVED"
+    ):
         receipt["state"] = "BLOCKED"
     return receipt
 
