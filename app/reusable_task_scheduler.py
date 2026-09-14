@@ -23,6 +23,9 @@ SCHEDULE_SCHEMA = "stegverse.reusable-task-schedule/v1"
 NEUTRAL_SCHEDULER_ID = "RT-REUSABLE-TASK-SCHEDULER-001"
 NEUTRAL_TRIGGER_REL = Path("scripts/trigger_reusable_task.py")
 RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
+ROOT_OBSERVATION_SCHEMA = "stegverse.healer.resident-custody-root-observation/v1"
+ROOT_OBSERVATION_TASK_ID = "STEG-BROWSER-RESIDENT-CUSTODY-ROOT-OBSERVATION-001"
+ROOT_OBSERVATION_COSV = "40000100100000"
 RUNTIME_REQUIRED_MARKERS = (
     Path("control/resident-execution-request.d/native-email-action-monitor-001.json"),
     Path("control/resident-execution-request.d/canonical-work-stegbrowser-runtime-consumption-001.json"),
@@ -53,8 +56,12 @@ def _load_schedule(path: Path) -> list[dict[str, Any]]:
     return tasks
 
 
+def _matched_runtime_markers(root: Path) -> list[str]:
+    return [str(marker) for marker in RUNTIME_REQUIRED_MARKERS if (root / marker).is_file()]
+
+
 def _valid_runtime_root(root: Path) -> bool:
-    return root.is_dir() and any((root / marker).is_file() for marker in RUNTIME_REQUIRED_MARKERS)
+    return root.is_dir() and bool(_matched_runtime_markers(root))
 
 
 def _resident_runtime_root() -> tuple[Path | None, str]:
@@ -85,6 +92,43 @@ def _resident_runtime_root() -> tuple[Path | None, str]:
     if len(unique) > 1:
         return None, "CANONICAL_RUNTIME_AMBIGUOUS"
     return None, "CANONICAL_RUNTIME_NOT_FOUND"
+
+
+def _resident_custody_root_observation(runtime_root: Path | None, runtime_root_source: str) -> dict[str, Any]:
+    if runtime_root is not None:
+        matched = _matched_runtime_markers(runtime_root)
+        state = "RESIDENT_CUSTODY_ROOT_OBSERVED" if matched else "RESIDENT_CUSTODY_ROOT_INVALID"
+        root_ref = str(runtime_root)
+    elif runtime_root_source == "CANONICAL_RUNTIME_AMBIGUOUS":
+        matched = []
+        state = "RESIDENT_CUSTODY_ROOT_AMBIGUOUS"
+        root_ref = None
+    elif runtime_root_source == "EXPLICIT_RUNTIME_ROOT_INVALID":
+        matched = []
+        state = "RESIDENT_CUSTODY_ROOT_INVALID"
+        root_ref = None
+    else:
+        matched = []
+        state = "RESIDENT_CUSTODY_ROOT_NOT_OBSERVED"
+        root_ref = None
+    return {
+        "schema": ROOT_OBSERVATION_SCHEMA,
+        "task_id": ROOT_OBSERVATION_TASK_ID,
+        "cosv_task_vector": ROOT_OBSERVATION_COSV,
+        "state": state,
+        "resident_runtime_root": root_ref,
+        "resident_runtime_root_source": runtime_root_source,
+        "matched_marker_relative_paths": matched,
+        "required_first_receipt_relative_path": "receipts/sovereign-host/canonical-work-stegbrowser-runtime-consumption-request-consumption.latest.json",
+        "authority_effect": "NONE_OBSERVATION_ONLY",
+        "healer_carrier_authority": "SCHEDULING_AND_INVOCATION_TRANSPORT_ONLY",
+        "github_runtime_authority": "NONE",
+        "credential_authority": "TV/TVC",
+        "workercoordinator_bypass_created": False,
+        "second_scheduler_created": False,
+        "second_user_operated_device_required": False,
+        "runtime_completion_claimed": False,
+    }
 
 
 def _kv_path_env() -> dict[str, str]:
@@ -223,6 +267,7 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     scope = (os.getenv("RUN_SCOPE") or "all").strip().lower()
     now = base._now()
     runtime_root, runtime_root_source = _resident_runtime_root()
+    root_observation = _resident_custody_root_observation(runtime_root, runtime_root_source)
 
     delegation = _invoke_neutral_scheduler(
         roots=roots,
@@ -241,6 +286,7 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     receipt["selected_reusable_tasks"] = len(outcomes) if isinstance(outcomes, list) else 0
     receipt["reusable_task_schedule"] = outcomes if isinstance(outcomes, list) else []
     receipt["neutral_reusable_task_scheduler"] = delegation
+    receipt["resident_custody_root_observation"] = root_observation
     receipt["resident_runtime_root"] = str(runtime_root) if runtime_root is not None else None
     receipt["resident_runtime_root_source"] = runtime_root_source
     receipt["kv_path_env_available"] = sorted(_kv_path_env())
@@ -264,6 +310,16 @@ def main() -> int:
             "github_token_required": False,
             "reusable_task_scheduler_owner": NEUTRAL_SCHEDULER_ID,
             "healer_scheduler_role": "CONSUMER_CARRIER_ONLY",
+            "resident_custody_root_observation": {
+                "schema": ROOT_OBSERVATION_SCHEMA,
+                "task_id": ROOT_OBSERVATION_TASK_ID,
+                "cosv_task_vector": ROOT_OBSERVATION_COSV,
+                "state": "RESIDENT_CUSTODY_ROOT_OBSERVATION_FAILED",
+                "authority_effect": "NONE_OBSERVATION_ONLY",
+                "github_runtime_authority": "NONE",
+                "credential_authority": "TV/TVC",
+                "runtime_completion_claimed": False,
+            },
             "error": str(exc),
         }
     print(json.dumps(receipt, sort_keys=True))
