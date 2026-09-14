@@ -35,6 +35,26 @@
       "status": "healer-consumer-config-neutral-reusable-task-scheduler-no-second-scheduler"
     },
     {
+      "reusable_task_id": "RT-STEGBROWSER-RUNTIME-CONSUMPTION-001",
+      "tracking_task_id": "STEG-BROWSER-RUNTIME-CONSUMPTION-001",
+      "cosv_task_vector": "40000100100000",
+      "repository": "StegVerse-Labs/.github",
+      "enabled": true,
+      "aliases": ["stegbrowser-runtime-consumption", "stegbrowser-runtime", "canonical-work-stegbrowser"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+      "retry_interval_minutes": 15,
+      "max_attempts_per_slot": 4,
+      "parameters": {
+        "purpose": "invoke the already-registered StegBrowser runtime-consumption reusable task through the existing neutral scheduler and sovereign resident carrier",
+        "selected_execution_substrate": "ADMITTED-EPHEMERAL-STEGOS-NODE",
+        "automatic_advancement_required": true,
+        "network_source_fetch_allowed": false,
+        "remote_desktop_required": false,
+        "second_user_operated_device_required": false
+      },
+      "status": "stegbrowser-runtime-consumption-neutral-reusable-task-scheduler-carrier-no-second-scheduler"
+    },
+    {
       "reusable_task_id": "RT-SOVEREIGN-SOURCE-REFRESH-001",
       "tracking_task_id": "SITE-PUBLICATION-NATIVE-RUNTIME-EXECUTION-001",
       "cosv_task_vector": "50000000102000",
