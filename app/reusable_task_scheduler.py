@@ -23,7 +23,13 @@ SCHEDULE_SCHEMA = "stegverse.reusable-task-schedule/v1"
 NEUTRAL_SCHEDULER_ID = "RT-REUSABLE-TASK-SCHEDULER-001"
 NEUTRAL_TRIGGER_REL = Path("scripts/trigger_reusable_task.py")
 RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
-RUNTIME_REQUIRED_REL = Path("control/resident-execution-request.d/native-email-action-monitor-001.json")
+RUNTIME_REQUIRED_MARKERS = (
+    Path("control/resident-execution-request.d/native-email-action-monitor-001.json"),
+    Path("control/resident-execution-request.d/canonical-work-stegbrowser-runtime-consumption-001.json"),
+    Path("control/resident-execution-request.d/stegbrowser-tvc-source-promotion-001.json"),
+    Path("receipts/sovereign-host/canonical-work-stegbrowser-runtime-consumption-request-consumption.latest.json"),
+)
+RUNTIME_REQUIRED_REL = RUNTIME_REQUIRED_MARKERS[0]
 KV_PATH_ENV_NAMES = ("STEGVERSE_KV_ROOT", "STEGVERSE_KV_PROVIDER_MATERIALIZED_ROOT")
 SOURCE_PREP_SCHEMA = "stegverse.sv-dn1.production-source-prep-receipt/v2"
 SOURCE_PREP_RECEIPT_ENV = "STEGVERSE_SV_DN1_SOURCE_PREP_RECEIPT"
@@ -48,7 +54,7 @@ def _load_schedule(path: Path) -> list[dict[str, Any]]:
 
 
 def _valid_runtime_root(root: Path) -> bool:
-    return root.is_dir() and (root / RUNTIME_REQUIRED_REL).is_file()
+    return root.is_dir() and any((root / marker).is_file() for marker in RUNTIME_REQUIRED_MARKERS)
 
 
 def _resident_runtime_root() -> tuple[Path | None, str]:
