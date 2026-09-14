@@ -40,8 +40,8 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
         trigger.write_text("# neutral reusable trigger\n", encoding="utf-8")
         return github_root
 
-    def _runtime_root(self, path: Path) -> Path:
-        request = path / subject.RUNTIME_REQUIRED_REL
+    def _runtime_root(self, path: Path, marker: Path | None = None) -> Path:
+        request = path / (marker or subject.RUNTIME_REQUIRED_REL)
         request.parent.mkdir(parents=True, exist_ok=True)
         request.write_text("{}\n", encoding="utf-8")
         return path
@@ -93,6 +93,17 @@ class ReusableTaskSchedulerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
             runtime_root = self._runtime_root(home / ".local" / "state" / "stegverse" / "heartbeat-runtime")
+            with mock.patch.object(subject.Path, "home", return_value=home), \
+                 mock.patch.dict("os.environ", {"STEGVERSE_HEARTBEAT_ROOT": ""}, clear=False):
+                resolved, source = subject._resident_runtime_root()
+            self.assertEqual(resolved, runtime_root.resolve())
+            self.assertEqual(source, "CANONICAL_LOCAL_RUNTIME_DISCOVERY")
+
+    def test_runtime_discovery_accepts_stegbrowser_resident_request_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            marker = Path("control/resident-execution-request.d/canonical-work-stegbrowser-runtime-consumption-001.json")
+            runtime_root = self._runtime_root(home / ".local" / "state" / "stegverse" / "heartbeat-runtime", marker)
             with mock.patch.object(subject.Path, "home", return_value=home), \
                  mock.patch.dict("os.environ", {"STEGVERSE_HEARTBEAT_ROOT": ""}, clear=False):
                 resolved, source = subject._resident_runtime_root()
