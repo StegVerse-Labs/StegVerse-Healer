@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TASK_ID = "SHWP-SV002-FROZEN-CORPUS-MATERIALIZATION-001"
 COSV = "50000000107001"
-RT_ID = "RT-TVC-RUNTIME-BOUNDARY-OBSERVATION-001"
+RT_ID = "RT-TVC-PRIMARY-RUNTIME-BINDING-001"
 
 
 def test_sv002_frozen_corpus_uses_existing_neutral_reusable_scheduler() -> None:
@@ -23,10 +23,9 @@ def test_sv002_frozen_corpus_uses_existing_neutral_reusable_scheduler() -> None:
     assert row["retry_interval_minutes"] == 15
     assert row["max_attempts_per_slot"] == 4
     params = row["parameters"]
-    assert params["automatic_advancement_required"] is True
-    assert params["network_source_fetch_allowed"] is False
-    assert params["remote_desktop_required"] is False
-    assert params["persistent_runner_required"] is False
-    assert params["second_scheduler_required"] is False
-    assert params["second_user_operated_device_required"] is False
-    assert params["require_vault_backed_provider_binding"] is True
+    assert params["canonical_tvc_source"].startswith("already-local")
+    assert params["binder_task_ref"] == "StegVerse-Labs/TVC:tasks/TVC-PRIMARY-RUNTIME-BINDER-005.json"
+    assert params["activation_delivery_task_ref"] == "StegVerse-Labs/TVC:tasks/TVC-PRIMARY-RUNTIME-ACTIVATION-DELIVERY-006.json"
+    assert params["vault_broker_socket"] == "/run/stegverse/vault-broker.sock"
+    assert params["provider_operation_surface"] == "https://tvc.stegverse.org/v1/provider-operation"
+    assert params["activation_authority_declaration"] == "TV/TVC"
