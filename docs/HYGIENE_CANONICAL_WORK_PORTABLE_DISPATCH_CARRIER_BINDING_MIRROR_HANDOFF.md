@@ -144,3 +144,34 @@ projected Healer checkpoint
 The portable reusable trigger currently treats the bridge as a successful bounded runner without a standardized reusable `runner-result` file; that is not itself a proven runtime defect. The bridge writes the full resident refresh/dispatch and exact resident request-dispatch receipts under the same authentic runtime root, and those existing receipts carry the canonical Task Registry result. A source repair is authorized only if an authentic resident checkpoint/child receipt proves that this existing chain stops before the required `CONTINUE` evidence.
 
 Current accessible evidence still exposes no authentic projected Healer checkpoint, child reusable trigger receipt, resident request-dispatch receipt for this invocation, or retained hygiene `CONTINUE`. The standing request remains eligible. No WorkerCoordinator claim/fence or Interlock/InTr admission is recognized for hygiene, and no scheduler, runtime, dispatcher, browser route, request, authority plane, Site/StegCore mutation, Remote Desktop dependency, or second user-operated device is introduced.
+
+
+## 2026-09-17 generation-32 first-checkpoint direct re-observation
+
+The corrected first authentic resident surface was re-observed directly rather than inferred from search indexing. Current canonical coordinates entering this observation were `.github` generation 32 and Healer main `fdbfefb15cf9ea520ca3085556b195d1fc69eccc`.
+
+Direct authenticated repository probes found no retained copies of:
+
+```text
+receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json
+receipts/sovereign-host/healer-sovereign-scheduler-request-consumption.latest.json
+receipts/sovereign-host/resident-request-dispatch.latest.json
+receipts/sovereign-host/resident-refresh-dispatch.latest.json
+```
+
+The checkpoint and dispatch paths were checked in both `StegVerse-Labs/.github` and `StegVerse-Labs/StegVerse-Healer` where applicable. Organization-wide search resolved only source contracts, tests, handoffs, canonical classification reports, and historical records that themselves say the checkpoint is absent. No result was an authentic resident checkpoint, child reusable trigger receipt, or same-root dispatch receipt.
+
+Therefore none of the required hygiene child predicates can yet be evaluated authentically:
+
+```text
+reusable_task_id == RT-CANONICAL-WORK-PORTABLE-DISPATCH-001
+tracking_task_id == HYGIENE-CAUSAL-ROOTS-001
+cosv_task_vector == 10100000100000
+selection_scope == EXACT_SELECTOR
+selected_consumers == [canonical_work_coordination]
+current_goal_task_id == HYGIENE-CAUSAL-ROOTS-001
+selected_task_id == HYGIENE-CAUSAL-ROOTS-001
+considered[HYGIENE-CAUSAL-ROOTS-001].disposition == CONTINUE
+```
+
+No connected Remote Desktop surface was available during this observation. That remains evidence reachability only; it does not alter the standing recurring request, create a runtime/substrate failure, or authorize a second device/path. Because no authentic checkpoint or child receipt exposed a concrete pre-`CONTINUE` boundary, no source/runtime repair is authorized. The standing Healer request and existing neutral reusable-task carrier remain unchanged.
