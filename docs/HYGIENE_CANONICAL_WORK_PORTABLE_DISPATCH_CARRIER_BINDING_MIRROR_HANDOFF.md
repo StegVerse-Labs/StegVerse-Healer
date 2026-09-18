@@ -81,3 +81,10 @@ No source merge, CI success, schedule presence, GitHub Action, or absent/present
 ## Validation
 
 `tests/test_hygiene_canonical_work_schedule.py` protects the exact reusable/task/COSV/repository binding, all-hours retry policy, minimal bridge-compatible parameter object, existing neutral scheduler trigger reuse, existing source-refresh bootstrap reuse, and no-second-scheduler/no-second-device invariants.
+
+
+## 2026-09-17 merge and authentic runtime boundary
+
+PR #90 merged the schedule-binding repair as `9c737c77f861a28ef55005b31812777f541af96d` from exact head `7643962d7d31cbff74c3afa45cb4727f7b097b8f`. Exact-head Healer `Test Readiness` run `35305308087` / job `105476184831` passed. The deterministic suite ran 150 tests and explicitly executed both `HygieneCanonicalWorkScheduleTests` methods, proving the exact schedule/task/COSV/minimal-parameter binding and reuse of the existing neutral scheduler/source-refresh carrier semantics.
+
+A post-merge evidence search found no retained `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001` trigger receipt, no hygiene `CONTINUE` check-in, and no hygiene WorkerCoordinator/InTr admission evidence. This is not reclassified as a new source defect. The existing standing Healer carrier remains the first eligible authentic invocation surface; source/CI cannot substitute for its resident execution. No additional scheduler, runtime, dispatcher, browser route, Remote Desktop prerequisite, or second device is authorized.
