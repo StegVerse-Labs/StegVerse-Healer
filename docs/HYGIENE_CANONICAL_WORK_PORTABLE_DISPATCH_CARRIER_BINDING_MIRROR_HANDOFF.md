@@ -105,3 +105,42 @@ The exact authoritative resident consumption receipt remains:
 Current accessible evidence does not expose an authentic resident copy of that receipt, an embedded retention pointer, or the retained resident-root packet. The canonical runtime classification already records this as `RESIDENT_CARRIER_OUTPUT_POINTER_NOT_GITHUB_VISIBLE_BUT_RUNTIME_BOUND`, with `defect_source_side_fixable=false` and `source_side_repair_required=false`. The exact GitHub checkpoint `receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json` is also absent; that absence is evidence reachability only and is not a runtime-failure claim.
 
 No authentic `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001` trigger receipt, runner receipt, hygiene Task Registry `CONTINUE`, WorkerCoordinator claim/fence, or Interlock/InTr admission was therefore observed. Because no authentic carrier boundary was recorded before `CONTINUE`, there is no newly evidenced source defect to repair in this continuation. No scheduler, runtime, dispatcher, browser route, request identity, authority plane, Site/StegCore mutation, Remote Desktop dependency, or second user-operated device was added.
+
+
+## 2026-09-17 generation-32 checkpoint/CONTINUE evidence-chain correction
+
+A concurrent canonical reconciliation in `StegVerse-Labs/.github` advanced the Task Registry to generation 32 and traced the existing Healer resident serialization boundary field-by-field. That trace corrects the earlier assumption that the outer resident request-consumption receipt directly inlines the Healer child receipt.
+
+The first existing full pointer-bearing resident surface is instead the fenced worker checkpoint after:
+
+```text
+FENCED_PROCESS_ADAPTER_ALLOW_PROJECTION
+-> <resident-root>/receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json
+-> child_receipt
+```
+
+The outer `receipts/sovereign-host/healer-sovereign-scheduler-request-consumption.latest.json` retains the WorkerCoordinator cycle envelope as `execution_result`; it does not structurally inline `child_receipt`. No exporter or alternate projection is required or authorized.
+
+For this hygiene Goal, the authentic proof chain is therefore:
+
+```text
+projected Healer checkpoint
+-> child_receipt.reusable_task_schedule[]
+   or child_receipt.neutral_reusable_task_scheduler.runner_result.outcomes[]
+-> reusable_task_id == RT-CANONICAL-WORK-PORTABLE-DISPATCH-001
+-> tracking_task_id == HYGIENE-CAUSAL-ROOTS-001
+-> cosv_task_vector == 10100000100000
+-> receipt_ref + runtime_root
+-> authentic child reusable trigger receipt at receipt_ref
+-> resident-root/receipts/sovereign-host/resident-request-dispatch.latest.json
+-> selection_scope == EXACT_SELECTOR
+-> selected_consumers == [canonical_work_coordination]
+-> current_goal_task_id == HYGIENE-CAUSAL-ROOTS-001
+-> outcomes[canonical_work_coordination].result.canonical_work_request_set.task_registry_cycle.result
+-> selected_task_id == HYGIENE-CAUSAL-ROOTS-001
+-> considered[HYGIENE-CAUSAL-ROOTS-001].disposition == CONTINUE
+```
+
+The portable reusable trigger currently treats the bridge as a successful bounded runner without a standardized reusable `runner-result` file; that is not itself a proven runtime defect. The bridge writes the full resident refresh/dispatch and exact resident request-dispatch receipts under the same authentic runtime root, and those existing receipts carry the canonical Task Registry result. A source repair is authorized only if an authentic resident checkpoint/child receipt proves that this existing chain stops before the required `CONTINUE` evidence.
+
+Current accessible evidence still exposes no authentic projected Healer checkpoint, child reusable trigger receipt, resident request-dispatch receipt for this invocation, or retained hygiene `CONTINUE`. The standing request remains eligible. No WorkerCoordinator claim/fence or Interlock/InTr admission is recognized for hygiene, and no scheduler, runtime, dispatcher, browser route, request, authority plane, Site/StegCore mutation, Remote Desktop dependency, or second user-operated device is introduced.
