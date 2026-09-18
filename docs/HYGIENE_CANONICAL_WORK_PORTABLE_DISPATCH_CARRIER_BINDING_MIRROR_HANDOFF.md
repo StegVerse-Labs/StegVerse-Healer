@@ -1,0 +1,83 @@
+# Hygiene Canonical Work Portable Dispatch Carrier Binding
+
+Goal Task ID: `HYGIENE-CAUSAL-ROOTS-001`  
+COSV: `10100000100000`  
+Reusable task: `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001`  
+Repository: `StegVerse-Labs/StegVerse-Healer`  
+State: `SOURCE_BINDING_READY / AUTHENTIC_RESIDENT_INVOCATION_PENDING`
+
+## Purpose
+
+Bind the already-registered `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001` identity to the existing standing sovereign Healer carrier and neutral reusable-task scheduler so `HYGIENE-CAUSAL-ROOTS-001` can be invoked without requiring a permanently connected or second user-operated device.
+
+This is an invocation-reachability repair only. It creates no scheduler, runtime, dispatcher, request identity, WorkerCoordinator, Interlock/InTr authority, credential route, Site route, or execution authority.
+
+## First proven defect
+
+The reusable identity exists in `StegVerse-Labs/.github`, its sole runner is the existing `scripts/refresh_and_dispatch_resident_requests.py` bridge, and the Healer carrier already delegates through:
+
+```text
+standing Healer resident request
+-> existing WorkerCoordinator targeted execution
+-> existing Healer sovereign scheduler worker
+-> app/reusable_task_scheduler.py
+-> RT-REUSABLE-TASK-SCHEDULER-001
+-> scripts/trigger_reusable_task.py
+-> registered reusable identity
+```
+
+But `data/reusable_task_schedule.json` had no row for `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001`. Therefore the existing carrier could not select or trigger the hygiene reusable identity at all. This is the first source-level stop before an authentic Task Registry `CONTINUE` check-in can occur.
+
+## Repair
+
+Add one enabled hourly schedule row:
+
+- reusable task: `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001`
+- tracking task: `HYGIENE-CAUSAL-ROOTS-001`
+- COSV: `10100000100000`
+- repository: `StegVerse-Labs/.github`
+- retry interval: 15 minutes
+- maximum attempts per UTC-hour slot: 4
+- `only_consumer=canonical_work_coordination`
+- `goal_task_id=HYGIENE-CAUSAL-ROOTS-001`
+
+The parameter object intentionally contains no task-extraneous scheduler metadata. The reusable bridge in `.github` rejects unknown manifest parameters and requires only `source_root`, `runtime_root`, `only_consumer`, and `goal_task_id`; the neutral scheduler already injects `source_root` and `runtime_root` before child invocation.
+
+The existing `RT-SOVEREIGN-SOURCE-REFRESH-001` schedule row remains enabled, so the Healer carrier may use the already-canonical resident-root materialization path when no valid runtime root is initially observed. No connected Remote Desktop/device surface is required by this binding.
+
+## Authority boundaries
+
+- Task Registry = work identity and coordination truth.
+- Healer = carrier/consumer only.
+- `RT-REUSABLE-TASK-SCHEDULER-001` = neutral scheduling/idempotency/retry semantics.
+- WorkerCoordinator = execution claim/fence authority.
+- Interlock/InTr = governed transition/admission authority.
+- TV/TVC = credential authority.
+- Master Records = observed-reality/custody/reconstruction authority.
+- GitHub/CI = source validation/evidence transport only; runtime authority `NONE`.
+- second user-operated device required = `false`.
+
+## Authentic completion boundary
+
+Source merge proves only that the existing Healer carrier can select the hygiene reusable identity.
+
+The required authentic chain remains:
+
+```text
+standing Healer resident cycle
+-> RT-REUSABLE-TASK-SCHEDULER-001
+-> RT-CANONICAL-WORK-PORTABLE-DISPATCH-001
+-> scripts/refresh_and_dispatch_resident_requests.py
+-> exact canonical_work_coordination
+-> --goal-task-id HYGIENE-CAUSAL-ROOTS-001
+-> retained Task Registry check-in
+-> disposition == CONTINUE
+-> WorkerCoordinator claim/fence
+-> Interlock/InTr admission
+```
+
+No source merge, CI success, schedule presence, GitHub Action, or absent/present device connector may substitute for the retained resident `CONTINUE` receipt.
+
+## Validation
+
+`tests/test_hygiene_canonical_work_schedule.py` protects the exact reusable/task/COSV/repository binding, all-hours retry policy, minimal bridge-compatible parameter object, existing neutral scheduler trigger reuse, existing source-refresh bootstrap reuse, and no-second-scheduler/no-second-device invariants.

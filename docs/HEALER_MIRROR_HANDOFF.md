@@ -331,3 +331,14 @@ This repository contributes to the StegVerse ecosystem sum through: **observabil
 This binding grants no new authority, does not change repository-local execution/credential/admission/routing/custody/publication/consequence boundaries, and does not establish a new runtime or maturity state. Existing handoff evidence remains authoritative for what this repository has actually implemented, validated, released, deployed, activated, observed, or reconstructed.
 
 The repository should continue advancing the shared objective: preserve agency and explicit authority while making consequential transitions bounded and reconstructable, without requiring a specific intelligence provider or collapsing governance into a universal correctness authority.
+
+
+## 2026-09-17 hygiene Canonical Work reusable carrier binding
+
+Canonical scoped handoff: `docs/HYGIENE_CANONICAL_WORK_PORTABLE_DISPATCH_CARRIER_BINDING_MIRROR_HANDOFF.md`.
+
+The existing `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001` identity is now bound into Healer's existing neutral reusable-task schedule for `HYGIENE-CAUSAL-ROOTS-001` / COSV `10100000100000`. The prior exact defect was schedule addressability only: the reusable definition and bridge existed in `.github`, but Healer had no schedule row capable of selecting them.
+
+The row is enabled for every UTC hour with the existing 15-minute/4-attempt retry policy. Its child parameter set is deliberately limited to `only_consumer=canonical_work_coordination` and `goal_task_id=HYGIENE-CAUSAL-ROOTS-001`; the neutral scheduler injects `source_root` and `runtime_root`. Existing `RT-SOVEREIGN-SOURCE-REFRESH-001` remains the only allowed resident-root bootstrap mechanism when required.
+
+This changes no authority. Healer remains carrier-only; WorkerCoordinator remains claim/fence authority; Interlock/InTr remains transition authority; TV/TVC remains credential authority; GitHub runtime authority remains NONE. Authentic completion still requires a real resident Healer cycle whose reusable child reaches a retained Task Registry `CONTINUE` disposition before any claim/fence or InTr admission is credited.
