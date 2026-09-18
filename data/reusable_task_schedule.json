@@ -75,6 +75,22 @@
       "status": "stegos-ai-preexecution-neutral-reusable-task-scheduler-carrier-no-second-scheduler"
     },
     {
+      "reusable_task_id": "RT-CANONICAL-WORK-PORTABLE-DISPATCH-001",
+      "tracking_task_id": "HYGIENE-CAUSAL-ROOTS-001",
+      "cosv_task_vector": "10100000100000",
+      "repository": "StegVerse-Labs/.github",
+      "enabled": true,
+      "aliases": ["hygiene-causal-roots", "hygiene-canonical-work", "canonical-work-hygiene"],
+      "run_hours_utc": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+      "retry_interval_minutes": 15,
+      "max_attempts_per_slot": 4,
+      "parameters": {
+        "only_consumer": "canonical_work_coordination",
+        "goal_task_id": "HYGIENE-CAUSAL-ROOTS-001"
+      },
+      "status": "hygiene-canonical-work-existing-neutral-reusable-task-scheduler-carrier-no-second-scheduler"
+    },
+    {
       "reusable_task_id": "RT-SOVEREIGN-SOURCE-REFRESH-001",
       "tracking_task_id": "SITE-PUBLICATION-NATIVE-RUNTIME-EXECUTION-001",
       "cosv_task_vector": "50000000102000",
