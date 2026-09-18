@@ -88,3 +88,20 @@ No source merge, CI success, schedule presence, GitHub Action, or absent/present
 PR #90 merged the schedule-binding repair as `9c737c77f861a28ef55005b31812777f541af96d` from exact head `7643962d7d31cbff74c3afa45cb4727f7b097b8f`. Exact-head Healer `Test Readiness` run `35305308087` / job `105476184831` passed. The deterministic suite ran 150 tests and explicitly executed both `HygieneCanonicalWorkScheduleTests` methods, proving the exact schedule/task/COSV/minimal-parameter binding and reuse of the existing neutral scheduler/source-refresh carrier semantics.
 
 A post-merge evidence search found no retained `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001` trigger receipt, no hygiene `CONTINUE` check-in, and no hygiene WorkerCoordinator/InTr admission evidence. This is not reclassified as a new source defect. The existing standing Healer carrier remains the first eligible authentic invocation surface; source/CI cannot substitute for its resident execution. No additional scheduler, runtime, dispatcher, browser route, Remote Desktop prerequisite, or second device is authorized.
+
+
+## 2026-09-17 authentic resident-cycle observation after carrier binding
+
+The post-merge continuation re-read the standing Healer request and the existing authorized resident-evidence seam before making any further change. `control/resident-execution-request.d/healer-sovereign-scheduler-001.json` remains a standing recurring `REQUESTED` request for `EACH_ELIGIBLE_RESIDENT_SCHEDULER_CYCLE`; it is not consumed or retired by one completed scheduler cycle.
+
+The exact authoritative resident consumption receipt remains:
+
+```text
+<resident-root>/receipts/sovereign-host/healer-sovereign-scheduler-request-consumption.latest.json
+-> execution_result
+-> resident_custody_root_observation_retention
+```
+
+Current accessible evidence does not expose an authentic resident copy of that receipt, an embedded retention pointer, or the retained resident-root packet. The canonical runtime classification already records this as `RESIDENT_CARRIER_OUTPUT_POINTER_NOT_GITHUB_VISIBLE_BUT_RUNTIME_BOUND`, with `defect_source_side_fixable=false` and `source_side_repair_required=false`. The exact GitHub checkpoint `receipts/healer-sovereign-scheduler/SHWP-HEALER-SOVEREIGN-SCHEDULER-001.json` is also absent; that absence is evidence reachability only and is not a runtime-failure claim.
+
+No authentic `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001` trigger receipt, runner receipt, hygiene Task Registry `CONTINUE`, WorkerCoordinator claim/fence, or Interlock/InTr admission was therefore observed. Because no authentic carrier boundary was recorded before `CONTINUE`, there is no newly evidenced source defect to repair in this continuation. No scheduler, runtime, dispatcher, browser route, request identity, authority plane, Site/StegCore mutation, Remote Desktop dependency, or second user-operated device was added.
