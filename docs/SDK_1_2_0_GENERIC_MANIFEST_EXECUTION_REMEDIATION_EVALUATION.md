@@ -49,11 +49,18 @@ Basis:
 4. the bounded remedy can preserve the current version and its prior 565-commit capability history;
 5. no new scheduler, runtime, WorkerCoordinator, transition authority, credential authority, custody plane, carrier, or second-device dependency is required.
 
-## Derived bounded remediation task
+## Corrective-task routing
 
-Healer derives:
+Healer does not create the corrective-task identity. Per the canonical execution spine, StegHealth owns corrective-task creation/reuse for mapped ecosystem failures.
 
-`SDK-1.2.0-GENERIC-MANIFEST-EXECUTION-REMEDIATION-001`
+This finding must be handed to the existing StegHealth failure-remediation lane with an exact existing canonical task hint:
+
+- task: `SDK-TT-PURPOSE-BOUND-WORKER-RUNTIME-PROOF-001`
+- COSV: `71000000111111`
+- expected StegHealth disposition: `EXISTING_CORRECTIVE_TASK_REUSED`
+- next action: `CONTINUE_EXISTING_CANONICAL_TASK`
+
+No new corrective task is authorized unless StegHealth independently determines that no existing nonterminal task owns the failure.
 
 Required result:
 
@@ -70,4 +77,4 @@ The remediation MUST:
 
 ## Explicit non-authorizations
 
-This evaluation does not make Healer an execution authority or prerequisite. WorkerCoordinator remains assignment authority, Interlock/InTr transition authority, TV/TVC credential authority, and Master Records custody/reconstruction authority. GitHub Actions remain validation/evidence transport only.
+This evaluation does not make Healer an execution authority, task-creation authority, or prerequisite. StegHealth owns corrective-task creation/reuse; WorkerCoordinator remains assignment authority, Interlock/InTr transition authority, TV/TVC credential authority, and Master Records custody/reconstruction authority. GitHub Actions remain validation/evidence transport only.
