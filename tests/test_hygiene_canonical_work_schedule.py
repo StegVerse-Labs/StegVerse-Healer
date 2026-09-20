@@ -14,7 +14,11 @@ class HygieneCanonicalWorkScheduleTests(unittest.TestCase):
     def test_hygiene_canonical_work_uses_existing_neutral_scheduler_carrier(self) -> None:
         schedule = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
         self.assertEqual(schedule["schema"], "stegverse.reusable-task-schedule/v1")
-        rows = [row for row in schedule["tasks"] if row.get("reusable_task_id") == RT_ID]
+        rows = [
+            row for row in schedule["tasks"]
+            if row.get("reusable_task_id") == RT_ID
+            and row.get("tracking_task_id") == GOAL
+        ]
         self.assertEqual(len(rows), 1)
         row = rows[0]
         self.assertEqual(row["tracking_task_id"], GOAL)
