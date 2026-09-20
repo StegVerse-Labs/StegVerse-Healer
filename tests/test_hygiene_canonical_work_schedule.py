@@ -14,7 +14,11 @@ class HygieneCanonicalWorkScheduleTests(unittest.TestCase):
     def test_hygiene_canonical_work_uses_existing_neutral_scheduler_carrier(self) -> None:
         schedule = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
         self.assertEqual(schedule["schema"], "stegverse.reusable-task-schedule/v1")
-        rows = [row for row in schedule["tasks"] if row.get("reusable_task_id") == RT_ID]
+        rows = [
+            row for row in schedule["tasks"]
+            if row.get("reusable_task_id") == RT_ID
+            and row.get("tracking_task_id") == GOAL
+        ]
         self.assertEqual(len(rows), 1)
         row = rows[0]
         self.assertEqual(row["tracking_task_id"], GOAL)
@@ -46,3 +50,33 @@ class HygieneCanonicalWorkScheduleTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StegHealthCanonicalWorkScheduleTests(unittest.TestCase):
+    def test_steghealth_kv_interlock_uses_existing_portable_dispatch_with_unique_slot_key(self) -> None:
+        schedule = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
+        rows = [
+            row for row in schedule["tasks"]
+            if row.get("reusable_task_id") == RT_ID
+            and row.get("tracking_task_id") == "STEGHEALTH-KV-INTERLOCK-PRODUCTION-ENDPOINT-001"
+        ]
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row["cosv_task_vector"], "60000000111000")
+        self.assertEqual(row["repository"], "StegVerse-Labs/.github")
+        self.assertEqual(row["invocation_key"], "STEGHEALTH-KV-INTERLOCK-PRODUCTION-ENDPOINT-001")
+        self.assertEqual(
+            row["parameters"],
+            {
+                "only_consumer": "canonical_work_coordination",
+                "goal_task_id": "STEGHEALTH-KV-INTERLOCK-PRODUCTION-ENDPOINT-001",
+            },
+        )
+        self.assertIn("no-second-scheduler", row["status"])
+
+    def test_existing_hygiene_binding_remains_present_and_distinct(self) -> None:
+        schedule = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
+        rows = [row for row in schedule["tasks"] if row.get("reusable_task_id") == RT_ID]
+        goals = {row.get("tracking_task_id") for row in rows}
+        self.assertIn("HYGIENE-CAUSAL-ROOTS-001", goals)
+        self.assertIn("STEGHEALTH-KV-INTERLOCK-PRODUCTION-ENDPOINT-001", goals)
