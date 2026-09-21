@@ -356,3 +356,6 @@ The binding is configuration/transport only. Local readiness remains distinct fr
 ## 2026-09-21 HIL receiver projection
 
 The Gateway now treats the machine-owned HIL receiver and Universal InTr as separate loopback projections. `STEGVERSE_HIL_INTR_UPSTREAM` remains the exact `/intr/materialization` transport. `STEGVERSE_HIL_RECEIVER_UPSTREAM` is a pathless loopback origin for the already-running HIL `combined_gateway` process. When enabled, Gateway activation requires its public/local `/api/hil/readiness` projection to return exact READY, Primary/prompt hashes, and no execution/publication/Master Records authority before the activation receipt can close.
+
+
+The receiver projection is additionally source-fenced on LLM-adapter merge `c1b2442acda6612a0360a2fad9238bc1579b415c` (or a descendant). A stale local Gateway source tree may not satisfy receiver readiness using its own local `/api/hil/*` handlers.
