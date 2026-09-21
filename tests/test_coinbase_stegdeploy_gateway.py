@@ -406,3 +406,51 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HILReceiverProjectionTests(unittest.TestCase):
+    def test_hil_receiver_runtime_config_is_distinct_loopback_origin(self) -> None:
+        with mock.patch.dict("os.environ", {
+            mod.HIL_RECEIVER_PROXY_ENABLED_ENV: "true",
+            mod.HIL_RECEIVER_UPSTREAM_ENV: "http://127.0.0.1:8877",
+        }, clear=False):
+            value = mod.hil_receiver_runtime_config()
+        self.assertEqual(value, {"enabled": True, "upstream": "http://127.0.0.1:8877"})
+
+    def test_hil_receiver_runtime_config_rejects_intr_path(self) -> None:
+        with mock.patch.dict("os.environ", {
+            mod.HIL_RECEIVER_PROXY_ENABLED_ENV: "true",
+            mod.HIL_RECEIVER_UPSTREAM_ENV: "http://127.0.0.1:8765/intr/materialization",
+        }, clear=False):
+            with self.assertRaisesRegex(mod.GatewayActivationError, "HIL_RECEIVER_UPSTREAM_NOT_LOOPBACK_ORIGIN"):
+                mod.hil_receiver_runtime_config()
+
+    def test_clean_env_carries_receiver_projection_separately(self) -> None:
+        decision = {"decision_id": "sha256:" + "a"*64}
+        with mock.patch.dict("os.environ", {}, clear=True):
+            env = mod._clean_env(
+                decision,
+                hil_intr={"enabled": True, "upstream": mod.HIL_INTR_LOOPBACK_UPSTREAM},
+                hil_receiver={"enabled": True, "upstream": "http://127.0.0.1:8877"},
+            )
+        self.assertEqual(env[mod.HIL_INTR_UPSTREAM_ENV], mod.HIL_INTR_LOOPBACK_UPSTREAM)
+        self.assertEqual(env[mod.HIL_RECEIVER_UPSTREAM_ENV], "http://127.0.0.1:8877")
+        self.assertEqual(env[mod.HIL_RECEIVER_PROXY_ENABLED_ENV], "true")
+
+    def test_hil_receiver_projection_pins_merged_gateway_relay_source(self) -> None:
+        self.assertEqual(
+            mod.MINIMUM_HIL_RECEIVER_GATEWAY_COMMIT,
+            "c1b2442acda6612a0360a2fad9238bc1579b415c",
+        )
+        source = Path(mod.__file__).read_text(encoding="utf-8")
+        self.assertIn("LLM_ADAPTER_HIL_RECEIVER_GATEWAY_SOURCE_STALE", source)
+
+    def test_hil_receiver_gateway_readiness_requires_exact_hil_contract(self) -> None:
+        mod.validate_hil_receiver_gateway_readiness({
+            "state": "READY",
+            "primary_sha256": mod.HIL_PRIMARY_SHA256,
+            "prompt_sha256": mod.HIL_PROMPT_SHA256,
+            "execution_authority": False,
+            "publication_authority": False,
+            "master_record_append_authority": False,
+        })
