@@ -53,3 +53,8 @@ Read these before modifying scheduling or dispatch behavior:
 ## Validation
 
 Repository validation is performed by the `Test Readiness` workflow. Runtime activation claims require observed resident/runtime evidence and retained receipts; configuration or source merge alone is not activation proof.
+
+
+### Separate HIL receiver projection
+
+Service Gateway activation keeps Universal InTr and the machine-owned HIL receiver on distinct loopback bindings. The receiver projection is enabled only from a validated pathless loopback origin and must pass exact HIL readiness through the Gateway before being reported ready.
