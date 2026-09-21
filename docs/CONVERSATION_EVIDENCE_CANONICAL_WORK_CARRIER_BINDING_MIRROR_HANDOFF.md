@@ -49,3 +49,10 @@ GitHub/CI/source success proves no resident execution.
 ## Completion boundary
 
 This binding is complete only as source configuration after exact-head Healer validation and merge. The parent Goal remains incomplete until an authentic resident invocation produces a fresh WorkerCoordinator claim/fence and `CONVERSATION_EVIDENCE_INGESTED` closes in Master Records with RECORDED + reconstruction PASS + required-evidence PASS + exact digest equality.
+
+
+## Source-refresh ordering repair — 2026-09-21
+
+The first deterministic post-binding invocation defect was schedule ordering when no resident runtime root was yet materialized. The neutral scheduler evaluates schedule rows in document order, and `CONVERSATION-EVIDENCE-INGESTION-CUSTODY-001` was positioned before `RT-SOVEREIGN-SOURCE-REFRESH-001`. In that state the conversation-evidence Goal necessarily hit `RESIDENT_RUNTIME_ROOT_NOT_MATERIALIZED` before the same already-existing scheduler reached the existing local-only source refresh child.
+
+This repair changes only schedule ordering: the existing `RT-SOVEREIGN-SOURCE-REFRESH-001` row now precedes the existing conversation-evidence portable-dispatch row. The source-refresh child retains the same reusable identity, runner, scheduler, local-only source contract, and authority boundaries. No scheduler, runtime, dispatcher, WorkerCoordinator, custody plane, credential path, device prerequisite, or source transport is added.

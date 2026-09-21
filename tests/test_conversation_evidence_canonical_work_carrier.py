@@ -54,3 +54,10 @@ class ConversationEvidenceCanonicalWorkCarrierTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_source_refresh_precedes_conversation_evidence_goal():
+    schedule = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
+    refresh_index = next(i for i, row in enumerate(schedule["tasks"]) if row.get("reusable_task_id") == "RT-SOVEREIGN-SOURCE-REFRESH-001")
+    goal_index = next(i for i, row in enumerate(schedule["tasks"]) if row.get("reusable_task_id") == RT_ID and row.get("tracking_task_id") == GOAL)
+    assert refresh_index < goal_index
