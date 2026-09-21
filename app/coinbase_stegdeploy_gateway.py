@@ -36,6 +36,11 @@ HIL_INTR_ENABLED_ENV = "STEGVERSE_HIL_INTR_ENABLED"
 HIL_INTR_UPSTREAM_ENV = "STEGVERSE_HIL_INTR_UPSTREAM"
 HIL_INTR_LOOPBACK_UPSTREAM = "http://127.0.0.1:8765/intr/materialization"
 HIL_INTR_GATEWAY_READINESS_PATH = "/intr/materialization/readiness"
+HIL_RECEIVER_PROXY_ENABLED_ENV = "STEGVERSE_HIL_RECEIVER_PROXY_ENABLED"
+HIL_RECEIVER_UPSTREAM_ENV = "STEGVERSE_HIL_RECEIVER_UPSTREAM"
+HIL_RECEIVER_READINESS_PATH = "/api/hil/readiness"
+HIL_PRIMARY_SHA256 = "a7b1c62e336b4e244ecf7fdcd10af195401f6c44328de32615b073d2a5c3c462"
+HIL_PROMPT_SHA256 = "cdff8d2266bb3eefbb6e5d28d9adc548e6c8dfc039debd72fe404f1d0249912c"
 MINIMUM_UNIVERSAL_INTR_GATEWAY_COMMIT = "49676d20cff32ee346f22cfd79726b0127d80b33"
 FORBIDDEN_ENV = (
     "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "HEALER_GH_TOKEN", "HEALER_PAT",
@@ -230,6 +235,52 @@ def hil_intr_runtime_config() -> dict[str, Any]:
     return {"enabled": enabled, "upstream": upstream if enabled else ""}
 
 
+def hil_receiver_runtime_config() -> dict[str, Any]:
+    raw = os.getenv(HIL_RECEIVER_PROXY_ENABLED_ENV, "false").strip().lower()
+    if raw not in {"true", "false", "1", "0", "yes", "no"}:
+        raise GatewayActivationError("HIL_RECEIVER_PROXY_ENABLED_INVALID")
+    enabled = raw in {"true", "1", "yes"}
+    upstream = os.getenv(HIL_RECEIVER_UPSTREAM_ENV, "").strip().rstrip("/")
+    if enabled:
+        from urllib.parse import urlsplit
+        parsed = urlsplit(upstream)
+        if (
+            parsed.scheme != "http"
+            or parsed.hostname not in {"127.0.0.1", "::1", "localhost"}
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+            or parsed.username
+            or parsed.password
+        ):
+            raise GatewayActivationError("HIL_RECEIVER_UPSTREAM_NOT_LOOPBACK_ORIGIN")
+    return {"enabled": enabled, "upstream": upstream if enabled else ""}
+
+
+def validate_hil_receiver_gateway_readiness(payload: dict[str, Any]) -> None:
+    expected = {
+        "state": "READY",
+        "primary_sha256": HIL_PRIMARY_SHA256,
+        "prompt_sha256": HIL_PROMPT_SHA256,
+        "execution_authority": False,
+        "publication_authority": False,
+        "master_record_append_authority": False,
+    }
+    failed = [key for key, value in expected.items() if payload.get(key) != value]
+    if failed:
+        raise GatewayActivationError(
+            "HIL_RECEIVER_GATEWAY_READINESS_INVALID:" + ",".join(sorted(failed))
+        )
+
+
+def _hil_receiver_gateway_readiness_url(*, tls_enabled: bool, tls_request: dict[str, Any] | None) -> str:
+    if tls_enabled:
+        if tls_request is None:
+            raise GatewayActivationError("HIL_RECEIVER_TLS_REQUEST_MISSING")
+        return f"https://127.0.0.1:{int(tls_request['port'])}{HIL_RECEIVER_READINESS_PATH}"
+    return "http://127.0.0.1:8000" + HIL_RECEIVER_READINESS_PATH
+
+
 def validate_hil_intr_gateway_readiness(payload: dict[str, Any]) -> None:
     expected = {
         "schema": "stegverse.service-gateway.hil-intr-readiness/v1",
@@ -401,6 +452,7 @@ def _clean_env(
     evaluator: dict[str, Any] | None = None,
     sv002_observe: dict[str, Any] | None = None,
     hil_intr: dict[str, Any] | None = None,
+    hil_receiver: dict[str, Any] | None = None,
 ) -> dict[str, str]:
     present = [name for name in FORBIDDEN_ENV if os.getenv(name)]
     if present:
@@ -438,6 +490,12 @@ def _clean_env(
     else:
         env[HIL_INTR_ENABLED_ENV] = "false"
         env[HIL_INTR_UPSTREAM_ENV] = ""
+    if hil_receiver and hil_receiver.get("enabled") is True:
+        env[HIL_RECEIVER_PROXY_ENABLED_ENV] = "true"
+        env[HIL_RECEIVER_UPSTREAM_ENV] = str(hil_receiver["upstream"])
+    else:
+        env[HIL_RECEIVER_PROXY_ENABLED_ENV] = "false"
+        env[HIL_RECEIVER_UPSTREAM_ENV] = ""
     return env
 
 
@@ -465,7 +523,15 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
     evaluator = evaluator_runtime_config()
     sv002_observe = sv002_observation_runtime_config()
     hil_intr = hil_intr_runtime_config()
-    env = _clean_env(decision, tls_request=tls_request, evaluator=evaluator, sv002_observe=sv002_observe, hil_intr=hil_intr)
+    hil_receiver = hil_receiver_runtime_config()
+    env = _clean_env(
+        decision,
+        tls_request=tls_request,
+        evaluator=evaluator,
+        sv002_observe=sv002_observe,
+        hil_intr=hil_intr,
+        hil_receiver=hil_receiver,
+    )
 
     head = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=llm_root, env={"PATH": env["PATH"]},
@@ -504,6 +570,7 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             "evaluator_intr_enabled": evaluator["enabled"],
             "sv002_observation_enabled": sv002_observe["enabled"],
             "hil_intr_enabled": hil_intr["enabled"],
+            "hil_receiver_proxy_enabled": hil_receiver["enabled"],
             "minimum_universal_intr_gateway_commit": MINIMUM_UNIVERSAL_INTR_GATEWAY_COMMIT,
             "authority_effect": "NONE",
         }
@@ -540,6 +607,28 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             raise GatewayActivationError("LOCAL_SV002_OBSERVATION_GATEWAY_READINESS_OBJECT_REQUIRED")
         validate_sv002_gateway_readiness(sv002_readiness)
 
+    hil_receiver_readiness = None
+    hil_receiver_readiness_url = None
+    if hil_receiver["enabled"]:
+        hil_receiver_readiness_url = _hil_receiver_gateway_readiness_url(
+            tls_enabled=tls_enabled,
+            tls_request=tls_request,
+        )
+        try:
+            with urllib.request.urlopen(
+                hil_receiver_readiness_url,
+                timeout=5,
+                context=context,
+            ) as response:
+                hil_receiver_readiness = json.loads(response.read().decode("utf-8"))
+        except Exception as exc:
+            raise GatewayActivationError(
+                "LOCAL_HIL_RECEIVER_GATEWAY_READINESS_UNAVAILABLE:" + type(exc).__name__
+            ) from exc
+        if not isinstance(hil_receiver_readiness, dict):
+            raise GatewayActivationError("LOCAL_HIL_RECEIVER_GATEWAY_READINESS_OBJECT_REQUIRED")
+        validate_hil_receiver_gateway_readiness(hil_receiver_readiness)
+
     hil_intr_readiness = None
     hil_intr_readiness_url = None
     if hil_intr["enabled"]:
@@ -575,6 +664,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "sv002_observation_readiness": sv002_readiness,
         "hil_intr_readiness_url": hil_intr_readiness_url,
         "hil_intr_readiness": hil_intr_readiness,
+        "hil_receiver_readiness_url": hil_receiver_readiness_url,
+        "hil_receiver_readiness": hil_receiver_readiness,
         "credential_authority": "TV/TVC",
         "credential_material_present": False,
         "github_token_required": False,
@@ -588,6 +679,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "sv002_observation_upstream": sv002_observe["upstream"] if sv002_observe["enabled"] else None,
         "hil_intr_enabled": hil_intr["enabled"],
         "hil_intr_upstream": hil_intr["upstream"] if hil_intr["enabled"] else None,
+        "hil_receiver_proxy_enabled": hil_receiver["enabled"],
+        "hil_receiver_upstream": hil_receiver["upstream"] if hil_receiver["enabled"] else None,
         "minimum_universal_intr_gateway_commit": MINIMUM_UNIVERSAL_INTR_GATEWAY_COMMIT,
         "minimum_universal_intr_gateway_commit_ancestor": True,
         "tls_locator_source": str(tls_request.get("locator_source")) if tls_enabled and tls_request else "NONE",
