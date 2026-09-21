@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+import pytest
 from unittest import mock
 from pathlib import Path
 
@@ -406,3 +407,41 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_hil_receiver_runtime_config_is_distinct_loopback_origin(monkeypatch):
+    monkeypatch.setenv(mod.HIL_RECEIVER_PROXY_ENABLED_ENV, "true")
+    monkeypatch.setenv(mod.HIL_RECEIVER_UPSTREAM_ENV, "http://127.0.0.1:8877")
+    value = mod.hil_receiver_runtime_config()
+    assert value == {"enabled": True, "upstream": "http://127.0.0.1:8877"}
+
+
+def test_hil_receiver_runtime_config_rejects_intr_path(monkeypatch):
+    monkeypatch.setenv(mod.HIL_RECEIVER_PROXY_ENABLED_ENV, "true")
+    monkeypatch.setenv(mod.HIL_RECEIVER_UPSTREAM_ENV, "http://127.0.0.1:8765/intr/materialization")
+    with pytest.raises(mod.GatewayActivationError, match="HIL_RECEIVER_UPSTREAM_NOT_LOOPBACK_ORIGIN"):
+        mod.hil_receiver_runtime_config()
+
+
+def test_clean_env_carries_receiver_projection_separately(monkeypatch):
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    decision = {"decision_id": "sha256:" + "a"*64}
+    env = mod._clean_env(
+        decision,
+        hil_intr={"enabled": True, "upstream": mod.HIL_INTR_LOOPBACK_UPSTREAM},
+        hil_receiver={"enabled": True, "upstream": "http://127.0.0.1:8877"},
+    )
+    assert env[mod.HIL_INTR_UPSTREAM_ENV] == mod.HIL_INTR_LOOPBACK_UPSTREAM
+    assert env[mod.HIL_RECEIVER_UPSTREAM_ENV] == "http://127.0.0.1:8877"
+    assert env[mod.HIL_RECEIVER_PROXY_ENABLED_ENV] == "true"
+
+
+def test_hil_receiver_gateway_readiness_requires_exact_hil_contract():
+    mod.validate_hil_receiver_gateway_readiness({
+        "state": "READY",
+        "primary_sha256": mod.HIL_PRIMARY_SHA256,
+        "prompt_sha256": mod.HIL_PROMPT_SHA256,
+        "execution_authority": False,
+        "publication_authority": False,
+        "master_record_append_authority": False,
+    })
