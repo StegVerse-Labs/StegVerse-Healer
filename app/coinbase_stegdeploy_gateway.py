@@ -42,6 +42,7 @@ HIL_RECEIVER_READINESS_PATH = "/api/hil/readiness"
 HIL_PRIMARY_SHA256 = "a7b1c62e336b4e244ecf7fdcd10af195401f6c44328de32615b073d2a5c3c462"
 HIL_PROMPT_SHA256 = "cdff8d2266bb3eefbb6e5d28d9adc548e6c8dfc039debd72fe404f1d0249912c"
 MINIMUM_UNIVERSAL_INTR_GATEWAY_COMMIT = "49676d20cff32ee346f22cfd79726b0127d80b33"
+MINIMUM_HIL_RECEIVER_GATEWAY_COMMIT = "c1b2442acda6612a0360a2fad9238bc1579b415c"
 FORBIDDEN_ENV = (
     "GITHUB_TOKEN", "GH_TOKEN", "GITHUB_PAT", "HEALER_GH_TOKEN", "HEALER_PAT",
     "GH_STEGVERSE_AI_TOKEN", "ACTIONS_RUNTIME_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
@@ -547,6 +548,14 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
     if ancestry.returncode != 0:
         raise GatewayActivationError("LLM_ADAPTER_UNIVERSAL_INTR_GATEWAY_SOURCE_STALE")
 
+    if hil_receiver["enabled"]:
+        receiver_ancestry = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", MINIMUM_HIL_RECEIVER_GATEWAY_COMMIT, "HEAD"],
+            cwd=llm_root, env={"PATH": env["PATH"]}, text=True, capture_output=True, check=False, timeout=30,
+        )
+        if receiver_ancestry.returncode != 0:
+            raise GatewayActivationError("LLM_ADAPTER_HIL_RECEIVER_GATEWAY_SOURCE_STALE")
+
     deploy_command, readiness_url, tls_enabled = build_deploy_command(tls_request)
     deploy = subprocess.run(
         deploy_command,
@@ -683,6 +692,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "hil_receiver_upstream": hil_receiver["upstream"] if hil_receiver["enabled"] else None,
         "minimum_universal_intr_gateway_commit": MINIMUM_UNIVERSAL_INTR_GATEWAY_COMMIT,
         "minimum_universal_intr_gateway_commit_ancestor": True,
+        "minimum_hil_receiver_gateway_commit": MINIMUM_HIL_RECEIVER_GATEWAY_COMMIT if hil_receiver["enabled"] else None,
+        "minimum_hil_receiver_gateway_commit_ancestor": True if hil_receiver["enabled"] else None,
         "tls_locator_source": str(tls_request.get("locator_source")) if tls_enabled and tls_request else "NONE",
         "tls_adoption_receipt_sha256": tls_request.get("adoption_receipt_sha256") if tls_enabled and tls_request else None,
         "tls_private_key_material_recorded": False,
