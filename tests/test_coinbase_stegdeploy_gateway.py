@@ -437,6 +437,14 @@ class HILReceiverProjectionTests(unittest.TestCase):
         self.assertEqual(env[mod.HIL_RECEIVER_UPSTREAM_ENV], "http://127.0.0.1:8877")
         self.assertEqual(env[mod.HIL_RECEIVER_PROXY_ENABLED_ENV], "true")
 
+    def test_hil_receiver_projection_pins_merged_gateway_relay_source(self) -> None:
+        self.assertEqual(
+            mod.MINIMUM_HIL_RECEIVER_GATEWAY_COMMIT,
+            "c1b2442acda6612a0360a2fad9238bc1579b415c",
+        )
+        source = Path(mod.__file__).read_text(encoding="utf-8")
+        self.assertIn("LLM_ADAPTER_HIL_RECEIVER_GATEWAY_SOURCE_STALE", source)
+
     def test_hil_receiver_gateway_readiness_requires_exact_hil_contract(self) -> None:
         mod.validate_hil_receiver_gateway_readiness({
             "state": "READY",
