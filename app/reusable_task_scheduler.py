@@ -40,6 +40,9 @@ KV_PATH_ENV_NAMES = ("STEGVERSE_KV_ROOT", "STEGVERSE_KV_PROVIDER_MATERIALIZED_RO
 SOURCE_PREP_SCHEMA = "stegverse.sv-dn1.production-source-prep-receipt/v2"
 SOURCE_PREP_RECEIPT_ENV = "STEGVERSE_SV_DN1_SOURCE_PREP_RECEIPT"
 SOURCE_PREP_DEFAULT = Path.home() / ".stegverse" / "state" / "sv-dn1-production-source-prep" / "receipts" / "latest.json"
+SOURCE_PREP_TASK_ID = "SV-DN1-PRODUCTION-SOURCE-PREP-001"
+SOURCE_PREP_COSV = "50000000102000"
+SOURCE_PREP_BRIDGE_REL = Path("scripts/refresh_and_execute_resident_task.py")
 SOURCE_PREP_COMPONENTS = {
     "stegverse.sdk": ("StegVerse-org/StegVerse-SDK", Path("stegverse/sovereign_validation_runtime.py")),
     "stegverse.stegcore": ("StegVerse-Labs/StegCore", Path("src/stegcore/steggate_runtime.py")),
@@ -264,6 +267,70 @@ def _verified_governance_component_roots() -> tuple[dict[str, Path], str]:
     return resolved, "SV_DN1_SOURCE_PREP_RECEIPT_VERIFIED"
 
 
+def _source_prep_locator_env(roots: dict[str, Path]) -> dict[str, str]:
+    mapping = {
+        "STEGVERSE_SDK_SOURCE_ROOT": "StegVerse-org/StegVerse-SDK",
+        "STEGVERSE_STEGCORE_SOURCE_ROOT": "StegVerse-Labs/StegCore",
+        "STEGVERSE_CORE_LITE_SOURCE_ROOT": "Data-Continuation/core-lite",
+        "STEGVERSE_MASTER_RECORDS_SOURCE_ROOT": "master-records/orchestration",
+    }
+    return {
+        env_name: str(roots[repository])
+        for env_name, repository in mapping.items()
+        if repository in roots and roots[repository].is_dir()
+    }
+
+
+def _invoke_existing_source_prep_bridge(
+    *,
+    roots: dict[str, Path],
+    runtime_root: Path | None,
+    runtime_root_source: str,
+) -> dict[str, Any]:
+    base_result = {
+        "task_id": SOURCE_PREP_TASK_ID,
+        "cosv_task_vector": SOURCE_PREP_COSV,
+        "runtime_root_source": runtime_root_source,
+        "existing_bridge_ref": str(SOURCE_PREP_BRIDGE_REL),
+        "new_scheduler_created": False,
+        "new_dispatcher_created": False,
+        "new_workercoordinator_created": False,
+        "authority_effect": "EXISTING_ADMITTED_TASK_AUTHORITY_ONLY",
+    }
+    github_root = roots.get("StegVerse-Labs/.github")
+    if github_root is None:
+        return {**base_result, "state": "BOUNDARY_RECORDED", "boundary": "LOCAL_DOTGITHUB_SOURCE_NOT_MATERIALIZED"}
+    if runtime_root is None:
+        return {**base_result, "state": "BOUNDARY_RECORDED", "boundary": "RESIDENT_RUNTIME_ROOT_NOT_MATERIALIZED"}
+    bridge = github_root / SOURCE_PREP_BRIDGE_REL
+    if not bridge.is_file():
+        return {**base_result, "state": "BOUNDARY_RECORDED", "boundary": "EXISTING_TARGETED_RESIDENT_BRIDGE_NOT_MATERIALIZED"}
+
+    command = [
+        sys.executable,
+        str(bridge),
+        "--source-root", str(github_root),
+        "--runtime-root", str(runtime_root),
+        "--task-id", SOURCE_PREP_TASK_ID,
+        "--cosv-task-vector", SOURCE_PREP_COSV,
+    ]
+    env = {
+        RUNTIME_ROOT_ENV: str(runtime_root),
+        **_source_prep_locator_env(roots),
+    }
+    execution = base._run(command, github_root, env, timeout=1200)
+    prepared_roots, source_prep_state = _verified_governance_component_roots()
+    return {
+        **base_result,
+        "state": "SOURCE_PREP_RECEIPT_VERIFIED" if prepared_roots else "BOUNDARY_RECORDED",
+        "command": command,
+        "execution": execution,
+        "source_prep_state": source_prep_state,
+        "verified_component_repositories": sorted(prepared_roots),
+        "runtime_execution_attempted": True,
+    }
+
+
 def _neutral_scheduler_invocation_id(now) -> str:
     return f"healer-neutral-reusable-scheduler-{now.strftime('%Y%m%dT%H%M%SZ')}"
 
@@ -338,9 +405,6 @@ def _invoke_neutral_scheduler(
 def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) -> dict[str, Any]:
     receipt = base.build_and_execute(config_path)
     roots = base._repo_roots()
-    prepared_roots, source_prep_state = _verified_governance_component_roots()
-    for repository, path in prepared_roots.items():
-        roots.setdefault(repository, path)
     scope = (os.getenv("RUN_SCOPE") or "all").strip().lower()
     now = base._now()
 
@@ -355,6 +419,23 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
         if materialization_target is not None:
             invocation_runtime_root = materialization_target
             invocation_runtime_root_source = materialization_source
+
+    prepared_roots, source_prep_state = _verified_governance_component_roots()
+    source_prep_bridge = {
+        "task_id": SOURCE_PREP_TASK_ID,
+        "state": "NOT_REQUIRED_RECEIPT_ALREADY_VERIFIED",
+        "source_prep_state": source_prep_state,
+        "authority_effect": "NONE",
+    }
+    if not prepared_roots:
+        source_prep_bridge = _invoke_existing_source_prep_bridge(
+            roots=roots,
+            runtime_root=invocation_runtime_root,
+            runtime_root_source=invocation_runtime_root_source,
+        )
+        prepared_roots, source_prep_state = _verified_governance_component_roots()
+    for repository, path in prepared_roots.items():
+        roots.setdefault(repository, path)
 
     delegation = _invoke_neutral_scheduler(
         roots=roots,
@@ -402,6 +483,7 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     )
     receipt["kv_path_env_available"] = sorted(_kv_path_env())
     receipt["sv_dn1_source_prep_state"] = source_prep_state
+    receipt["sv_dn1_source_prep_existing_bridge"] = source_prep_bridge
     receipt["sv_dn1_governance_component_roots_added"] = sorted(prepared_roots)
     if receipt.get("state") == "COMPLETE" and (
         delegation.get("state") == "BOUNDARY_RECORDED"
