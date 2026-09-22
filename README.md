@@ -58,3 +58,7 @@ Repository validation is performed by the `Test Readiness` workflow. Runtime act
 ### Separate HIL receiver projection
 
 Service Gateway activation keeps Universal InTr and the machine-owned HIL receiver on distinct loopback bindings. The receiver projection is enabled only from a validated pathless loopback origin and must pass exact HIL readiness through the Gateway before being reported ready.
+
+### Native-email source-prep reachability
+
+When the native-email governance source-preparation v2 receipt is absent, the existing Healer carrier now invokes the already-canonical `.github/scripts/refresh_and_execute_resident_task.py` bridge for `SV-DN1-PRODUCTION-SOURCE-PREP-001`. The call uses the existing resident runtime, WorkerCoordinator independent-task-control admission, COSV `50000000102000`, and only the four already-local non-secret SDK/StegCore/Core-Lite/Master Records root locators. Healer then re-reads the canonical source-prep receipt before delegating to the neutral reusable-task scheduler. This is reachability repair only; it creates no scheduler, dispatcher, WorkerCoordinator, source transport, credential route, custody store, or device prerequisite.
