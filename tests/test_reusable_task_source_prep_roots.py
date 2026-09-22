@@ -33,6 +33,13 @@ def valid_receipt(base: Path) -> tuple[Path, dict]:
         "schema": subject.SOURCE_PREP_SCHEMA,
         "state": "COMPLETE",
         "transition_id": "SV_DN1_PRODUCTION_SOURCE_PREPARATION_COMPLETE",
+        "task_id": subject.SOURCE_PREP_TASK_ID,
+        "worker_id": subject.SOURCE_PREP_WORKER_ID,
+        "claim_id": "SHWP-SV-DN1-PRODUCTION-SOURCE-PREP-001-G23",
+        "fencing_token": 23,
+        "source_identity_scheme": "sha256-content-manifest",
+        "current_source_identity_verified": True,
+        "current_source_identity_scheme": "sha256-content-manifest",
         "source_roots": roots,
         "source_identities": identities,
         "migration_anchors_verified": True,
@@ -153,3 +160,35 @@ def test_existing_source_prep_bridge_fails_closed_when_runtime_root_is_unavailab
     )
     assert result["state"] == "BOUNDARY_RECORDED"
     assert result["boundary"] == "RESIDENT_RUNTIME_ROOT_NOT_MATERIALIZED"
+
+
+def test_source_prep_receipt_requires_fresh_claim_and_fence_binding():
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td)
+        receipt, value = valid_receipt(base)
+        value.pop("claim_id")
+        receipt.write_text(json.dumps(value), encoding="utf-8")
+        with mock.patch.dict("os.environ", {subject.SOURCE_PREP_RECEIPT_ENV: str(receipt)}, clear=False):
+            roots, state = subject._verified_governance_component_roots()
+        assert roots == {}
+        assert state == "SV_DN1_SOURCE_PREP_CLAIM_ID_MISSING"
+
+        value["claim_id"] = "SHWP-SV-DN1-PRODUCTION-SOURCE-PREP-001-G22"
+        value["fencing_token"] = subject.SOURCE_PREP_MIN_FENCE_EXCLUSIVE
+        receipt.write_text(json.dumps(value), encoding="utf-8")
+        with mock.patch.dict("os.environ", {subject.SOURCE_PREP_RECEIPT_ENV: str(receipt)}, clear=False):
+            roots, state = subject._verified_governance_component_roots()
+        assert roots == {}
+        assert state == "SV_DN1_SOURCE_PREP_FENCING_TOKEN_INVALID"
+
+
+def test_source_prep_receipt_requires_current_identity_enrichment():
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td)
+        receipt, value = valid_receipt(base)
+        value["current_source_identity_verified"] = False
+        receipt.write_text(json.dumps(value), encoding="utf-8")
+        with mock.patch.dict("os.environ", {subject.SOURCE_PREP_RECEIPT_ENV: str(receipt)}, clear=False):
+            roots, state = subject._verified_governance_component_roots()
+        assert roots == {}
+        assert state == "SV_DN1_SOURCE_PREP_RECEIPT_NOT_ADMISSIBLE"
