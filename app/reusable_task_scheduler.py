@@ -259,6 +259,8 @@ def _verified_governance_component_roots() -> tuple[dict[str, Path], str]:
         return {}, "SV_DN1_SOURCE_PREP_CLAIM_ID_MISSING"
     if not isinstance(fencing_token, int) or fencing_token <= SOURCE_PREP_MIN_FENCE_EXCLUSIVE:
         return {}, "SV_DN1_SOURCE_PREP_FENCING_TOKEN_INVALID"
+    if claim_id != f"SHWP-{SOURCE_PREP_TASK_ID}-G{fencing_token}":
+        return {}, "SV_DN1_SOURCE_PREP_CLAIM_FENCE_BINDING_INVALID"
     roots = value.get("source_roots")
     identities = value.get("source_identities")
     if not isinstance(roots, dict) or not isinstance(identities, dict):
