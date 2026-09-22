@@ -192,3 +192,16 @@ def test_source_prep_receipt_requires_current_identity_enrichment():
             roots, state = subject._verified_governance_component_roots()
         assert roots == {}
         assert state == "SV_DN1_SOURCE_PREP_RECEIPT_NOT_ADMISSIBLE"
+
+
+def test_source_prep_receipt_rejects_claim_fence_mismatch():
+    with tempfile.TemporaryDirectory() as td:
+        base = Path(td)
+        receipt, value = valid_receipt(base)
+        value["claim_id"] = "SHWP-SV-DN1-PRODUCTION-SOURCE-PREP-001-G24"
+        value["fencing_token"] = 23
+        receipt.write_text(json.dumps(value), encoding="utf-8")
+        with mock.patch.dict("os.environ", {subject.SOURCE_PREP_RECEIPT_ENV: str(receipt)}, clear=False):
+            roots, state = subject._verified_governance_component_roots()
+        assert roots == {}
+        assert state == "SV_DN1_SOURCE_PREP_CLAIM_FENCE_BINDING_INVALID"
