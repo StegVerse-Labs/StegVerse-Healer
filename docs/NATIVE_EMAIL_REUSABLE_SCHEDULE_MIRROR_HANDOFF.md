@@ -64,3 +64,13 @@ This matches the existing SDK authority model: caller manifests keep `external_c
 ## Evidence boundary
 
 Source construction, source-root reuse, governance binding, and retry semantics do not prove resident operation. Authentic completion still requires a retained resident reusable-task receipt, the native-email monitor/KV evidence, canonical SDK/StegCore governance and commit-coherence evidence, corresponding TV/TVC Gmail provider evidence, route/transaction/Master Records custody, bounded mailbox progression, and durable downstream reconciliation. No second scheduler, monitor, heartbeat, WorkerCoordinator, provider route, source installer, or user-operated machine is introduced.
+
+## Existing source-prep bridge reachability repair — 2026-09-21
+
+Tracing the runtime path showed that the scheduler verified and consumed an existing `stegverse.sv-dn1.production-source-prep-receipt/v2`, but no standing Healer/native-email path invoked the already-existing targeted resident bridge when that receipt was absent. The source-prep WorkerCoordinator task itself was already `HANDOFF_READY`, independently admissible, fenced, and fully carried by the existing resident source refresh; the missing seam was invocation reachability.
+
+The bounded repair changes only `app/reusable_task_scheduler.py`: after resolving the existing resident runtime root and local repository roots, Healer first checks the canonical source-prep receipt. If it is absent or inadmissible, Healer invokes the existing `StegVerse-Labs/.github/scripts/refresh_and_execute_resident_task.py` bridge with exact task `SV-DN1-PRODUCTION-SOURCE-PREP-001` and COSV `50000000102000`, forwarding only the four already-local non-secret source-root locators. It then re-reads the canonical v2 receipt and augments governance roots only if that receipt verifies.
+
+No new scheduler, dispatcher, WorkerCoordinator, runtime, source installer/transport, credential route, authority plane, custody store, GitHub runtime authority, or device dependency is introduced. If the resident runtime root, targeted bridge, local component roots, fresh claim/fence, or worker execution is unavailable, the same path records a bounded boundary instead of fabricating completion.
+
+Site remains a public-facing mirror/projection surface; Site-hosted StegOS projection checks are not authoritative StegOS runtime truth and are not used as source-prep or native-email runtime completion evidence.
