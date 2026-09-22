@@ -342,3 +342,25 @@ The existing `RT-CANONICAL-WORK-PORTABLE-DISPATCH-001` identity is now bound int
 The row is enabled for every UTC hour with the existing 15-minute/4-attempt retry policy. Its child parameter set is deliberately limited to `only_consumer=canonical_work_coordination` and `goal_task_id=HYGIENE-CAUSAL-ROOTS-001`; the neutral scheduler injects `source_root` and `runtime_root`. Existing `RT-SOVEREIGN-SOURCE-REFRESH-001` remains the only allowed resident-root bootstrap mechanism when required.
 
 This changes no authority. Healer remains carrier-only; WorkerCoordinator remains claim/fence authority; Interlock/InTr remains transition authority; TV/TVC remains credential authority; GitHub runtime authority remains NONE. Authentic completion still requires a real resident Healer cycle whose reusable child reaches a retained Task Registry `CONTINUE` disposition before any claim/fence or InTr admission is credited.
+
+
+## 2026-09-21 MIR TVC provider roundtrip reusable carrier binding
+
+The existing neutral reusable-task scheduler now carries `MIR-TVC-PROVIDER-ROUNDTRIP-001` / COSV `50000000100000` through the already-promoted `RT-TVC-RUNTIME-BOUNDARY-OBSERVATION-001` identity.
+
+The prior defect was schedule addressability only: the MIR goal, standing resident request, WorkerCoordinator worker, generic `RTC-INTERLOCK-INTR-TRANSPORT-008` path, explicit Interlock admission boundary, and Master Records continuation all existed in `StegVerse-Labs/.github`, but Healer had no schedule row capable of selecting that reusable trajectory when no process was already resident.
+
+The added row reuses the existing 24-hour / 15-minute / four-attempt neutral scheduler policy and binds only:
+
+```text
+tracking_task_id: MIR-TVC-PROVIDER-ROUNDTRIP-001
+cosv_task_vector: 50000000100000
+reusable_task_id: RT-TVC-RUNTIME-BOUNDARY-OBSERVATION-001
+repository: StegVerse-Labs/.github
+provider_operation_receipt_ref: receipts/mir-tvc-provider-roundtrip/MIR-RUN2-EVENT-001.latest.json
+expected_ready_state: READY_PRIMARY_RUNTIME_PROVIDER_OPERATION_BOUND
+```
+
+The row explicitly requires automatic advancement, forbids network source fetch, does not require Remote Desktop, does not require a persistent runner, does not create a second scheduler, and does not require a second user-operated device.
+
+This binding grants no claim/fence, credential, provider, transition, admission, custody, or runtime authority. WorkerCoordinator remains claim/fence authority; TV/TVC remains provider/credential authority; Interlock/InTr remains transition/admission authority; Master Records remains custody/reconstruction authority. A reusable scheduler attempt may advance the existing standing request only to its next authentic governed boundary. Source/CI validation does not satisfy `AUTHENTIC_TVC_MIR_PROVIDER_SESSION_OBSERVED`.

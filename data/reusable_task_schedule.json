@@ -565,6 +565,62 @@
         "goal_task_id": "KV-CONNECTION-REVALIDATION-WORKER-001"
       },
       "status": "kv-revalidation-canonical-work-existing-neutral-reusable-task-scheduler-carrier-no-second-scheduler"
+    },
+    {
+      "reusable_task_id": "RT-TVC-RUNTIME-BOUNDARY-OBSERVATION-001",
+      "tracking_task_id": "MIR-TVC-PROVIDER-ROUNDTRIP-001",
+      "cosv_task_vector": "50000000100000",
+      "repository": "StegVerse-Labs/.github",
+      "enabled": true,
+      "invocation_key": "MIR-TVC-PROVIDER-ROUNDTRIP-001",
+      "aliases": [
+        "mir-tvc-provider-roundtrip",
+        "mir-provider-session",
+        "tvc-mir-runtime-observation"
+      ],
+      "run_hours_utc": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "retry_interval_minutes": 15,
+      "max_attempts_per_slot": 4,
+      "parameters": {
+        "purpose": "invoke the already-registered MIR TVC provider roundtrip through the existing neutral reusable-task scheduler and sovereign resident carrier",
+        "provider_operation_receipt_ref": "receipts/mir-tvc-provider-roundtrip/MIR-RUN2-EVENT-001.latest.json",
+        "expected_ready_state": "READY_PRIMARY_RUNTIME_PROVIDER_OPERATION_BOUND",
+        "primary_evidence_source": "QUALIFYING_REAL_PROVIDER_OPERATION_ROUNDTRIP_RECEIPT_CHAIN",
+        "diagnostic_fallback": "StegVerse-Labs/TVC:scripts/observe_tvc_runtime_boundary.py",
+        "require_vault_backed_provider_binding": true,
+        "automatic_advancement_required": true,
+        "network_source_fetch_allowed": false,
+        "remote_desktop_required": false,
+        "persistent_runner_required": false,
+        "second_scheduler_required": false,
+        "second_user_operated_device_required": false
+      },
+      "status": "mir-tvc-provider-roundtrip-existing-neutral-reusable-task-scheduler-carrier-no-second-scheduler"
     }
   ]
 }
