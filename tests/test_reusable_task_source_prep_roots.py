@@ -90,3 +90,66 @@ def test_absent_source_prep_receipt_does_not_fabricate_roots():
             roots, state = subject._verified_governance_component_roots()
         assert roots == {}
         assert state == "SV_DN1_SOURCE_PREP_RECEIPT_NOT_PRESENT"
+
+
+def test_existing_source_prep_bridge_uses_canonical_targeted_resident_path_only():
+    with tempfile.TemporaryDirectory() as td:
+        base_dir = Path(td)
+        github_root = base_dir / ".github"
+        bridge = github_root / subject.SOURCE_PREP_BRIDGE_REL
+        bridge.parent.mkdir(parents=True, exist_ok=True)
+        bridge.write_text("# bridge fixture\n", encoding="utf-8")
+        runtime_root = base_dir / "runtime"
+        runtime_root.mkdir()
+
+        roots = {"StegVerse-Labs/.github": github_root}
+        for component_id, (repository, marker) in subject.SOURCE_PREP_COMPONENTS.items():
+            roots[repository] = materialize_component(base_dir, component_id, marker)
+
+        observed = {}
+
+        def fake_run(command, cwd, env, timeout):
+            observed["command"] = command
+            observed["cwd"] = cwd
+            observed["env"] = env
+            observed["timeout"] = timeout
+            return {"returncode": 0, "stdout": "{}", "stderr": ""}
+
+        verified = {repository: roots[repository] for repository, _marker in subject.SOURCE_PREP_COMPONENTS.values()}
+        with mock.patch.object(subject.base, "_run", side_effect=fake_run), mock.patch.object(
+            subject, "_verified_governance_component_roots", return_value=(verified, "SV_DN1_SOURCE_PREP_RECEIPT_VERIFIED")
+        ):
+            result = subject._invoke_existing_source_prep_bridge(
+                roots=roots,
+                runtime_root=runtime_root,
+                runtime_root_source="TEST_RUNTIME",
+            )
+
+        assert result["state"] == "SOURCE_PREP_RECEIPT_VERIFIED"
+        assert observed["command"] == [
+            sys.executable,
+            str(bridge),
+            "--source-root", str(github_root),
+            "--runtime-root", str(runtime_root),
+            "--task-id", subject.SOURCE_PREP_TASK_ID,
+            "--cosv-task-vector", subject.SOURCE_PREP_COSV,
+        ]
+        assert observed["cwd"] == github_root
+        assert observed["env"]["STEGVERSE_SDK_SOURCE_ROOT"] == str(roots["StegVerse-org/StegVerse-SDK"])
+        assert observed["env"]["STEGVERSE_STEGCORE_SOURCE_ROOT"] == str(roots["StegVerse-Labs/StegCore"])
+        assert observed["env"]["STEGVERSE_CORE_LITE_SOURCE_ROOT"] == str(roots["Data-Continuation/core-lite"])
+        assert observed["env"]["STEGVERSE_MASTER_RECORDS_SOURCE_ROOT"] == str(roots["master-records/orchestration"])
+        assert observed["env"][subject.RUNTIME_ROOT_ENV] == str(runtime_root)
+        assert result["new_scheduler_created"] is False
+        assert result["new_dispatcher_created"] is False
+        assert result["new_workercoordinator_created"] is False
+
+
+def test_existing_source_prep_bridge_fails_closed_when_runtime_root_is_unavailable():
+    result = subject._invoke_existing_source_prep_bridge(
+        roots={"StegVerse-Labs/.github": ROOT},
+        runtime_root=None,
+        runtime_root_source="NOT_OBSERVED",
+    )
+    assert result["state"] == "BOUNDARY_RECORDED"
+    assert result["boundary"] == "RESIDENT_RUNTIME_ROOT_NOT_MATERIALIZED"
