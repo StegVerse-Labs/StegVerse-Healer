@@ -1,0 +1,47 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+RT_ID = "RT-CANONICAL-WORK-PORTABLE-DISPATCH-001"
+GOAL = "ERL-HOUSEHOLD-ECONOMIC-CONDITIONS-SITE-001"
+COSV = "10100000100000"
+
+
+class ErlHouseholdCanonicalWorkScheduleTests(unittest.TestCase):
+    def test_exact_task_pointer_and_minimal_existing_bridge_parameters(self) -> None:
+        schedule = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
+        rows = [
+            row for row in schedule["tasks"]
+            if row.get("reusable_task_id") == RT_ID and row.get("tracking_task_id") == GOAL
+        ]
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row["cosv_task_vector"], COSV)
+        self.assertEqual(row["repository"], "StegVerse-Labs/.github")
+        self.assertEqual(row["invocation_key"], GOAL)
+        self.assertIs(row["enabled"], True)
+        self.assertEqual(row["run_hours_utc"], list(range(24)))
+        self.assertEqual(row["retry_interval_minutes"], 15)
+        self.assertEqual(row["max_attempts_per_slot"], 4)
+        self.assertEqual(
+            row["parameters"],
+            {"only_consumer": "canonical_work_coordination", "goal_task_id": GOAL},
+        )
+        self.assertIn("no-second-scheduler", row["status"])
+
+    def test_binding_reuses_existing_neutral_scheduler_and_has_no_device_parameter(self) -> None:
+        carrier = (ROOT / "app" / "reusable_task_scheduler.py").read_text(encoding="utf-8")
+        self.assertIn('NEUTRAL_SCHEDULER_ID = "RT-REUSABLE-TASK-SCHEDULER-001"', carrier)
+        self.assertIn('NEUTRAL_TRIGGER_REL = Path("scripts/trigger_reusable_task.py")', carrier)
+        self.assertIn('SOURCE_REFRESH_TASK_ID = "RT-SOVEREIGN-SOURCE-REFRESH-001"', carrier)
+        schedule = json.loads((ROOT / "data" / "reusable_task_schedule.json").read_text(encoding="utf-8"))
+        row = next(x for x in schedule["tasks"] if x.get("tracking_task_id") == GOAL and x.get("reusable_task_id") == RT_ID)
+        forbidden = {"device", "device_id", "remote_desktop", "connected_device", "credential", "api_key", "token"}
+        self.assertTrue(forbidden.isdisjoint(row["parameters"].keys()))
+
+
+if __name__ == "__main__":
+    unittest.main()
