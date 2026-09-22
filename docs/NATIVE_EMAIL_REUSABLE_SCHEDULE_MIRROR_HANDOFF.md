@@ -74,3 +74,21 @@ The bounded repair changes only `app/reusable_task_scheduler.py`: after resolvin
 No new scheduler, dispatcher, WorkerCoordinator, runtime, source installer/transport, credential route, authority plane, custody store, GitHub runtime authority, or device dependency is introduced. If the resident runtime root, targeted bridge, local component roots, fresh claim/fence, or worker execution is unavailable, the same path records a bounded boundary instead of fabricating completion.
 
 Site remains a public-facing mirror/projection surface; Site-hosted StegOS projection checks are not authoritative StegOS runtime truth and are not used as source-prep or native-email runtime completion evidence.
+
+## Claim/fence-bound source-prep receipt readback — 2026-09-21
+
+Post-merge tracing after the provenance-parent repair found the next deterministic existing-path defect at Healer receipt readback. `_verified_governance_component_roots()` verified schema/state/transition, component roots, identities, migration policy, and no-network/no-credential/no-writeback predicates, but it did not require the retained v2 receipt to carry a canonical WorkerCoordinator claim/fence. A stale, manually formed, or otherwise unfenced receipt with the same data shape could therefore have augmented the native-email governance roots without satisfying the native-email predicate's fresh claim/fence requirement.
+
+The bounded repair now requires the canonical v2 receipt to prove:
+
+```text
+task_id = SV-DN1-PRODUCTION-SOURCE-PREP-001
+worker_id = sv-dn1-production-source-prep-worker
+source_identity_scheme = sha256-content-manifest
+current_source_identity_verified = true
+current_source_identity_scheme = sha256-content-manifest
+claim_id = SHWP-SV-DN1-PRODUCTION-SOURCE-PREP-001-G<fencing_token>
+fencing_token > 22
+```
+
+The existing schema/state/transition, exact four-component set, SHA-256 identities, root materialization, migration-anchor, no-network, no-GitHub-platform, no-credential, no-GitHub-token, and no-writeback checks remain unchanged. This is readback validation only; it does not mint a claim/fence, execute source prep, create authority, or promote runtime completion.

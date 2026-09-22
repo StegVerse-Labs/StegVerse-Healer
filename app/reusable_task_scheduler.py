@@ -41,7 +41,9 @@ SOURCE_PREP_SCHEMA = "stegverse.sv-dn1.production-source-prep-receipt/v2"
 SOURCE_PREP_RECEIPT_ENV = "STEGVERSE_SV_DN1_SOURCE_PREP_RECEIPT"
 SOURCE_PREP_DEFAULT = Path.home() / ".stegverse" / "state" / "sv-dn1-production-source-prep" / "receipts" / "latest.json"
 SOURCE_PREP_TASK_ID = "SV-DN1-PRODUCTION-SOURCE-PREP-001"
+SOURCE_PREP_WORKER_ID = "sv-dn1-production-source-prep-worker"
 SOURCE_PREP_COSV = "50000000102000"
+SOURCE_PREP_MIN_FENCE_EXCLUSIVE = 22
 SOURCE_PREP_BRIDGE_REL = Path("scripts/refresh_and_execute_resident_task.py")
 SOURCE_PREP_COMPONENTS = {
     "stegverse.sdk": ("StegVerse-org/StegVerse-SDK", Path("stegverse/sovereign_validation_runtime.py")),
@@ -237,7 +239,12 @@ def _verified_governance_component_roots() -> tuple[dict[str, Path], str]:
         "schema": SOURCE_PREP_SCHEMA,
         "state": "COMPLETE",
         "transition_id": "SV_DN1_PRODUCTION_SOURCE_PREPARATION_COMPLETE",
+        "task_id": SOURCE_PREP_TASK_ID,
+        "worker_id": SOURCE_PREP_WORKER_ID,
+        "source_identity_scheme": "sha256-content-manifest",
         "migration_anchors_verified": True,
+        "current_source_identity_verified": True,
+        "current_source_identity_scheme": "sha256-content-manifest",
         "network_source_fetch_performed": False,
         "github_platform_required": False,
         "credential_used": False,
@@ -246,6 +253,14 @@ def _verified_governance_component_roots() -> tuple[dict[str, Path], str]:
     }
     if any(value.get(key) != expected for key, expected in required.items()):
         return {}, "SV_DN1_SOURCE_PREP_RECEIPT_NOT_ADMISSIBLE"
+    claim_id = value.get("claim_id")
+    fencing_token = value.get("fencing_token")
+    if not isinstance(claim_id, str) or not claim_id.strip():
+        return {}, "SV_DN1_SOURCE_PREP_CLAIM_ID_MISSING"
+    if not isinstance(fencing_token, int) or fencing_token <= SOURCE_PREP_MIN_FENCE_EXCLUSIVE:
+        return {}, "SV_DN1_SOURCE_PREP_FENCING_TOKEN_INVALID"
+    if claim_id != f"SHWP-{SOURCE_PREP_TASK_ID}-G{fencing_token}":
+        return {}, "SV_DN1_SOURCE_PREP_CLAIM_FENCE_BINDING_INVALID"
     roots = value.get("source_roots")
     identities = value.get("source_identities")
     if not isinstance(roots, dict) or not isinstance(identities, dict):
