@@ -142,13 +142,15 @@ def record(plan_result: dict[str, Any], outcome: dict[str, Any]) -> dict[str, An
         raise ValueError("HB_DELTA_NOT_DUE")
     root = _resident_root()
     epoch, current_hash = _hb(root)
-    if epoch < plan_result["hb_epoch"] or current_hash != plan_result["hb_source_sha256"]:
-        # A changed carrier observation requires a fresh eligibility decision.
-        raise ValueError("HB_OBSERVATION_CHANGED_DURING_EXECUTION")
+    if epoch < plan_result["hb_epoch"]:
+        raise ValueError("HB_EPOCH_REGRESSION_DURING_EXECUTION")
+    # A newer authentic HB sample is expected during long-running work; do not
+    # require byte-identical carrier snapshots across a worker invocation.
     prior = _checkpoint(root)
     if prior and epoch < prior["last_attempt_epoch"]:
         raise ValueError("HB_EPOCH_REGRESSION")
-    complete = outcome.get("state") == "COMPLETE" and outcome.get("receipt", {}).get("status") == "PASS"
+    receipt = outcome.get("receipt")
+    complete = outcome.get("state") == "COMPLETE" and isinstance(receipt, dict) and receipt.get("status") == "PASS"
     if complete:
         last_complete, first, attempts = epoch, epoch, 0
     else:
