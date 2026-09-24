@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import tempfile
@@ -38,12 +39,24 @@ class TestST018ResidentHBDelta(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         (self.root / "control").mkdir()
+        (self.root / hb.LEGACY_SOURCE).write_text(
+            json.dumps({"schema": "stegverse.org-heartbeat-state/v1", "epoch": 29}), encoding="utf-8"
+        )
+        self.legacy_digest = hashlib.sha256((self.root / hb.LEGACY_SOURCE).read_bytes()).hexdigest()
+        (self.root / hb.CUTOVER_RECEIPT).parent.mkdir(parents=True)
+        (self.root / hb.CUTOVER_RECEIPT).write_text(json.dumps({
+            "schema": "stegverse.heartbeat-schema-cutover-receipt/v1",
+            "state": "CLOSED_MIGRATED", "legacy_state_sha256": self.legacy_digest,
+            "new_carrier_schema": hb.HB_SCHEMA, "first_new_epoch": 30,
+        }), encoding="utf-8")
         self.env = patch.dict(os.environ, {"STEGVERSE_HEARTBEAT_ROOT": str(self.root)}, clear=True)
         self.env.start()
         self.addCleanup(self.env.stop)
 
     def hb(self, epoch: int):
-        (self.root / hb.HB_SOURCE).write_text(json.dumps(carrier(epoch)), encoding="utf-8")
+        value = carrier(epoch)
+        value["legacy_cutover"]["legacy_state_sha256"] = self.legacy_digest
+        (self.root / hb.HB_SOURCE).write_text(json.dumps(value), encoding="utf-8")
 
     def complete(self):
         return {"state": "COMPLETE", "receipt": {"status": "PASS"}, "outcome": "SOVEREIGN_LOCAL_RSTD_ST018_TASK_MANAGER"}
@@ -55,6 +68,7 @@ class TestST018ResidentHBDelta(unittest.TestCase):
         self.assertEqual(hb.plan()["state"], "BLOCKED")
         self.hb(30)
         malformed = carrier(30)
+        malformed["legacy_cutover"]["legacy_state_sha256"] = self.legacy_digest
         malformed["authority_effect"] = "HB_GRANTS_AUTHORITY"
         (self.root / hb.HB_SOURCE).write_text(json.dumps(malformed), encoding="utf-8")
         self.assertEqual(hb.plan()["state"], "BLOCKED")
@@ -94,6 +108,11 @@ class TestST018ResidentHBDelta(unittest.TestCase):
         state["last_complete_epoch"] = 1
         path.write_text(json.dumps(state), encoding="utf-8")
         self.assertEqual(hb.plan()["reason"], "HB_DELTA_CHECKPOINT_INVALID")
+
+    def test_mutated_legacy_cutover_source_fails_closed(self):
+        self.hb(500)
+        (self.root / hb.LEGACY_SOURCE).write_text("{}", encoding="utf-8")
+        self.assertEqual(hb.plan()["state"], "BLOCKED")
 
     def test_epoch_regression_fails_closed(self):
         self.hb(500)
