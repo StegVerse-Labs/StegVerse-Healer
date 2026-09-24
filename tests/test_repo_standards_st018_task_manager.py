@@ -19,7 +19,9 @@ class TestRepoStandardsST018TaskManager(unittest.TestCase):
             and target.get("workflow") == "st018-local-task-manager"
         ]
         self.assertEqual(len(matches), 1)
-        self.assertEqual(matches[0]["run_hours_utc"], [0, 6, 12, 18])
+        self.assertNotIn("run_hours_utc", matches[0])
+        self.assertEqual(matches[0]["schedule_basis"], "resident_hb_delta")
+        self.assertEqual(matches[0]["period_hb_refs"], 2_160_000)
         self.assertIn("st018-task-manager", matches[0]["aliases"])
 
     def test_missing_task_manager_fails_closed(self):
