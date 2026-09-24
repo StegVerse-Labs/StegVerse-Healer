@@ -329,12 +329,41 @@ def build_and_execute(config_path: Path) -> dict[str, Any]:
     if not isinstance(targets, list): raise ValueError("targets must be a list")
     roots = _repo_roots(); roots_json = json.dumps({repo:str(path) for repo,path in sorted(roots.items())}, sort_keys=True)
     scope = (os.getenv("RUN_SCOPE") or "all").strip().lower(); mode = (os.getenv("DISPATCH_MODE") or "schedule").strip().lower(); now = _now(); selected = []
+    outcomes = []
+    hb_plans = {}
     for target in targets:
         if not isinstance(target, dict) or not target.get("enabled", True): continue
         short = str(target.get("repo", "")).split("/")[-1].lower(); aliases = {str(value).lower() for value in target.get("aliases", [])}
         if scope != "all" and scope != short and scope not in aliases: continue
-        if _due(target, now, mode): selected.append(target)
-    outcomes = [_execute_target(target, roots, roots_json) for target in selected]
+        if target.get("schedule_basis") == "resident_hb_delta" and mode == "schedule":
+            from app import hb_delta_schedule
+            hb_plan = hb_delta_schedule.plan()
+            if hb_plan["state"] == "BLOCKED":
+                outcomes.append({"repo": target.get("repo"), "workflow": target.get("workflow"),
+                                 "state": "BLOCKED", "outcome": "ST018_HB_DELTA_UNAVAILABLE",
+                                 "scheduling": hb_plan})
+                continue
+            if hb_plan["state"] == "NOT_DUE":
+                continue
+            hb_plans[id(target)] = hb_plan
+            selected.append(target)
+        elif _due(target, now, mode):
+            selected.append(target)
+    for target in selected:
+        outcome = _execute_target(target, roots, roots_json)
+        hb_plan = hb_plans.get(id(target))
+        if hb_plan is not None:
+            from app import hb_delta_schedule
+            try:
+                outcome["scheduling"] = hb_delta_schedule.record(hb_plan, outcome)
+                outcome["hb_delta_eligibility"] = hb_plan
+            except (OSError, ValueError, TypeError) as exc:
+                outcome["execution_state_before_checkpoint"] = outcome["state"]
+                outcome["state"] = "BLOCKED"
+                outcome["outcome"] = "ST018_HB_DELTA_CHECKPOINT_FAILED"
+                outcome["checkpoint_error"] = str(exc)
+                outcome["hb_delta_eligibility"] = hb_plan
+        outcomes.append(outcome)
     terminal = "COMPLETE"
     if any(item["state"] == "FAILED" for item in outcomes): terminal = "FAILED"
     elif any(item["state"] == "BLOCKED" for item in outcomes): terminal = "BLOCKED"
