@@ -41,14 +41,40 @@ def _read(path: Path) -> dict[str, Any]:
     return result
 
 
+def _canonical_candidates() -> list[Path]:
+    """Reuse the existing Healer resident-root locations, not a new runtime."""
+    home = Path.home()
+    return [
+        home / ".local" / "state" / "stegverse" / "heartbeat-runtime",
+        home / "Library" / "Application Support" / "stegverse" / "heartbeat-runtime",
+        home / ".stegverse" / "heartbeat-runtime",
+        Path("/var/lib/stegverse/heartbeat-runtime"),
+        Path("/srv/stegverse/heartbeat-runtime"),
+    ]
+
+
 def _resident_root() -> Path:
     raw = os.environ.get("STEGVERSE_HEARTBEAT_ROOT", "").strip()
-    if not raw or not Path(raw).is_absolute():
-        raise ValueError("RESIDENT_HEARTBEAT_ROOT_REQUIRED")
-    root = Path(raw).resolve()
-    if not root.is_dir():
-        raise ValueError("RESIDENT_HEARTBEAT_ROOT_NOT_MATERIALIZED")
-    return root
+    if raw:
+        if not Path(raw).is_absolute():
+            raise ValueError("RESIDENT_HEARTBEAT_ROOT_NOT_ABSOLUTE")
+        root = Path(raw).resolve()
+        if not root.is_dir():
+            raise ValueError("RESIDENT_HEARTBEAT_ROOT_NOT_MATERIALIZED")
+        return root
+    # A resident worker can lack an explicit locator. Use the same established
+    # local paths as the neutral reusable-task scheduler, accepting only one
+    # root with the actual independent HB carrier state. Never clone/fetch.
+    candidates = list(dict.fromkeys(
+        str(path.resolve()) for path in _canonical_candidates()
+        if path.is_dir() and (path / HB_SOURCE).is_file()
+    ))
+    if len(candidates) != 1:
+        raise ValueError(
+            "RESIDENT_HEARTBEAT_ROOT_AMBIGUOUS" if candidates
+            else "RESIDENT_HEARTBEAT_ROOT_NOT_MATERIALIZED"
+        )
+    return Path(candidates[0])
 
 
 def _hb(root: Path) -> tuple[int, str]:
