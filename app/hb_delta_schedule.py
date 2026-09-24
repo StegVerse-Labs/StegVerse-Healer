@@ -108,6 +108,7 @@ def plan() -> dict[str, Any]:
         epoch, hb_hash = _hb(root)
         prior = _checkpoint(root)
         base = {"hb_epoch": epoch, "hb_source_sha256": hb_hash,
+                "prior_checkpoint_sha256": _digest(prior) if prior is not None else None,
                 "hb_source_ref": str(HB_SOURCE), "checkpoint_ref": str(CHECKPOINT),
                 "authority_effect": "NONE_SCHEDULING_ONLY"}
         if prior is None:
@@ -147,6 +148,8 @@ def record(plan_result: dict[str, Any], outcome: dict[str, Any]) -> dict[str, An
     # A newer authentic HB sample is expected during long-running work; do not
     # require byte-identical carrier snapshots across a worker invocation.
     prior = _checkpoint(root)
+    if (_digest(prior) if prior is not None else None) != plan_result.get("prior_checkpoint_sha256"):
+        raise ValueError("HB_DELTA_CHECKPOINT_CHANGED_AFTER_ELIGIBILITY")
     if prior and epoch < prior["last_attempt_epoch"]:
         raise ValueError("HB_EPOCH_REGRESSION")
     receipt = outcome.get("receipt")
