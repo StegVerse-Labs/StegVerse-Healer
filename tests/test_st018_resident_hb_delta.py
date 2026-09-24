@@ -129,6 +129,25 @@ class TestST018ResidentHBDelta(unittest.TestCase):
         state = json.loads((self.root / hb.CHECKPOINT).read_text(encoding="utf-8"))
         self.assertEqual(state["last_complete_epoch"], 710)
 
+    def test_unique_canonical_local_root_is_discovered_without_override(self):
+        self.hb(750)
+        os.environ.pop("STEGVERSE_HEARTBEAT_ROOT", None)
+        with patch.object(hb, "_canonical_candidates", return_value=[self.root]):
+            self.assertEqual(hb.plan()["state"], "DUE")
+        second = self.root / "second"
+        (second / "control").mkdir(parents=True)
+        (second / hb.HB_SOURCE).write_text(json.dumps(carrier(750)), encoding="utf-8")
+        with patch.object(hb, "_canonical_candidates", return_value=[self.root, second]):
+            self.assertEqual(hb.plan()["reason"], "RESIDENT_HEARTBEAT_ROOT_AMBIGUOUS")
+
+    def test_duplicate_stale_plan_cannot_overwrite_completion(self):
+        self.hb(790)
+        first = hb.plan()
+        duplicate = hb.plan()
+        hb.record(first, self.complete())
+        with self.assertRaisesRegex(ValueError, "HB_DELTA_CHECKPOINT_CHANGED"):
+            hb.record(duplicate, self.complete())
+
     def test_non_st018_targets_preserve_legacy_schedule(self):
         target = {"repo": "StegVerse-Labs/TV", "run_hours_utc": [6]}
         from datetime import datetime, timezone
