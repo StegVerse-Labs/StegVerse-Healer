@@ -121,10 +121,10 @@ class TestST018ResidentHBDelta(unittest.TestCase):
         repo.mkdir()
         (repo / "tools").mkdir()
         (repo / "orchestration").mkdir()
-        (repo / "tools/run_st018_task_manager.py").write_text("pass\\n", encoding="utf-8")
-        (repo / "orchestration/st018-task-registry.json").write_text('{"tasks":[]}\\n', encoding="utf-8")
+        (repo / "tools/run_st018_task_manager.py").write_text("pass", encoding="utf-8")
+        (repo / "orchestration/st018-task-registry.json").write_text('{"tasks":[]}', encoding="utf-8")
         (repo / "reports").mkdir()
-        (repo / "reports/st018-task-execution.report.json").write_text('{"status":"PASS"}\\n', encoding="utf-8")
+        (repo / "reports/st018-task-execution.report.json").write_text('{"status":"PASS"}', encoding="utf-8")
         config = self.root / "targets.json"
         config.write_text(json.dumps({"targets": [{
             "repo": "StegVerse-Labs/repo-standards",
