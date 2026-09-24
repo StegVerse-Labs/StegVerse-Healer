@@ -17,6 +17,8 @@ SCHEMA = "stegverse.healer.st018-hb-delta-checkpoint/v1"
 HB_SCHEMA = "stegverse.heartbeat-carrier-runtime-state/v1"
 HB_FREQUENCY = "INDEPENDENT_OSCILLATOR_10MS_PHASE_TRAVEL"
 HB_SOURCE = Path("control/heartbeat-carrier-runtime-state.json")
+LEGACY_SOURCE = Path("control/heartbeat-state.json")
+CUTOVER_RECEIPT = Path("receipts/heartbeat-schema-cutover/HB29.json")
 CHECKPOINT = Path("receipts/healer-sovereign-scheduler/st018-hb-delta-checkpoint.json")
 PERIOD_REFS = 2_160_000  # six hours of canonical 100 Hz reference progression
 RETRY_REFS = 90_000      # 15 minutes of canonical reference progression
@@ -54,6 +56,13 @@ def _hb(root: Path) -> tuple[int, str]:
     if not path.is_file():
         raise ValueError("AUTHENTIC_HB_CARRIER_STATE_MISSING")
     data = _read(path)
+    legacy_path, receipt_path = root / LEGACY_SOURCE, root / CUTOVER_RECEIPT
+    if not legacy_path.is_file() or not receipt_path.is_file():
+        raise ValueError("AUTHENTIC_HB_CUTOVER_PROVENANCE_MISSING")
+    legacy_raw = legacy_path.read_bytes()
+    legacy = _read(legacy_path)
+    cutover_receipt = _read(receipt_path)
+    legacy_digest = hashlib.sha256(legacy_raw).hexdigest()
     epoch, generation = data.get("epoch"), data.get("generation")
     osc = data.get("oscillator")
     cutover = data.get("legacy_cutover")
@@ -68,6 +77,14 @@ def _hb(root: Path) -> tuple[int, str]:
         or data.get("reference_frame") != f"heartbeat_epoch:{epoch}"
         or not isinstance(cutover, dict) or cutover.get("closed") is not True
         or cutover.get("legacy_epoch") != 29
+        or cutover.get("legacy_state_sha256") != legacy_digest
+        or legacy.get("schema") != "stegverse.org-heartbeat-state/v1"
+        or legacy.get("epoch") != 29
+        or cutover_receipt.get("schema") != "stegverse.heartbeat-schema-cutover-receipt/v1"
+        or cutover_receipt.get("state") != "CLOSED_MIGRATED"
+        or cutover_receipt.get("legacy_state_sha256") != legacy_digest
+        or cutover_receipt.get("new_carrier_schema") != HB_SCHEMA
+        or cutover_receipt.get("first_new_epoch") != 30
         or not isinstance(osc, dict) or osc.get("period_ns") != 10_000_000
         or osc.get("mechanism") != "INDEPENDENT_PHASE_OSCILLATOR"
         or osc.get("progression_dependency") != "OSCILLATOR_ONLY"
@@ -93,6 +110,7 @@ def _checkpoint(root: Path) -> dict[str, Any] | None:
         or not _integer(data.get("first_attempt_epoch"))
         or not _integer(data.get("attempts"))
         or data["attempts"] > MAX_ATTEMPTS
+        or data["first_attempt_epoch"] > data["last_attempt_epoch"]
         or not (data.get("last_complete_epoch") is None or _integer(data["last_complete_epoch"]))
         or data.get("authority_effect") != "NONE_SCHEDULING_ONLY"
         or digest != _digest(data)
