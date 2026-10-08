@@ -34,4 +34,4 @@ Healer remains carrier/consumer only. `RT-REUSABLE-TASK-SCHEDULER-001` retains n
 
 ## Completion evidence
 
-Source merge proves only that the existing carrier can select the reusable task. Goal completion still requires authentic resident receipts proving ephemeral StegOS node materialization/verification, WorkerCoordinator claim/fence, Canonical Work/InTr admission, exact AI proposal consumption, ALLOW/DENY/BYPASS target-state outcomes, and Master Records custody/reconstruction.
+Source merge proves only that the existing carrier can select the reusable task. Goal completion still requires authentic resident receipts proving ephemeral StegOS node materialization/verification, WorkerCoordinator claim/fence, Canonical Work/InTr admission, exact AI proposal consumption, ALLOW/DENY/BYPASS target-state outcomes, and Master Records organization records/reconstruction.

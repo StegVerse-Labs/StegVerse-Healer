@@ -348,7 +348,7 @@ This changes no authority. Healer remains carrier-only; WorkerCoordinator remain
 
 The existing neutral reusable-task scheduler now carries `MIR-TVC-PROVIDER-ROUNDTRIP-001` / COSV `50000000100000` through the already-promoted `RT-TVC-RUNTIME-BOUNDARY-OBSERVATION-001` identity.
 
-The prior defect was schedule addressability only: the MIR goal, standing resident request, WorkerCoordinator worker, generic `RTC-INTERLOCK-INTR-TRANSPORT-008` path, explicit Interlock admission boundary, and Master Records continuation all existed in `StegVerse-Labs/.github`, but Healer had no schedule row capable of selecting that reusable trajectory when no process was already resident.
+The prior defect was schedule addressability only: the MIR goal, the Master Records continuation, standing resident request, WorkerCoordinator worker, generic `RTC-INTERLOCK-INTR-TRANSPORT-008` path, and explicit Interlock admission boundary all existed in `StegVerse-Labs/.github`, but Healer had no schedule row capable of selecting that reusable trajectory when no process was already resident.
 
 The added row reuses the existing 24-hour / 15-minute / four-attempt neutral scheduler policy and binds only:
 

@@ -31,7 +31,7 @@ gateway_experiment_authority: false
 authority_effect: NONE
 ```
 
-This verifies Gateway configuration/readiness only. It does not establish the resident SV002 receiver process, public Internet route, valid external observer round trip, principal experiment execution, or Master Records custody.
+This verifies Gateway configuration/readiness only. It does not establish the resident SV002 receiver process, public Internet route, valid external observer round trip, principal experiment execution, or a Master Records organization record.
 
 ## Existing owners retained
 
@@ -39,7 +39,7 @@ This verifies Gateway configuration/readiness only. It does not establish the re
 - SV002 receiver/runtime task: StegVerse-Labs/.github#462 / SHWP-SV002-PUBLIC-OBSERVATION-RUNTIME-001
 - credential/TLS authority: TV/TVC
 - resident scheduler: SHWP-HEALER-SOVEREIGN-SCHEDULER-001
-- custody/reconstruction: master-records/orchestration
+- organization records/reconstruction: master-records/orchestration
 
 No second Gateway, scheduler, heartbeat, TLS authority, or credential surface may be created.
 
@@ -56,7 +56,7 @@ No second Gateway, scheduler, heartbeat, TLS authority, or credential surface ma
 - public Gateway route/TLS -> StegVerse-org/LLM-adapter + StegVerse-Labs/TVC
 - Site browser observation -> StegVerse-Labs/Site
 - experiment artifacts -> StegVerse-002/micro-node-runtime
-- custody/reconstruction -> master-records/orchestration
+- organization records/reconstruction -> master-records/orchestration
 
 ## Completion
 

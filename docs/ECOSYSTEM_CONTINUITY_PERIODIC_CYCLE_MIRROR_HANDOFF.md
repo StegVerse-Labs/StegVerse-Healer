@@ -31,14 +31,14 @@ existing Healer hourly reusable slot
 -> exact SDK diagnostic result bytes + SHA-256 retained in resident runtime
 -> SDK result translated to ECE observation input
 -> canonical ECE continuity evaluation
--> exact ECE Master Records custody/reconstruction
+-> exact ECE Master Records organization records/reconstruction
 -> Healer intake
 -> Site-safe projection
 -> manifest-bound reusable runner result
 -> runner expiry observation
 -> residual non-executing reusable construct
 -> reusable lifecycle Master Records request
--> destination-owned lifecycle custody + exact request reconstruction
+-> destination-owned lifecycle organization record + exact request reconstruction
 -> entropy-recovery receipt
 -> scheduler slot satisfied by ENTROPY_RECOVERY_RECORDED
 ```
@@ -142,8 +142,8 @@ ENTROPY_RECOVERY_RECORDED
 - SDK diagnostic results cannot supply continuity state.
 - Missing observation stays `NOT_OBSERVED`; unsupported claimed evidence remains subject to SDK `PROBE_REQUIRED` semantics.
 - Exact SDK diagnostic result identity is retained into ECE evidence provenance.
-- Master Records custody/reconstruction must round-trip exact ECE evaluation bytes before downstream intake/projection completes.
-- Reusable lifecycle Master Records custody/reconstruction must round-trip the exact lifecycle request bytes before entropy recovery.
+- Master Records organization records/reconstruction must round-trip exact ECE evaluation bytes before downstream intake/projection completes.
+- Reusable lifecycle Master Records organization records/reconstruction must round-trip the exact lifecycle request bytes before entropy recovery.
 - Healer intake remains non-authorizing and cannot verify recovery.
 - Site projection remains read-only/fail-closed.
 - `recovery_verified` is always false for this cycle; a later independent ECE PASS is required.
@@ -152,7 +152,7 @@ ENTROPY_RECOVERY_RECORDED
 
 ## Current proof boundary
 
-The SDK diagnostic processor, ECE bridge, reusable lifecycle closure, resident Master Records lifecycle round trip, and scheduler terminal-state compatibility are source-level integrations. No authentic post-merge resident invocation is claimed until retained evidence exists for the same invocation across SDK diagnostic output, ECE evaluation, Master Records custody/reconstruction, Healer intake, Site projection, reusable runner evidence, runner expiry, residual recording, lifecycle custody/reconstruction, and entropy recovery.
+The SDK diagnostic processor, ECE bridge, reusable lifecycle closure, scheduler terminal-state compatibility, and the resident Master Records lifecycle round trip are source-level integrations. No authentic post-merge resident invocation is claimed until retained evidence exists for the same invocation across SDK diagnostic output, ECE evaluation, Master Records organization records/reconstruction, Healer intake, Site projection, reusable runner evidence, runner expiry, residual recording, lifecycle organization records/reconstruction, and entropy recovery.
 
 ## Next
 
