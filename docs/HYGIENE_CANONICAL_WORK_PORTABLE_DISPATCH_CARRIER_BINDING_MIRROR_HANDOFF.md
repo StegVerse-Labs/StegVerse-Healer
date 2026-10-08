@@ -53,7 +53,7 @@ The existing `RT-SOVEREIGN-SOURCE-REFRESH-001` schedule row remains enabled, so 
 - WorkerCoordinator = execution claim/fence authority.
 - Interlock/InTr = governed transition/admission authority.
 - TV/TVC = credential authority.
-- Master Records = observed-reality/custody/reconstruction authority.
+- Master Records = organization records/reconstruction.
 - GitHub/CI = source validation/evidence transport only; runtime authority `NONE`.
 - second user-operated device required = `false`.
 

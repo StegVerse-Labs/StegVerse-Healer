@@ -77,4 +77,4 @@ The remediation MUST:
 
 ## Explicit non-authorizations
 
-This evaluation does not make Healer an execution authority, task-creation authority, or prerequisite. StegHealth owns corrective-task creation/reuse; WorkerCoordinator remains assignment authority, Interlock/InTr transition authority, TV/TVC credential authority, and Master Records custody/reconstruction authority. GitHub Actions remain validation/evidence transport only.
+This evaluation does not make Healer an execution authority, task-creation authority, or prerequisite. StegHealth owns corrective-task creation/reuse; WorkerCoordinator remains assignment authority, Interlock/InTr transition authority, TV/TVC credential authority, and Master Records organization records and reconstruction. GitHub Actions remain validation/evidence transport only.

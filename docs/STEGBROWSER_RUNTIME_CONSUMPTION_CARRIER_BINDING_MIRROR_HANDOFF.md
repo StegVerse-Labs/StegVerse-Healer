@@ -60,7 +60,7 @@ Schedules that do not enable `RT-SOVEREIGN-SOURCE-REFRESH-001` retain the origin
 - WorkerCoordinator: claim/fence authority.
 - Interlock/InTr: governed admission/state-transition authority.
 - TV/TVC: credential/provider authority.
-- Master Records: observed-reality/custody/reconstruction authority.
+- Master Records: organization records/reconstruction.
 - HeartBeat: timing/freshness/observation only.
 - GitHub/CI: source validation and evidence transport only; runtime authority `NONE`.
 - no second user-operated device is introduced.

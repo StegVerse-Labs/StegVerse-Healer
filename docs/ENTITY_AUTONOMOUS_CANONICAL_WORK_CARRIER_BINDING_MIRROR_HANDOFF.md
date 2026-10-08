@@ -47,7 +47,7 @@ This source binding grants no execution, transition, claim/fence, credential, cu
 - WorkerCoordinator remains claim/fence authority.
 - Interlock/InTr remains transition authority.
 - TV/TVC remains credential authority.
-- Master Records remains observed-reality/custody/reconstruction authority.
+- Master Records remains limited to organization records and reconstruction.
 - GitHub remains source/evidence transport only.
 - No Remote Desktop or connected-device prerequisite is introduced.
 

@@ -42,7 +42,7 @@ The neutral scheduler injects local source/runtime roots through its existing co
 Healer remains carrier-only.
 WorkerCoordinator remains claim/fence authority.
 Interlock/InTr remains governed transition authority.
-Master Records remains custody/reconstruction authority.
+Master Records remains limited to organization records and reconstruction.
 TV/TVC remains credential authority.
 GitHub/CI/source success proves no resident execution.
 
