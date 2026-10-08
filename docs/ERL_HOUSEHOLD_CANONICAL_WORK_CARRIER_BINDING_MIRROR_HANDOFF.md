@@ -35,7 +35,7 @@ standing Healer carrier
 -> ERL household worker
 -> TV/TVC metadata-only BEA readiness
 -> BEA single-use operation only if authentic decision=READY
--> Master Records custody/reconstruction
+-> Master Records organization records/reconstruction
 ```
 
 Source presence, scheduler selection, GitHub Actions, and the COSV pointer do not prove any runtime transition. The first authentic progression evidence remains the resident child/dispatch chain for this exact Goal. BEA remains UNKNOWN until an authentic resident readiness result is retained. Site public activation remains false.

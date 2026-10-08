@@ -17,7 +17,7 @@ def _persist_cycle(receipt_path: Path, result: dict) -> None:
 def bind_site_materialization(result: dict, roots: dict[str, Path], runtime_root: Path) -> dict:
     """Optionally copy the exact Site-safe projection into an already-bound served Site root.
 
-    Absence of a served-root binding is not an ECE failure: diagnostic/evaluation/custody
+    Absence of a served-root binding is not an ECE failure: diagnostic/evaluation/organization-record
     may complete while public materialization remains unobserved. Once a served root is
     explicitly bound, however, materialization fails closed on any receipt/hash/authority
     error rather than silently presenting stale state.

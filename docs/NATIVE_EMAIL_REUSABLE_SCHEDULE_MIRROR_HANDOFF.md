@@ -63,7 +63,7 @@ This matches the existing SDK authority model: caller manifests keep `external_c
 
 ## Evidence boundary
 
-Source construction, source-root reuse, governance binding, and retry semantics do not prove resident operation. Authentic completion still requires a retained resident reusable-task receipt, the native-email monitor/KV evidence, canonical SDK/StegCore governance and commit-coherence evidence, corresponding TV/TVC Gmail provider evidence, route/transaction/Master Records custody, bounded mailbox progression, and durable downstream reconciliation. No second scheduler, monitor, heartbeat, WorkerCoordinator, provider route, source installer, or user-operated machine is introduced.
+Source construction, source-root reuse, governance binding, and retry semantics do not prove resident operation. Authentic completion still requires a retained resident reusable-task receipt, the native-email monitor/KV evidence, canonical SDK/StegCore governance and commit-coherence evidence, corresponding TV/TVC Gmail provider evidence, route/transaction evidence, the Master Records organization record, bounded mailbox progression, and durable downstream reconciliation. No second scheduler, monitor, heartbeat, WorkerCoordinator, provider route, source installer, or user-operated machine is introduced.
 
 ## Existing source-prep bridge reachability repair — 2026-09-21
 

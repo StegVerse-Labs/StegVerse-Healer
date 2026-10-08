@@ -5,7 +5,7 @@ The cycle is non-authorizing. It converts the canonical ECE registry plus option
 resident observations into a manifested ``ecosystem_diagnostic`` SDK request,
 retains the exact SDK diagnostic-result bytes, translates only those results into
 ECE observation input, executes the canonical ECE evaluator, retains exact ECE
-bytes through Master Records custody/reconstruction, prepares Healer finding
+bytes through Master Records organization records/reconstruction, prepares Healer finding
 intake, and creates a Site-safe projection. Source repositories remain read-only.
 """
 from __future__ import annotations
@@ -167,9 +167,9 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
 
     resident_root = resident_root.expanduser().resolve()
     output_root = resident_root / "receipts" / "ecosystem-continuity"
-    custody_root = resident_root / "master-records" / "ecosystem-continuity"
+    organization_record_root = resident_root / "master-records" / "ecosystem-continuity"
     output_root.mkdir(parents=True, exist_ok=True)
-    custody_root.mkdir(parents=True, exist_ok=True)
+    organization_record_root.mkdir(parents=True, exist_ok=True)
 
     explicit_observations = os.getenv("STEGVERSE_ECE_OBSERVATIONS", "").strip()
     resident_observations = Path(explicit_observations).expanduser().resolve() if explicit_observations else output_root / "observations.latest.json"
@@ -264,21 +264,21 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
         exact_eval.write_bytes(raw)
         latest_eval.write_bytes(raw)
 
-        custody_run = _run([
-            sys.executable, str(mr_ingest), "--evaluation", str(exact_eval), "--custody-root", str(custody_root),
+        organization_record_run = _run([
+            sys.executable, str(mr_ingest), "--evaluation", str(exact_eval), "--custody-root", str(organization_record_root),
         ], mr_root)
-        steps.append(custody_run)
-        if custody_run["returncode"] != 0:
-            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_CUSTODY_FAILED","evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
+        steps.append(organization_record_run)
+        if organization_record_run["returncode"] != 0:
+            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_ORGANIZATION_RECORD_FAILED","evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
         try:
-            custody_result = json.loads(custody_run["stdout_tail"].strip().splitlines()[-1])
+            organization_record_result = json.loads(organization_record_run["stdout_tail"].strip().splitlines()[-1])
         except Exception:
-            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_CUSTODY_RECEIPT_INVALID","evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_ORGANIZATION_RECORD_RECEIPT_INVALID","evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
 
-        custody_ref = Path(str(custody_result.get("custody_ref", "")))
+        organization_record_ref = Path(str(organization_record_result.get("custody_ref", "")))
         reconstructed = temp_root / "reconstructed.json"
         reconstruction_run = _run([
-            sys.executable, str(mr_reconstruct), "--record", str(custody_ref), "--custody-root", str(custody_root), "--output", str(reconstructed),
+            sys.executable, str(mr_reconstruct), "--record", str(organization_record_ref), "--custody-root", str(organization_record_root), "--output", str(reconstructed),
         ], mr_root)
         steps.append(reconstruction_run)
         if reconstruction_run["returncode"] != 0 or not reconstructed.is_file() or reconstructed.read_bytes() != raw:

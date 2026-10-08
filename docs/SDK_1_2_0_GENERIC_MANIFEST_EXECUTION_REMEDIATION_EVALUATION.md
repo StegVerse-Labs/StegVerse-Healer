@@ -34,7 +34,7 @@ The current public `run-manifest` route resolves Test 1 to
 Tests 2 and 3 resolve to
 `stegverse.atomic_task_worker_processor.execute_manifest`, which directly calls the SDK-local atomic task/worker implementation.
 
-Those returned packets do not establish WorkerCoordinator claim/fence, Interlock/InTr state-transition admission, per-transition Master Records closure, deterministic replay, reconstruction PASS, or exact receipt/reconstruction digest equality. Therefore the local semantic PASS markers are not authentic governed completion evidence.
+Those returned packets do not establish WorkerCoordinator claim/fence, Interlock/InTr state-transition admission and closure, deterministic replay, the per-transition Master Records organization record, reconstruction PASS, or exact receipt/reconstruction digest equality. Therefore the local semantic PASS markers are not authentic governed completion evidence.
 
 A second exact defect is also reproducible from the clean version: the README's published Test 1 command uses `inspection/examples/sdk-test1-source.json`, but that file has no `payload.text`; `run-manifest` rejects it with `manifest payload.text must be a string for purpose_bound_worker`. The shared-source fixture succeeds.
 
