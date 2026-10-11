@@ -129,6 +129,17 @@ class LabsEmailObservationIngestTests(unittest.TestCase):
         self.assertEqual(len(self._ledger()["incidents"]), 2)
         self.assertEqual(self._ledger()["incidents"][first["incident_ids"][0]]["occurrence_count"], 1)
 
+    def test_summary_construction_failure_does_not_persist_ledger(self) -> None:
+        self._write_projection(projection([observation("m-summary-failure")]))
+        engine, _ = subject._failure_mailbox_modules()
+        with mock.patch.object(engine, "summary", side_effect=ValueError("summary unavailable")):
+            result = self._ingest()
+        self.assertEqual(result["state"], "BOUNDARY_RECORDED")
+        self.assertEqual(result["boundary"], "LABS_HEALER_OBSERVATIONS_REJECTED")
+        self.assertFalse((self.state_dir / "github-operational-failure-ledger.json").exists())
+        self.assertFalse((self.state_dir / "github-operational-failure-summary.json").exists())
+
+
     def test_new_representative_message_updates_the_same_incident(self) -> None:
         self._write_projection(projection([observation("m1")]))
         first = self._ingest()
