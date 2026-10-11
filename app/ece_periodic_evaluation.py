@@ -92,7 +92,37 @@ def _diagnostic_request(registry: dict[str, Any], observations: dict[str, Any], 
     }
 
 
-def _ece_observations_from_diagnostic(result: dict[str, Any], diagnostic_sha256: str) -> dict[str, Any]:
+ENCLOSED_DIAGNOSTIC_OPERATION = "ecosystem_diagnostic"
+ENCLOSED_DIAGNOSTIC_LANE = "SDK_LOCAL_ENCLOSED_VALIDATION"
+
+
+def _installed_diagnostic_result(document: Any) -> dict[str, Any]:
+    """Return the diagnostic result from the installed SDK CLI output.
+
+    Current SDK CLIs label their diagnostic output as a local, non-authorizing,
+    non-canonical operation and carry the result under ``result``. Older SDKs
+    wrote the result at the top level. Any other enclosure fails closed.
+    """
+    if not isinstance(document, dict):
+        raise ValueError("SDK_DIAGNOSTIC_RESULT_SCHEMA_INVALID")
+    if "local_operation" not in document:
+        return document
+    lane = document.get("sdk_execution_lane")
+    result = document.get("result")
+    if not (
+        document.get("local_operation") == ENCLOSED_DIAGNOSTIC_OPERATION
+        and isinstance(lane, dict)
+        and lane.get("lane") == ENCLOSED_DIAGNOSTIC_LANE
+        and lane.get("authorizing") is False
+        and lane.get("canonical") is False
+        and isinstance(result, dict)
+    ):
+        raise ValueError("SDK_DIAGNOSTIC_RESULT_ENCLOSURE_INVALID")
+    return result
+
+
+def _ece_observations_from_diagnostic(document: Any, diagnostic_sha256: str) -> dict[str, Any]:
+    result = _installed_diagnostic_result(document)
     if result.get("schema") != "stegverse.ecosystem-diagnostic-result.v1":
         raise ValueError("SDK_DIAGNOSTIC_RESULT_SCHEMA_INVALID")
     if result.get("processing_capability") != "ecosystem_diagnostic":
