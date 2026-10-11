@@ -52,6 +52,18 @@ SOURCE_PREP_COMPONENTS = {
     "stegverse.master-records": ("master-records/orchestration", Path("services/manifest_receipt_custody.py")),
 }
 SHA256_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
+# StegVerse-Labs/.github #3039 P3: the outstanding email-discovered failure
+# lineages Labs already correlated against GitHub, projected in the shape
+# failure_mailbox/incident_engine.ingest_observation consumes. Read on the
+# existing hourly RT-NATIVE-EMAIL-ACTION-MONITOR-001 carrier pass; no new
+# scheduler, process or workflow.
+NATIVE_EMAIL_TASK_ID = "RT-NATIVE-EMAIL-ACTION-MONITOR-001"
+LABS_HEALER_OBSERVATIONS_REL = Path("data/native-email-action-monitor/healer-observations.latest.json")
+LABS_HEALER_OBSERVATIONS_SCHEMA = "stegverse.native-email-healer-observations/v1"
+HEALER_OBSERVATION_RECORD_SCHEMA = "stegverse.healer.github-failure-observation/v0.2"
+LABS_OBSERVATION_INGEST_SCHEMA = "stegverse.healer.labs-outstanding-email-observation-ingest/v1"
+FAILURE_MAILBOX_DIR = Path(__file__).resolve().parents[1] / "failure_mailbox"
+OBSERVATION_REQUIRED_FIELDS = ("message_id", "repository", "workflow", "received_at")
 
 
 def _load_schedule(path: Path) -> list[dict[str, Any]]:
@@ -69,6 +81,119 @@ def _schedule_enables_source_refresh(path: Path) -> bool:
         row.get("reusable_task_id") == SOURCE_REFRESH_TASK_ID and row.get("enabled") is True
         for row in _load_schedule(path)
     )
+
+
+def _schedule_enables_task(path: Path, task_id: str) -> bool:
+    return any(row.get("reusable_task_id") == task_id and row.get("enabled") is True for row in _load_schedule(path))
+
+
+def _failure_mailbox_modules():
+    """The existing ledger engine and the existing intake's ledger location."""
+    if str(FAILURE_MAILBOX_DIR) not in sys.path:
+        sys.path.insert(0, str(FAILURE_MAILBOX_DIR))
+    import incident_engine  # noqa: WPS433 (existing module, local import keeps carrier import light)
+    import sovereign_tvc_intake  # noqa: WPS433
+
+    return incident_engine, sovereign_tvc_intake
+
+
+def _validate_labs_observations(payload: Any) -> list[dict[str, Any]]:
+    """Admit the Labs projection whole or not at all; dedupe by message_id."""
+    if not isinstance(payload, dict) or payload.get("schema") != LABS_HEALER_OBSERVATIONS_SCHEMA:
+        raise ValueError("LABS_HEALER_OBSERVATIONS_SCHEMA_INVALID")
+    if payload.get("authority_effect") != "NONE_PROJECTION_ONLY" or payload.get("projection_only") is not True:
+        raise ValueError("LABS_HEALER_OBSERVATIONS_CLAIM_AUTHORITY")
+    if payload.get("resolved_transition_claimed") is not False:
+        raise ValueError("LABS_HEALER_OBSERVATIONS_CLAIM_RESOLUTION")
+    if payload.get("observation_schema") != HEALER_OBSERVATION_RECORD_SCHEMA:
+        raise ValueError("LABS_HEALER_OBSERVATION_RECORD_SCHEMA_UNSUPPORTED")
+    rows = payload.get("observations")
+    if not isinstance(rows, list) or len(rows) != payload.get("observation_count"):
+        raise ValueError("LABS_HEALER_OBSERVATION_COUNT_MISMATCH")
+    seen: set[str] = set()
+    admitted: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("LABS_HEALER_OBSERVATION_NOT_OBJECT")
+        for key in OBSERVATION_REQUIRED_FIELDS:
+            if not str(row.get(key) or "").strip():
+                raise ValueError(f"LABS_HEALER_OBSERVATION_MISSING_{key.upper()}")
+        if row.get("authority_effect") is not False:
+            raise ValueError("LABS_HEALER_OBSERVATION_CLAIMS_AUTHORITY")
+        message_id = str(row["message_id"]).strip()
+        if message_id in seen:
+            continue
+        seen.add(message_id)
+        admitted.append(row)
+    return admitted
+
+
+def _ingest_labs_outstanding_email_observations(roots: dict[str, Path], schedule_path: Path) -> dict[str, Any]:
+    """Feed Labs' outstanding email-failure lineages to the existing failure ledger.
+
+    Runs on the same carrier pass that already invokes
+    RT-NATIVE-EMAIL-ACTION-MONITOR-001. Fails closed when the projection is
+    missing or malformed (nothing is ingested, the boundary is recorded) and
+    never transitions a ledger incident; ``ingest_observation`` is idempotent
+    on ``message_id`` (``duplicate_noop``), so an hourly re-read adds nothing.
+    """
+    base_result: dict[str, Any] = {
+        "schema": LABS_OBSERVATION_INGEST_SCHEMA,
+        "reusable_task_id": NATIVE_EMAIL_TASK_ID,
+        "source_relative_path": str(LABS_HEALER_OBSERVATIONS_REL),
+        "disposition_path": "failure_mailbox/incident_engine.py#ingest_observation",
+        "ingested_count": 0,
+        "resolved_transition_claimed": False,
+        "new_scheduler_created": False,
+        "new_process_created": False,
+        "authority_effect": "NONE_OBSERVATION_INGEST_ONLY",
+        "credential_authority": "TV/TVC",
+        "github_runtime_authority": "NONE",
+    }
+    try:
+        if not schedule_path.is_file() or not _schedule_enables_task(schedule_path, NATIVE_EMAIL_TASK_ID):
+            return {**base_result, "state": "NOT_ENABLED", "boundary": "NATIVE_EMAIL_TASK_NOT_ENABLED_IN_SCHEDULE"}
+        github_root = roots.get("StegVerse-Labs/.github")
+        if github_root is None:
+            return {**base_result, "state": "BOUNDARY_RECORDED", "boundary": "LOCAL_DOTGITHUB_SOURCE_NOT_MATERIALIZED"}
+        source = github_root / LABS_HEALER_OBSERVATIONS_REL
+        if not source.is_file():
+            return {**base_result, "state": "BOUNDARY_RECORDED", "boundary": "LABS_HEALER_OBSERVATIONS_NOT_MATERIALIZED",
+                    "source_ref": str(source)}
+        raw = source.read_bytes()
+        rows = _validate_labs_observations(json.loads(raw.decode("utf-8")))
+        payload = json.loads(raw.decode("utf-8"))
+        incident_engine, intake = _failure_mailbox_modules()
+        state_dir = intake._state_dir()
+        state_dir.mkdir(parents=True, exist_ok=True)
+        ledger_path = state_dir / "github-operational-failure-ledger.json"
+        summary_path = state_dir / "github-operational-failure-summary.json"
+        ledger = incident_engine.load_ledger(ledger_path)
+        counts: dict[str, int] = {"incident_created": 0, "incident_updated": 0, "duplicate_noop": 0}
+        incident_ids: set[str] = set()
+        for row in rows:
+            result = incident_engine.ingest_observation(ledger, row)
+            counts[result["result"]] = counts.get(result["result"], 0) + 1
+            incident_ids.add(result["incident_id"])
+        incident_engine.build_neighbor_candidates(ledger)
+        incident_engine.save_json(ledger_path, ledger)
+        incident_engine.save_json(summary_path, incident_engine.summary(ledger))
+        return {
+            **base_result,
+            "state": "INGESTED",
+            "source_ref": str(source),
+            "source_sha256": hashlib.sha256(raw).hexdigest(),
+            "projection_source": payload.get("projection_source"),
+            "source_correlation": payload.get("source_correlation"),
+            "observation_count": len(rows),
+            "ingested_count": counts["incident_created"] + counts["incident_updated"],
+            "result_counts": counts,
+            "incident_ids": sorted(incident_ids),
+            "ledger_ref": str(ledger_path),
+            "summary_ref": str(summary_path),
+        }
+    except Exception as exc:  # fail closed: the carrier records the boundary and ingests nothing
+        return {**base_result, "state": "BOUNDARY_RECORDED", "boundary": "LABS_HEALER_OBSERVATIONS_REJECTED", "error": str(exc)}
 
 
 def _matched_runtime_markers(root: Path) -> list[str]:
@@ -461,6 +586,8 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
         scope=scope,
     )
 
+    labs_email_observation_ingest = _ingest_labs_outstanding_email_observations(roots, schedule_path)
+
     runtime_root, runtime_root_source = _resident_runtime_root()
     root_observation = _resident_custody_root_observation(runtime_root, runtime_root_source)
     retain_root = runtime_root if runtime_root is not None else invocation_runtime_root
@@ -480,6 +607,7 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
     receipt["selected_reusable_tasks"] = len(outcomes) if isinstance(outcomes, list) else 0
     receipt["reusable_task_schedule"] = outcomes if isinstance(outcomes, list) else []
     receipt["neutral_reusable_task_scheduler"] = delegation
+    receipt["labs_outstanding_email_observation_ingest"] = labs_email_observation_ingest
     receipt["resident_custody_root_observation"] = root_observation
     receipt["resident_custody_root_observation_retention"] = retention
     receipt["resident_runtime_root"] = str(runtime_root) if runtime_root is not None else None
