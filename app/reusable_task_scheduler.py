@@ -176,8 +176,11 @@ def _ingest_labs_outstanding_email_observations(roots: dict[str, Path], schedule
             counts[result["result"]] = counts.get(result["result"], 0) + 1
             incident_ids.add(result["incident_id"])
         incident_engine.build_neighbor_candidates(ledger)
+        # Complete both projections before persisting either. A summary
+        # construction failure must not advance the durable incident ledger.
+        summary = incident_engine.summary(ledger)
         incident_engine.save_json(ledger_path, ledger)
-        incident_engine.save_json(summary_path, incident_engine.summary(ledger))
+        incident_engine.save_json(summary_path, summary)
         return {
             **base_result,
             "state": "INGESTED",
