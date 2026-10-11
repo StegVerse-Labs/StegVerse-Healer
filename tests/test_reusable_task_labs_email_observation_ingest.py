@@ -140,6 +140,23 @@ class LabsEmailObservationIngestTests(unittest.TestCase):
         self.assertFalse((self.state_dir / "github-operational-failure-summary.json").exists())
 
 
+    def test_summary_write_failure_does_not_advance_incident_ledger(self) -> None:
+        self._write_projection(projection([observation("m-summary-io-failure")]))
+        engine, _ = subject._failure_mailbox_modules()
+        original_save = engine.save_json
+
+        def fail_summary_write(path, payload):
+            if Path(path).name == "github-operational-failure-summary.json":
+                raise OSError("simulated summary persistence failure")
+            return original_save(path, payload)
+
+        with mock.patch.object(engine, "save_json", side_effect=fail_summary_write):
+            result = self._ingest()
+        self.assertEqual(result["state"], "BOUNDARY_RECORDED")
+        self.assertEqual(result["boundary"], "LABS_HEALER_OBSERVATIONS_REJECTED")
+        self.assertFalse((self.state_dir / "github-operational-failure-ledger.json").exists())
+        self.assertFalse((self.state_dir / "github-operational-failure-summary.json").exists())
+
     def test_new_representative_message_updates_the_same_incident(self) -> None:
         self._write_projection(projection([observation("m1")]))
         first = self._ingest()
