@@ -179,8 +179,12 @@ def _ingest_labs_outstanding_email_observations(roots: dict[str, Path], schedule
         # Complete both projections before persisting either. A summary
         # construction failure must not advance the durable incident ledger.
         summary = incident_engine.summary(ledger)
-        incident_engine.save_json(ledger_path, ledger)
+        # Summary is derived and can be rebuilt. Persist it before the authoritative
+        # incident ledger so a summary write failure cannot advance ledger state.
+        # A later ledger-write failure may leave a speculative summary; callers
+        # must never treat the summary as a sovereign authorization or receipt.
         incident_engine.save_json(summary_path, summary)
+        incident_engine.save_json(ledger_path, ledger)
         return {
             **base_result,
             "state": "INGESTED",
