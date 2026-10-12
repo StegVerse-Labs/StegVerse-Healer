@@ -95,6 +95,8 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
         "state": "DETECTED",
         "source_disposition_ref": denial["source_disposition_ref"],
         "original_request_sha256": request["request_sha256"],
+        "original_request_document_sha256": full_request_digest,
+        "original_wire_manifest_sha256": request["wire_manifest_sha256"],
         "reason_code": denial["reason_code"],
         "failed_predicate": denial.get("failed_predicate"),
         "suggested_action": "RE_MANIFEST" if denial.get("retry_condition") ==
