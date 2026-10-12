@@ -69,6 +69,12 @@ class SDKDenyClassificationTests(unittest.TestCase):
             classify_sdk_manifest_deny(denial, {
                 **request, "wire_manifest_sha256": request["canonical_manifest_sha256"]})
 
+    def test_missing_request_wire_identity_fails_closed(self):
+        denial, request = self.fixture()
+        request.pop("wire_manifest_sha256")
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_REQUEST_FIELD_REQUIRED:wire_manifest_sha256"):
+            classify_sdk_manifest_deny(denial, request)
+
     def test_reject_request_substitution(self):
         denial, request = self.fixture()
         with self.assertRaisesRegex(ValueError, "SDK_DENY_REQUEST_BINDING_MISMATCH"):
