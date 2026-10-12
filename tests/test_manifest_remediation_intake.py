@@ -69,9 +69,13 @@ class SDKDenyClassificationTests(unittest.TestCase):
         denial, request = self.fixture()
         self.assertNotEqual(request["canonical_manifest_sha256"], request["wire_manifest_sha256"])
         self.assertEqual(classify_sdk_manifest_deny(denial, request)["state"], "DETECTED")
+        altered_request = {**request, "wire_manifest_sha256": request["canonical_manifest_sha256"]}
+        altered_denial = dict(denial)
+        altered_denial["original_request_sha256"] = hashlib.sha256(json.dumps(
+            altered_request, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")).hexdigest()
         with self.assertRaisesRegex(ValueError, "original_wire_manifest_sha256"):
-            classify_sdk_manifest_deny(denial, {
-                **request, "wire_manifest_sha256": request["canonical_manifest_sha256"]})
+            classify_sdk_manifest_deny(altered_denial, altered_request)
 
     def test_missing_request_wire_identity_fails_closed(self):
         denial, request = self.fixture()
