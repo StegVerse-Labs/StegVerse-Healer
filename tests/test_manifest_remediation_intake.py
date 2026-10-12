@@ -65,6 +65,24 @@ class SDKDenyClassificationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "SDK_DENY_REQUEST_BINDING_MISMATCH"):
             classify_sdk_manifest_deny(denial, {**request, "request_sha256": "c" * 64})
 
+    def test_reject_wire_manifest_substitution(self):
+        denial, request = self.fixture()
+        denial["original_wire_manifest_sha256"] = "f" * 64
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_REQUEST_BINDING_MISMATCH"):
+            classify_sdk_manifest_deny(denial, request)
+
+    def test_reject_claimed_request_substitution(self):
+        denial, request = self.fixture()
+        denial["claimed_request_sha256"] = "f" * 64
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_REQUEST_BINDING_MISMATCH"):
+            classify_sdk_manifest_deny(denial, request)
+
+    def test_terminal_deny_not_retried(self):
+        denial, request = self.fixture()
+        denial["terminal"] = True
+        with self.assertRaisesRegex(ValueError, "NONTERMINAL_SDK_DENY_REQUIRED"):
+            classify_sdk_manifest_deny(denial, request)
+
     def test_reject_authenticity_escalation(self):
         denial, request = self.fixture()
         denial["authentic_intr_admission_observed"] = True
