@@ -158,5 +158,41 @@ class SourceProfileDenyClassificationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ALLOW_IS_NOT_A_REMEDIATION_INPUT"):
             classify_sdk_deny(allowed, request)
 
+    def test_historical_request_without_wire_field_uses_canonical_manifest_identity(self):
+        # Requests derived before SDK #323 (the original Experiment 3 request)
+        # carry no wire_manifest_sha256 field.
+        from app.manifest_remediation_intake import classify_sdk_manifest_deny
+        request = _request()
+        request.pop("wire_manifest_sha256")
+        wire = hashlib.sha256(json.dumps(request["canonical_manifest"], sort_keys=True,
+                              separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+        denial = {
+            "schema": "stegverse.sdk.manifest-profile-disposition/v1",
+            "state": "DENY", "disposition": "DENY", "terminal": False,
+            "automatic_retry_permitted": False,
+            "evaluation_boundary": "SDK_MANIFEST_PROFILE", "authentic_intr_admission_observed": False,
+            "transition_id": "SDK_MANIFEST_BINDING",
+            "retry_condition": "CORRECT_ENVELOPE_IN_EXISTING_MANIFEST_BUILDER_THEN_NEW_GOVERNED_ATTEMPT",
+            "transport_validated": True,
+            "repair_owner": "StegVerse-org/StegVerse-SDK:stegverse/manifest_builder.py",
+            "authority_effect": "NONE_MANIFEST_PROFILE_DENY_ONLY",
+            "organization_master_records_organization_record_observed": False,
+            "reason_code": "canonical_manifest_sha256_binding_mismatch",
+            "failed_predicate": "canonical_manifest_sha256_binding_mismatch",
+            "original_request_sha256": hashlib.sha256(json.dumps(request, sort_keys=True,
+                separators=(",", ":"), ensure_ascii=False).encode()).hexdigest(),
+            "claimed_request_sha256": request["request_sha256"],
+            "original_wire_manifest_sha256": wire,
+            "graph_id": request["graph_id"], "processing_capability": request["processing_capability"],
+            "source_disposition_ref": "mock-evaluating-profile-path-not-sovereign-custody",
+        }
+        out = classify_sdk_deny(denial, request)
+        self.assertEqual(out["suggested_action"], "RE_MANIFEST")
+        self.assertEqual(out["original_wire_manifest_sha256"], wire)
+        denial["original_wire_manifest_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_REQUEST_BINDING_MISMATCH:original_wire_manifest_sha256"):
+            classify_sdk_deny(denial, request)
+
+
 if __name__ == "__main__":
     unittest.main()

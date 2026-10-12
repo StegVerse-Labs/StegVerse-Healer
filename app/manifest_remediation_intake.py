@@ -46,6 +46,21 @@ def ingest_manifest_remediation(proposal: Mapping[str, Any], manifest_transition
     }
 
 
+def _request_wire_sha256(request: Mapping[str, Any]) -> str | None:
+    """The request's wire identity. Requests derived before SDK #323 carry no
+    wire_manifest_sha256; their wire identity is the digest of the
+    canonical_manifest they hold (SDK 53a6749)."""
+    declared = request.get("wire_manifest_sha256")
+    if isinstance(declared, str) and declared:
+        return declared
+    original = request.get("canonical_manifest")
+    if isinstance(original, Mapping):
+        return hashlib.sha256(json.dumps(
+            dict(original), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")).hexdigest()
+    return None
+
+
 def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, Any]) -> dict[str, Any]:
     """Classify a source-level SDK DENY for governance; never authorize a retry.
 
@@ -81,9 +96,12 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
         raise ValueError("SDK_DENY_ORGANIZATION_RECORD_ESCALATION")
     if denial.get("failed_predicate") != denial.get("reason_code"):
         raise ValueError("SDK_DENY_REASON_PREDICATE_MISMATCH")
-    for key in ("request_sha256", "wire_manifest_sha256", "graph_id", "processing_capability"):
+    for key in ("request_sha256", "graph_id", "processing_capability"):
         if not isinstance(request.get(key), str) or not request[key]:
             raise ValueError(f"SDK_DENY_REQUEST_FIELD_REQUIRED:{key}")
+    wire = _request_wire_sha256(request)
+    if not wire:
+        raise ValueError("SDK_DENY_REQUEST_FIELD_REQUIRED:wire_manifest_sha256")
     # The actual SDK profile-DENY schema carries original_request_sha256,
     # original_wire_manifest_sha256 and claimed_request_sha256. It does not
     # carry a request_sha256 or canonical_manifest_sha256 field directly.
@@ -100,7 +118,7 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
     # Original wire and canonical projection are distinct identities. A request
     # may legitimately have a different canonical_manifest_sha256. The source
     # DENY binds the *wire* bytes, never the normalized projection digest.
-    if denial.get("original_wire_manifest_sha256") != request.get("wire_manifest_sha256"):
+    if denial.get("original_wire_manifest_sha256") != wire:
         raise ValueError("SDK_DENY_REQUEST_BINDING_MISMATCH:original_wire_manifest_sha256")
     for key in ("graph_id", "processing_capability"):
         if denial.get(key) != request.get(key):
@@ -116,7 +134,7 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
         "source_disposition_ref": denial["source_disposition_ref"],
         "original_request_sha256": request["request_sha256"],
         "original_request_document_sha256": full_request_digest,
-        "original_wire_manifest_sha256": request["wire_manifest_sha256"],
+        "original_wire_manifest_sha256": wire,
         "reason_code": denial["reason_code"],
         "failed_predicate": denial.get("failed_predicate"),
         "suggested_action": "RE_MANIFEST" if denial.get("retry_condition") ==
@@ -215,9 +233,11 @@ def _classify_terminal_or_unmapped(result: Mapping[str, Any], request: Mapping[s
                 "graph_id", "processing_capability"):
         if key in result and result.get(key) != request.get(key):
             raise ValueError(f"SDK_NON_ALLOW_REQUEST_BINDING_MISMATCH:{key}")
-    for key in ("request_sha256", "wire_manifest_sha256"):
-        if not isinstance(request.get(key), str) or not request[key]:
-            raise ValueError(f"SDK_NON_ALLOW_REQUEST_FIELD_REQUIRED:{key}")
+    if not isinstance(request.get("request_sha256"), str) or not request["request_sha256"]:
+        raise ValueError("SDK_NON_ALLOW_REQUEST_FIELD_REQUIRED:request_sha256")
+    wire = _request_wire_sha256(request)
+    if not wire:
+        raise ValueError("SDK_NON_ALLOW_REQUEST_FIELD_REQUIRED:wire_manifest_sha256")
     for key in ("authentic_intr_disposition_observed", "authentic_intr_admission_observed"):
         if result.get(key) is True:
             raise ValueError("SDK_NON_ALLOW_AUTHENTICITY_ESCALATION")
@@ -234,7 +254,7 @@ def _classify_terminal_or_unmapped(result: Mapping[str, Any], request: Mapping[s
         "source_disposition_ref": result.get("source_disposition_ref") or "",
         "original_request_sha256": request["request_sha256"],
         "original_request_document_sha256": _sha256_document(request),
-        "original_wire_manifest_sha256": request["wire_manifest_sha256"],
+        "original_wire_manifest_sha256": wire,
         "reason_code": result.get("reason_code") or predicate,
         "failed_predicate": predicate,
         "failure_site": "DENYING_SITE" if reentry_only else "UNMAPPED",
