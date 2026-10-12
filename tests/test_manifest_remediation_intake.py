@@ -39,11 +39,12 @@ class ManifestIntakeTests(unittest.TestCase):
 class SDKDenyClassificationTests(unittest.TestCase):
     def fixture(self):
         request = {"request_sha256": "a" * 64, "canonical_manifest_sha256": "b" * 64,
+                   "wire_manifest_sha256": "c" * 64,
                    "graph_id": "graph", "processing_capability": "ecosystem_diagnostic"}
         denial = {**request, "schema": "stegverse.sdk.manifest-profile-disposition/v1",
                   "original_request_sha256": request["request_sha256"],
                   "claimed_request_sha256": request["request_sha256"],
-                  "original_wire_manifest_sha256": request["canonical_manifest_sha256"],
+                  "original_wire_manifest_sha256": request["wire_manifest_sha256"],
                   "state": "DENY", "disposition": "DENY", "terminal": False,
                   "automatic_retry_permitted": False, "evaluation_boundary": "SDK_MANIFEST_PROFILE",
                   "authentic_intr_admission_observed": False,
@@ -59,6 +60,14 @@ class SDKDenyClassificationTests(unittest.TestCase):
         self.assertEqual(out["governance_disposition"], "NOT_EVALUATED")
         self.assertFalse(out["execution_authority_granted"])
         self.assertEqual(out["original_request_sha256"], request["request_sha256"])
+
+    def test_canonical_projection_differs_from_wire_and_is_not_used_as_wire(self):
+        denial, request = self.fixture()
+        self.assertNotEqual(request["canonical_manifest_sha256"], request["wire_manifest_sha256"])
+        self.assertEqual(classify_sdk_manifest_deny(denial, request)["state"], "DETECTED")
+        with self.assertRaisesRegex(ValueError, "original_wire_manifest_sha256"):
+            classify_sdk_manifest_deny(denial, {
+                **request, "wire_manifest_sha256": request["canonical_manifest_sha256"]})
 
     def test_reject_request_substitution(self):
         denial, request = self.fixture()
