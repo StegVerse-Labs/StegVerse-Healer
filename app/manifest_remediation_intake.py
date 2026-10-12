@@ -5,6 +5,8 @@ not dispatch, approve, correct a manifest, or mint an organization receipt.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any, Mapping
 
 SCHEMA = "stegverse.healer.manifest-remediation-intake/v1"
@@ -65,7 +67,13 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
     # The actual SDK profile-DENY schema carries original_request_sha256,
     # original_wire_manifest_sha256 and claimed_request_sha256. It does not
     # carry a request_sha256 or canonical_manifest_sha256 field directly.
-    if denial.get("original_request_sha256") != request.get("request_sha256"):
+    # The SDK source-profile DENY distinguishes the digest of the *entire*
+    # rejected request from its embedded claimed request_sha256. Match the SDK
+    # canonical JSON hash contract, never equate these different identities.
+    full_request_digest = hashlib.sha256(json.dumps(
+        dict(request), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")).hexdigest()
+    if denial.get("original_request_sha256") != full_request_digest:
         raise ValueError("SDK_DENY_REQUEST_BINDING_MISMATCH:original_request_sha256")
     if denial.get("claimed_request_sha256") != request.get("request_sha256"):
         raise ValueError("SDK_DENY_REQUEST_BINDING_MISMATCH:claimed_request_sha256")
