@@ -74,6 +74,11 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
     for key, value in required.items():
         if denial.get(key) != value:
             raise ValueError(f"SDK_DENY_CONTRACT_MISMATCH:{key}")
+    observed_key = "organization_master_records_organization_record_observed"
+    legacy_observed_key = "organization_master_records_closure_observed"
+    observed = denial.get(observed_key, denial.get(legacy_observed_key))
+    if observed is not False:
+        raise ValueError("SDK_DENY_ORGANIZATION_RECORD_ESCALATION")
     if denial.get("failed_predicate") != denial.get("reason_code"):
         raise ValueError("SDK_DENY_REASON_PREDICATE_MISMATCH")
     for key in ("request_sha256", "wire_manifest_sha256", "graph_id", "processing_capability"):
