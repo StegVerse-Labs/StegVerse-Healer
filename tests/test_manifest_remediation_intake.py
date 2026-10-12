@@ -41,6 +41,9 @@ class SDKDenyClassificationTests(unittest.TestCase):
         request = {"request_sha256": "a" * 64, "canonical_manifest_sha256": "b" * 64,
                    "graph_id": "graph", "processing_capability": "ecosystem_diagnostic"}
         denial = {**request, "schema": "stegverse.sdk.manifest-profile-disposition/v1",
+                  "original_request_sha256": request["request_sha256"],
+                  "claimed_request_sha256": request["request_sha256"],
+                  "original_wire_manifest_sha256": request["canonical_manifest_sha256"],
                   "state": "DENY", "disposition": "DENY", "terminal": False,
                   "automatic_retry_permitted": False, "evaluation_boundary": "SDK_MANIFEST_PROFILE",
                   "authentic_intr_admission_observed": False,
