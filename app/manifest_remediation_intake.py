@@ -42,3 +42,43 @@ def ingest_manifest_remediation(proposal: Mapping[str, Any], manifest_transition
         "execution_authority_granted": False,
         "authority_effect": "NONE_INTAKE_ONLY",
     }
+
+
+def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, Any]) -> dict[str, Any]:
+    """Classify a source-level SDK DENY for governance; never authorize a retry.
+
+    This is a non-authorizing Healer classification, not an InTr disposition or
+    a replacement for the canonical organization .github decision interface.
+    """
+    if denial.get("schema") != "stegverse.sdk.manifest-profile-disposition/v1":
+        raise ValueError("SDK_DENY_SCHEMA_REQUIRED")
+    if (denial.get("state") != "DENY" or denial.get("disposition") != "DENY"
+            or denial.get("terminal") is not False
+            or denial.get("automatic_retry_permitted") is not False):
+        raise ValueError("NONTERMINAL_SDK_DENY_REQUIRED")
+    if (denial.get("evaluation_boundary") != "SDK_MANIFEST_PROFILE"
+            or denial.get("authentic_intr_admission_observed") is not False):
+        raise ValueError("SDK_DENY_BOUNDARY_ESCALATION")
+    for key in ("request_sha256", "canonical_manifest_sha256", "graph_id", "processing_capability"):
+        if denial.get(key) != request.get(key):
+            raise ValueError(f"SDK_DENY_REQUEST_BINDING_MISMATCH:{key}")
+    if (not isinstance(denial.get("source_disposition_ref"), str)
+            or not denial["source_disposition_ref"]
+            or not isinstance(denial.get("reason_code"), str)
+            or not denial["reason_code"]):
+        raise ValueError("SDK_DENY_EVIDENCE_REQUIRED")
+    return {
+        "schema": "stegverse.healer.sdk-deny-classification/v1",
+        "state": "DETECTED",
+        "source_disposition_ref": denial["source_disposition_ref"],
+        "original_request_sha256": request["request_sha256"],
+        "reason_code": denial["reason_code"],
+        "failed_predicate": denial.get("failed_predicate"),
+        "suggested_action": "RE_MANIFEST" if denial.get("retry_condition") ==
+            "CORRECT_ENVELOPE_IN_EXISTING_MANIFEST_BUILDER_THEN_NEW_GOVERNED_ATTEMPT"
+            else "GOVERNANCE_REVIEW_REQUIRED",
+        "governance_disposition": "NOT_EVALUATED",
+        "execution_authority_granted": False,
+        "next_action": "AWAIT_ORGANIZATION_GITHUB_GOVERNED_RETURN",
+        "authority_effect": "NONE_CLASSIFICATION_ONLY",
+    }
