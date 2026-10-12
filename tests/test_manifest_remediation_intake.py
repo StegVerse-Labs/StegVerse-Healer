@@ -62,6 +62,8 @@ class SDKDenyClassificationTests(unittest.TestCase):
         self.assertEqual(out["governance_disposition"], "NOT_EVALUATED")
         self.assertFalse(out["execution_authority_granted"])
         self.assertEqual(out["original_request_sha256"], request["request_sha256"])
+        self.assertEqual(out["original_request_document_sha256"], denial["original_request_sha256"])
+        self.assertEqual(out["original_wire_manifest_sha256"], request["wire_manifest_sha256"])
 
     def test_canonical_projection_differs_from_wire_and_is_not_used_as_wire(self):
         denial, request = self.fixture()
