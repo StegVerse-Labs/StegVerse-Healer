@@ -127,3 +127,146 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
         "next_action": "AWAIT_ORGANIZATION_GITHUB_GOVERNED_RETURN",
         "authority_effect": "NONE_CLASSIFICATION_ONLY",
     }
+
+
+# Source-profile DENYs whose manifest stays valid: the failure was at the site
+# that denied it, so once its owner repairs that site the unchanged manifest is
+# resubmitted as a new governed attempt. Any other retry condition is not
+# guessed at here; it goes to governance review.
+_RESUBMIT_RETRY_CONDITIONS = frozenset({
+    "NEW_GOVERNED_ATTEMPT_AFTER_EXISTING_OWNER_DISPATCH_REPAIR",
+})
+
+
+def _sha256_document(value: Mapping[str, Any]) -> str:
+    return hashlib.sha256(json.dumps(
+        dict(value), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")).hexdigest()
+
+
+def classify_sdk_source_profile_deny(denial: Mapping[str, Any], request: Mapping[str, Any]) -> dict[str, Any]:
+    """Classify an SDK source-profile DENY (error at the site of the deny).
+
+    Mirrors the SDK's ``_validate_profile_source_deny`` contract. Maps to
+    RESUBMIT of the unchanged manifest after the named owner repairs the denying
+    site. Terminal FAIL_CLOSED is never classified for retry. Non-authorizing.
+    """
+    if denial.get("schema") != "stegverse.sdk.manifest-profile-disposition/v1":
+        raise ValueError("SDK_DENY_SCHEMA_REQUIRED")
+    if denial.get("state") != "DENY" or denial.get("disposition") != "DENY" or denial.get("terminal") is not False:
+        raise ValueError("NONTERMINAL_SDK_DENY_REQUIRED")
+    if denial.get("automatic_retry_permitted") is not False:
+        raise ValueError("SDK_DENY_RETRY_CONTRACT_MISMATCH")
+    if denial.get("evaluation_boundary") != "SDK_MANIFEST_PROFILE_SOURCE_ONLY":
+        raise ValueError("SDK_DENY_BOUNDARY_ESCALATION")
+    if denial.get("authentic_intr_disposition_observed") is not False:
+        raise ValueError("SDK_DENY_AUTHENTICITY_ESCALATION")
+    observed = denial.get("organization_master_records_organization_record_observed",
+                          denial.get("organization_master_records_closure_observed"))
+    if observed is not False:
+        raise ValueError("SDK_DENY_ORGANIZATION_RECORD_ESCALATION")
+    for key in ("request_sha256", "wire_manifest_sha256", "canonical_manifest_sha256",
+                "graph_id", "processing_capability"):
+        if not isinstance(request.get(key), str) or not request[key]:
+            raise ValueError(f"SDK_DENY_REQUEST_FIELD_REQUIRED:{key}")
+        if denial.get(key) != request[key]:
+            raise ValueError(f"SDK_DENY_REQUEST_BINDING_MISMATCH:{key}")
+    original = request.get("canonical_manifest")
+    payload = original.get("payload") if isinstance(original, Mapping) else None
+    if isinstance(payload, Mapping):
+        for field in ("goal_task_id", "cosv"):
+            if payload.get(field) != denial.get(field):
+                raise ValueError(f"SDK_DENY_ORIGINAL_LINEAGE_MISMATCH:{field}")
+    for key in ("reason_code", "failed_predicate", "transition_id", "repair_owner",
+                "retry_condition", "source_disposition_ref"):
+        if not isinstance(denial.get(key), str) or not denial[key]:
+            raise ValueError("SDK_DENY_EVIDENCE_REQUIRED")
+    if not isinstance(denial.get("evidence_refs"), list):
+        raise ValueError("SDK_DENY_EVIDENCE_REQUIRED")
+    resubmit = denial["retry_condition"] in _RESUBMIT_RETRY_CONDITIONS
+    return {
+        "schema": "stegverse.healer.sdk-deny-classification/v1",
+        "state": "DETECTED",
+        "source_disposition_ref": denial["source_disposition_ref"],
+        "original_request_sha256": request["request_sha256"],
+        "original_request_document_sha256": _sha256_document(request),
+        "original_wire_manifest_sha256": request["wire_manifest_sha256"],
+        "reason_code": denial["reason_code"],
+        "failed_predicate": denial["failed_predicate"],
+        "failure_site": "DENYING_SITE",
+        "site_repair_owner": denial["repair_owner"],
+        "suggested_action": "RESUBMIT" if resubmit else "GOVERNANCE_REVIEW_REQUIRED",
+        "governance_disposition": "NOT_EVALUATED",
+        "execution_authority_granted": False,
+        "next_action": "AWAIT_ORGANIZATION_GITHUB_GOVERNED_RETURN",
+        "authority_effect": "NONE_CLASSIFICATION_ONLY",
+    }
+
+
+def _classify_terminal_or_unmapped(result: Mapping[str, Any], request: Mapping[str, Any]) -> dict[str, Any]:
+    """Classify a non-ALLOW that no specific contract above covers.
+
+    Every non-ALLOW reaches Healer. Bindings the result carries must match the
+    request; the failure is retained; an unmapped condition goes to governance
+    review. A terminal FAIL_CLOSED is mapped but only for a separately governed
+    re-entry, never an automatic retry.
+    """
+    for key in ("request_sha256", "wire_manifest_sha256", "canonical_manifest_sha256",
+                "graph_id", "processing_capability"):
+        if key in result and result.get(key) != request.get(key):
+            raise ValueError(f"SDK_NON_ALLOW_REQUEST_BINDING_MISMATCH:{key}")
+    for key in ("request_sha256", "wire_manifest_sha256"):
+        if not isinstance(request.get(key), str) or not request[key]:
+            raise ValueError(f"SDK_NON_ALLOW_REQUEST_FIELD_REQUIRED:{key}")
+    for key in ("authentic_intr_disposition_observed", "authentic_intr_admission_observed"):
+        if result.get(key) is True:
+            raise ValueError("SDK_NON_ALLOW_AUTHENTICITY_ESCALATION")
+    predicate = result.get("failed_predicate") or result.get("reason_code")
+    if not isinstance(predicate, str) or not predicate:
+        raise ValueError("SDK_NON_ALLOW_FAILED_PREDICATE_REQUIRED")
+    terminal = result.get("disposition") == "FAIL_CLOSED"
+    reentry_only = result.get("retry_condition") == "SEPARATELY_GOVERNED_FUTURE_REENTRY_ONLY"
+    return {
+        "schema": "stegverse.healer.sdk-deny-classification/v1",
+        "state": "DETECTED",
+        "source_disposition": result.get("disposition"),
+        "source_evaluation_boundary": result.get("evaluation_boundary"),
+        "source_disposition_ref": result.get("source_disposition_ref") or "",
+        "original_request_sha256": request["request_sha256"],
+        "original_request_document_sha256": _sha256_document(request),
+        "original_wire_manifest_sha256": request["wire_manifest_sha256"],
+        "reason_code": result.get("reason_code") or predicate,
+        "failed_predicate": predicate,
+        "failure_site": "DENYING_SITE" if reentry_only else "UNMAPPED",
+        "site_repair_owner": result.get("repair_owner"),
+        "suggested_action": "RESUBMIT" if (terminal and reentry_only) else "GOVERNANCE_REVIEW_REQUIRED",
+        "terminal_attempt": terminal,
+        "reentry": "SEPARATELY_GOVERNED_FUTURE_REENTRY_ONLY" if terminal else "NEW_GOVERNED_ATTEMPT",
+        "automatic_retry_permitted": False,
+        "governance_disposition": "NOT_EVALUATED",
+        "execution_authority_granted": False,
+        "next_action": "AWAIT_ORGANIZATION_GITHUB_GOVERNED_RETURN",
+        "authority_effect": "NONE_CLASSIFICATION_ONLY",
+    }
+
+
+def classify_sdk_deny(result: Mapping[str, Any], request: Mapping[str, Any]) -> dict[str, Any]:
+    """Healer entry point for every SDK non-ALLOW (DENY or FAIL_CLOSED).
+
+    SDK_MANIFEST_PROFILE envelope DENY -> RE_MANIFEST via the Manifest Builder;
+    SDK_MANIFEST_PROFILE_SOURCE_ONLY site DENY -> RESUBMIT; terminal FAIL_CLOSED
+    -> mapped for separately governed re-entry only; anything else -> retained
+    and sent to governance review. Only an ALLOW is not classified here.
+    """
+    disposition = result.get("disposition")
+    if disposition == "ALLOW":
+        raise ValueError("ALLOW_IS_NOT_A_REMEDIATION_INPUT")
+    if disposition not in ("DENY", "FAIL_CLOSED"):
+        raise ValueError("SDK_NON_ALLOW_DISPOSITION_REQUIRED")
+    boundary = result.get("evaluation_boundary")
+    if disposition == "DENY" and result.get("terminal") is False:
+        if boundary == "SDK_MANIFEST_PROFILE":
+            return classify_sdk_manifest_deny(result, request)
+        if boundary == "SDK_MANIFEST_PROFILE_SOURCE_ONLY":
+            return classify_sdk_source_profile_deny(result, request)
+    return _classify_terminal_or_unmapped(result, request)
