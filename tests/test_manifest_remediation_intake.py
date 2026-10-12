@@ -55,7 +55,8 @@ class SDKDenyClassificationTests(unittest.TestCase):
                   "retry_condition": "CORRECT_ENVELOPE_IN_EXISTING_MANIFEST_BUILDER_THEN_NEW_GOVERNED_ATTEMPT",
                   "transition_id": "SDK_MANIFEST_BINDING", "transport_validated": True,
                   "repair_owner": "StegVerse-org/StegVerse-SDK:stegverse/manifest_builder.py",
-                  "authority_effect": "NONE_MANIFEST_PROFILE_DENY_ONLY"}
+                  "authority_effect": "NONE_MANIFEST_PROFILE_DENY_ONLY",
+                  "organization_master_records_organization_record_observed": False}
         return denial, request
 
     def test_classification_never_authorizes(self):
@@ -134,6 +135,12 @@ class SDKDenyClassificationTests(unittest.TestCase):
         denial, request = self.fixture()
         denial["authority_effect"] = "ALLOW"
         with self.assertRaisesRegex(ValueError, "SDK_DENY_CONTRACT_MISMATCH:authority_effect"):
+            classify_sdk_manifest_deny(denial, request)
+
+    def test_cannot_claim_organization_record_observed(self):
+        denial, request = self.fixture()
+        denial["organization_master_records_organization_record_observed"] = True
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_ORGANIZATION_RECORD_ESCALATION"):
             classify_sdk_manifest_deny(denial, request)
 
     def test_reason_and_predicate_must_match(self):
