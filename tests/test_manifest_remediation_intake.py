@@ -1,4 +1,6 @@
 import unittest
+import hashlib
+import json
 from app.manifest_remediation_intake import ingest_manifest_remediation, classify_sdk_manifest_deny
 
 
@@ -42,7 +44,7 @@ class SDKDenyClassificationTests(unittest.TestCase):
                    "wire_manifest_sha256": "c" * 64,
                    "graph_id": "graph", "processing_capability": "ecosystem_diagnostic"}
         denial = {**request, "schema": "stegverse.sdk.manifest-profile-disposition/v1",
-                  "original_request_sha256": request["request_sha256"],
+                  "original_request_sha256": hashlib.sha256(json.dumps(request, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")).hexdigest(),
                   "claimed_request_sha256": request["request_sha256"],
                   "original_wire_manifest_sha256": request["wire_manifest_sha256"],
                   "state": "DENY", "disposition": "DENY", "terminal": False,
@@ -74,6 +76,15 @@ class SDKDenyClassificationTests(unittest.TestCase):
         request.pop("wire_manifest_sha256")
         with self.assertRaisesRegex(ValueError, "SDK_DENY_REQUEST_FIELD_REQUIRED:wire_manifest_sha256"):
             classify_sdk_manifest_deny(denial, request)
+
+    def test_full_request_digest_is_not_embedded_claimed_digest(self):
+        denial, request = self.fixture()
+        self.assertNotEqual(denial["original_request_sha256"], request["request_sha256"])
+        self.assertEqual(classify_sdk_manifest_deny(denial, request)["state"], "DETECTED")
+        altered = dict(denial)
+        altered["original_request_sha256"] = request["request_sha256"]
+        with self.assertRaisesRegex(ValueError, "original_request_sha256"):
+            classify_sdk_manifest_deny(altered, request)
 
     def test_reject_request_substitution(self):
         denial, request = self.fixture()
