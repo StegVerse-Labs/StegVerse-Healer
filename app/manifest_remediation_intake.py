@@ -66,7 +66,10 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
         raise ValueError("SDK_DENY_REQUEST_BINDING_MISMATCH:original_request_sha256")
     if denial.get("claimed_request_sha256") != request.get("request_sha256"):
         raise ValueError("SDK_DENY_REQUEST_BINDING_MISMATCH:claimed_request_sha256")
-    if denial.get("original_wire_manifest_sha256") != request.get("canonical_manifest_sha256"):
+    # Original wire and canonical projection are distinct identities. A request
+    # may legitimately have a different canonical_manifest_sha256. The source
+    # DENY binds the *wire* bytes, never the normalized projection digest.
+    if denial.get("original_wire_manifest_sha256") != request.get("wire_manifest_sha256"):
         raise ValueError("SDK_DENY_REQUEST_BINDING_MISMATCH:original_wire_manifest_sha256")
     for key in ("graph_id", "processing_capability"):
         if denial.get(key) != request.get(key):
