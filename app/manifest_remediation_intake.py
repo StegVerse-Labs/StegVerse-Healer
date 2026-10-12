@@ -59,6 +59,9 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
     if (denial.get("evaluation_boundary") != "SDK_MANIFEST_PROFILE"
             or denial.get("authentic_intr_admission_observed") is not False):
         raise ValueError("SDK_DENY_BOUNDARY_ESCALATION")
+    for key in ("request_sha256", "wire_manifest_sha256", "graph_id", "processing_capability"):
+        if not isinstance(request.get(key), str) or not request[key]:
+            raise ValueError(f"SDK_DENY_REQUEST_FIELD_REQUIRED:{key}")
     # The actual SDK profile-DENY schema carries original_request_sha256,
     # original_wire_manifest_sha256 and claimed_request_sha256. It does not
     # carry a request_sha256 or canonical_manifest_sha256 field directly.
