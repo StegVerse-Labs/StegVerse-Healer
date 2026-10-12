@@ -52,7 +52,11 @@ class SDKDenyClassificationTests(unittest.TestCase):
                   "authentic_intr_admission_observed": False,
                   "source_disposition_ref": "source-deny", "reason_code": "binding_mismatch",
                   "failed_predicate": "binding_mismatch",
-                  "retry_condition": "CORRECT_ENVELOPE_IN_EXISTING_MANIFEST_BUILDER_THEN_NEW_GOVERNED_ATTEMPT"}
+                  "retry_condition": "CORRECT_ENVELOPE_IN_EXISTING_MANIFEST_BUILDER_THEN_NEW_GOVERNED_ATTEMPT",
+                  "transition_id": "SDK_MANIFEST_BINDING", "transport_validated": True,
+                  "repair_owner": "StegVerse-org/StegVerse-SDK:stegverse/manifest_builder.py",
+                  "authority_effect": "NONE_MANIFEST_PROFILE_DENY_ONLY",
+                  "organization_master_records_organization_record_observed": False}
         return denial, request
 
     def test_classification_never_authorizes(self):
@@ -107,6 +111,42 @@ class SDKDenyClassificationTests(unittest.TestCase):
         denial, request = self.fixture()
         denial["claimed_request_sha256"] = "f" * 64
         with self.assertRaisesRegex(ValueError, "SDK_DENY_REQUEST_BINDING_MISMATCH"):
+            classify_sdk_manifest_deny(denial, request)
+
+    def test_cannot_reclassify_arbitrary_transition_as_sdk_binding_deny(self):
+        denial, request = self.fixture()
+        denial["transition_id"] = "ARBITRARY_TRANSITION"
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_CONTRACT_MISMATCH:transition_id"):
+            classify_sdk_manifest_deny(denial, request)
+
+    def test_cannot_promote_unvalidated_transport(self):
+        denial, request = self.fixture()
+        denial["transport_validated"] = False
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_CONTRACT_MISMATCH:transport_validated"):
+            classify_sdk_manifest_deny(denial, request)
+
+    def test_cannot_reassign_repair_owner(self):
+        denial, request = self.fixture()
+        denial["repair_owner"] = "caller"
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_CONTRACT_MISMATCH:repair_owner"):
+            classify_sdk_manifest_deny(denial, request)
+
+    def test_cannot_promote_authority_effect(self):
+        denial, request = self.fixture()
+        denial["authority_effect"] = "ALLOW"
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_CONTRACT_MISMATCH:authority_effect"):
+            classify_sdk_manifest_deny(denial, request)
+
+    def test_cannot_claim_organization_record_observed(self):
+        denial, request = self.fixture()
+        denial["organization_master_records_organization_record_observed"] = True
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_ORGANIZATION_RECORD_ESCALATION"):
+            classify_sdk_manifest_deny(denial, request)
+
+    def test_reason_and_predicate_must_match(self):
+        denial, request = self.fixture()
+        denial["failed_predicate"] = "different"
+        with self.assertRaisesRegex(ValueError, "SDK_DENY_REASON_PREDICATE_MISMATCH"):
             classify_sdk_manifest_deny(denial, request)
 
     def test_terminal_deny_not_retried(self):

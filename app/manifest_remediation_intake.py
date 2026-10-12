@@ -61,6 +61,26 @@ def classify_sdk_manifest_deny(denial: Mapping[str, Any], request: Mapping[str, 
     if (denial.get("evaluation_boundary") != "SDK_MANIFEST_PROFILE"
             or denial.get("authentic_intr_admission_observed") is not False):
         raise ValueError("SDK_DENY_BOUNDARY_ESCALATION")
+    # Match the SDK's source-profile DENY invariants before recommending a
+    # remediation action. Healer must not promote a caller-crafted DENY into
+    # a governance candidate by checking hashes alone.
+    required = {
+        "transition_id": "SDK_MANIFEST_BINDING",
+        "retry_condition": "CORRECT_ENVELOPE_IN_EXISTING_MANIFEST_BUILDER_THEN_NEW_GOVERNED_ATTEMPT",
+        "transport_validated": True,
+        "repair_owner": "StegVerse-org/StegVerse-SDK:stegverse/manifest_builder.py",
+        "authority_effect": "NONE_MANIFEST_PROFILE_DENY_ONLY",
+    }
+    for key, value in required.items():
+        if denial.get(key) != value:
+            raise ValueError(f"SDK_DENY_CONTRACT_MISMATCH:{key}")
+    observed_key = "organization_master_records_organization_record_observed"
+    legacy_observed_key = "organization_master_records_closure_observed"
+    observed = denial.get(observed_key, denial.get(legacy_observed_key))
+    if observed is not False:
+        raise ValueError("SDK_DENY_ORGANIZATION_RECORD_ESCALATION")
+    if denial.get("failed_predicate") != denial.get("reason_code"):
+        raise ValueError("SDK_DENY_REASON_PREDICATE_MISMATCH")
     for key in ("request_sha256", "wire_manifest_sha256", "graph_id", "processing_capability"):
         if not isinstance(request.get(key), str) or not request[key]:
             raise ValueError(f"SDK_DENY_REQUEST_FIELD_REQUIRED:{key}")
