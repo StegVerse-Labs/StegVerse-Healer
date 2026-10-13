@@ -8,6 +8,7 @@ import ssl
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -500,6 +501,55 @@ def _clean_env(
     return env
 
 
+class _NotObserved(Exception):
+    pass
+
+
+def adopted_certificate_context(tls_request: dict[str, Any] | None) -> ssl.SSLContext:
+    """Verify the local TLS endpoint against the TV/TVC-adopted certificate itself.
+
+    The endpoint is reached on loopback, so the public hostname cannot be
+    checked here; instead the adopted certificate file is the only trust anchor
+    (partial chain), which pins the exact certificate TV/TVC adopted.
+    """
+    if not tls_request or not tls_request.get("cert_file"):
+        raise GatewayActivationError("TLS_ADOPTED_CERTIFICATE_LOCATOR_REQUIRED")
+    context = ssl.create_default_context(cafile=str(tls_request["cert_file"]))
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+    return context
+
+
+def _fetch_readiness(url: str, context: ssl.SSLContext | None) -> Any:
+    try:
+        with urllib.request.urlopen(url, timeout=5, context=context) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except ssl.SSLCertVerificationError:
+        raise
+    except urllib.error.URLError as exc:
+        if isinstance(exc.reason, ssl.SSLCertVerificationError):
+            raise exc.reason from exc
+        raise _NotObserved(type(exc.reason).__name__ if isinstance(exc.reason, BaseException) else type(exc).__name__) from exc
+    except Exception as exc:
+        raise _NotObserved(type(exc).__name__) from exc
+
+
+def _observe_readiness(url: str, context: ssl.SSLContext | None, code: str,
+                       unobserved: dict[str, str], label: str) -> dict[str, Any] | None:
+    """Readiness as non-gating evidence: an unreachable surface is NOT_OBSERVED."""
+    try:
+        value = _fetch_readiness(url, context)
+    except ssl.SSLCertVerificationError as exc:
+        raise GatewayActivationError("LOCAL_GATEWAY_TLS_CERTIFICATE_NOT_ADOPTED_CERTIFICATE") from exc
+    except _NotObserved as exc:
+        unobserved[label] = f"{code}:{exc}"
+        return None
+    if not isinstance(value, dict):
+        raise GatewayActivationError(code.replace("_UNAVAILABLE", "_OBJECT_REQUIRED"))
+    return value
+
+
 def execute(roots_json: str | None = None) -> dict[str, Any]:
     roots = load_roots(roots_json)
     llm_root = roots.get(LLM_REPO)
@@ -584,15 +634,18 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             "authority_effect": "NONE",
         }
 
-    try:
-        context = ssl._create_unverified_context() if tls_enabled else None
-        with urllib.request.urlopen(readiness_url, timeout=5, context=context) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except Exception as exc:
-        raise GatewayActivationError("LOCAL_COINBASE_READINESS_UNAVAILABLE:" + type(exc).__name__) from exc
-    if not isinstance(payload, dict):
-        raise GatewayActivationError("LOCAL_COINBASE_READINESS_OBJECT_REQUIRED")
-    validate_readiness(payload, decision)
+    # The deploy receipt above closes this transition. Readiness is observation
+    # evidence after closure, never its predicate: destination liveness is not a
+    # transition predicate and no machine is awaited (Task Registry global
+    # invariants). An unreachable readiness surface is recorded NOT_OBSERVED. A
+    # readiness surface that answers outside its authority boundary, or a TLS
+    # endpoint that does not present the adopted certificate, still fails closed.
+    context = adopted_certificate_context(tls_request) if tls_enabled else None
+    unobserved: dict[str, str] = {}
+
+    payload = _observe_readiness(readiness_url, context, "LOCAL_COINBASE_READINESS_UNAVAILABLE", unobserved, "coinbase")
+    if payload is not None:
+        validate_readiness(payload, decision)
 
     sv002_readiness = None
     sv002_readiness_url = None
@@ -601,20 +654,12 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             tls_enabled=tls_enabled,
             tls_request=tls_request,
         )
-        try:
-            with urllib.request.urlopen(
-                sv002_readiness_url,
-                timeout=5,
-                context=context,
-            ) as response:
-                sv002_readiness = json.loads(response.read().decode("utf-8"))
-        except Exception as exc:
-            raise GatewayActivationError(
-                "LOCAL_SV002_OBSERVATION_GATEWAY_READINESS_UNAVAILABLE:" + type(exc).__name__
-            ) from exc
-        if not isinstance(sv002_readiness, dict):
-            raise GatewayActivationError("LOCAL_SV002_OBSERVATION_GATEWAY_READINESS_OBJECT_REQUIRED")
-        validate_sv002_gateway_readiness(sv002_readiness)
+        sv002_readiness = _observe_readiness(
+            sv002_readiness_url, context,
+            "LOCAL_SV002_OBSERVATION_GATEWAY_READINESS_UNAVAILABLE", unobserved, "sv002_observation",
+        )
+        if sv002_readiness is not None:
+            validate_sv002_gateway_readiness(sv002_readiness)
 
     hil_receiver_readiness = None
     hil_receiver_readiness_url = None
@@ -623,20 +668,12 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             tls_enabled=tls_enabled,
             tls_request=tls_request,
         )
-        try:
-            with urllib.request.urlopen(
-                hil_receiver_readiness_url,
-                timeout=5,
-                context=context,
-            ) as response:
-                hil_receiver_readiness = json.loads(response.read().decode("utf-8"))
-        except Exception as exc:
-            raise GatewayActivationError(
-                "LOCAL_HIL_RECEIVER_GATEWAY_READINESS_UNAVAILABLE:" + type(exc).__name__
-            ) from exc
-        if not isinstance(hil_receiver_readiness, dict):
-            raise GatewayActivationError("LOCAL_HIL_RECEIVER_GATEWAY_READINESS_OBJECT_REQUIRED")
-        validate_hil_receiver_gateway_readiness(hil_receiver_readiness)
+        hil_receiver_readiness = _observe_readiness(
+            hil_receiver_readiness_url, context,
+            "LOCAL_HIL_RECEIVER_GATEWAY_READINESS_UNAVAILABLE", unobserved, "hil_receiver",
+        )
+        if hil_receiver_readiness is not None:
+            validate_hil_receiver_gateway_readiness(hil_receiver_readiness)
 
     hil_intr_readiness = None
     hil_intr_readiness_url = None
@@ -645,25 +682,25 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             tls_enabled=tls_enabled,
             tls_request=tls_request,
         )
-        try:
-            with urllib.request.urlopen(
-                hil_intr_readiness_url,
-                timeout=5,
-                context=context,
-            ) as response:
-                hil_intr_readiness = json.loads(response.read().decode("utf-8"))
-        except Exception as exc:
-            raise GatewayActivationError(
-                "LOCAL_HIL_INTR_GATEWAY_READINESS_UNAVAILABLE:" + type(exc).__name__
-            ) from exc
-        if not isinstance(hil_intr_readiness, dict):
-            raise GatewayActivationError("LOCAL_HIL_INTR_GATEWAY_READINESS_OBJECT_REQUIRED")
-        validate_hil_intr_gateway_readiness(hil_intr_readiness)
+        hil_intr_readiness = _observe_readiness(
+            hil_intr_readiness_url, context,
+            "LOCAL_HIL_INTR_GATEWAY_READINESS_UNAVAILABLE", unobserved, "hil_intr",
+        )
+        if hil_intr_readiness is not None:
+            validate_hil_intr_gateway_readiness(hil_intr_readiness)
 
+    if payload is None:
+        outcome = "LOCAL_SOVEREIGN_COINBASE_GATEWAY_DEPLOYED_READINESS_NOT_OBSERVED"
+    else:
+        outcome = "LOCAL_SOVEREIGN_COINBASE_GATEWAY_TLS_READY" if tls_enabled else "LOCAL_SOVEREIGN_COINBASE_GATEWAY_READY"
     return {
         "schema": "stegverse.healer.coinbase_stegdeploy_gateway_activation/v1",
         "state": "COMPLETE",
-        "outcome": "LOCAL_SOVEREIGN_COINBASE_GATEWAY_TLS_READY" if tls_enabled else "LOCAL_SOVEREIGN_COINBASE_GATEWAY_READY",
+        "outcome": outcome,
+        "readiness_observation": "NOT_OBSERVED" if unobserved else "OBSERVED",
+        "readiness_not_observed": unobserved,
+        "readiness_gates_transition": False,
+        "destination_liveness_is_transition_predicate": False,
         "source_head": source_head,
         "decision_ref": str(decision_path),
         "decision_id": decision["decision_id"],
@@ -698,6 +735,7 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "tls_adoption_receipt_sha256": tls_request.get("adoption_receipt_sha256") if tls_enabled and tls_request else None,
         "tls_private_key_material_recorded": False,
         "public_certificate_hostname_verified": False,
+        "local_tls_certificate_pinned_to_adoption": tls_enabled,
         "network_source_fetch_performed": False,
         "provider_operation_started": False,
         "may_authorize_order": False,
