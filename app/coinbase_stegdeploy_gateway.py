@@ -536,14 +536,19 @@ def _fetch_readiness(url: str, context: ssl.SSLContext | None) -> Any:
 
 
 def _observe_readiness(url: str, context: ssl.SSLContext | None, code: str,
-                       unobserved: dict[str, str], label: str) -> dict[str, Any] | None:
-    """Readiness as non-gating evidence: an unreachable surface is NOT_OBSERVED."""
+                       unobserved: dict[str, dict[str, Any]], label: str) -> dict[str, Any] | None:
+    """Readiness as non-gating evidence: an unreachable surface is NOT_AUTHENTICALLY_OBSERVED with a reconciliation entrypoint."""
     try:
         value = _fetch_readiness(url, context)
     except ssl.SSLCertVerificationError as exc:
         raise GatewayActivationError("LOCAL_GATEWAY_TLS_CERTIFICATE_NOT_ADOPTED_CERTIFICATE") from exc
     except _NotObserved as exc:
-        unobserved[label] = f"{code}:{exc}"
+        unobserved[label] = {
+            "consequence_observation": "NOT_AUTHENTICALLY_OBSERVED",
+            "reason": f"{code}:{exc}",
+            "reconciliation_entrypoint": f"GET {url}",
+            "gates_transition": False,
+        }
         return None
     if not isinstance(value, dict):
         raise GatewayActivationError(code.replace("_UNAVAILABLE", "_OBJECT_REQUIRED"))
@@ -637,11 +642,11 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
     # The deploy receipt above closes this transition. Readiness is observation
     # evidence after closure, never its predicate: destination liveness is not a
     # transition predicate and no machine is awaited (Task Registry global
-    # invariants). An unreachable readiness surface is recorded NOT_OBSERVED. A
+    # invariants). An unreachable readiness surface is recorded NOT_AUTHENTICALLY_OBSERVED. A
     # readiness surface that answers outside its authority boundary, or a TLS
     # endpoint that does not present the adopted certificate, still fails closed.
     context = adopted_certificate_context(tls_request) if tls_enabled else None
-    unobserved: dict[str, str] = {}
+    unobserved: dict[str, dict[str, Any]] = {}
 
     payload = _observe_readiness(readiness_url, context, "LOCAL_COINBASE_READINESS_UNAVAILABLE", unobserved, "coinbase")
     if payload is not None:
@@ -690,14 +695,14 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             validate_hil_intr_gateway_readiness(hil_intr_readiness)
 
     if payload is None:
-        outcome = "LOCAL_SOVEREIGN_COINBASE_GATEWAY_DEPLOYED_READINESS_NOT_OBSERVED"
+        outcome = "LOCAL_SOVEREIGN_COINBASE_GATEWAY_DEPLOYED_READINESS_NOT_AUTHENTICALLY_OBSERVED"
     else:
         outcome = "LOCAL_SOVEREIGN_COINBASE_GATEWAY_TLS_READY" if tls_enabled else "LOCAL_SOVEREIGN_COINBASE_GATEWAY_READY"
     return {
         "schema": "stegverse.healer.coinbase_stegdeploy_gateway_activation/v1",
         "state": "COMPLETE",
         "outcome": outcome,
-        "readiness_observation": "NOT_OBSERVED" if unobserved else "OBSERVED",
+        "readiness_observation": "NOT_AUTHENTICALLY_OBSERVED" if unobserved else "OBSERVED",
         "readiness_not_observed": unobserved,
         "readiness_gates_transition": False,
         "destination_liveness_is_transition_predicate": False,
