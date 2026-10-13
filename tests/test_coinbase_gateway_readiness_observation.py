@@ -27,7 +27,11 @@ class ReadinessObservationTests(unittest.TestCase):
         url = f"http://127.0.0.1:{free_port()}/api/coinbase/skap/readiness"
         value = mod._observe_readiness(url, None, "LOCAL_COINBASE_READINESS_UNAVAILABLE", unobserved, "coinbase")
         self.assertIsNone(value)
-        self.assertTrue(unobserved["coinbase"].startswith("LOCAL_COINBASE_READINESS_UNAVAILABLE:"))
+        entry = unobserved["coinbase"]
+        self.assertEqual(entry["consequence_observation"], "NOT_AUTHENTICALLY_OBSERVED")
+        self.assertTrue(entry["reason"].startswith("LOCAL_COINBASE_READINESS_UNAVAILABLE:"))
+        self.assertEqual(entry["reconciliation_entrypoint"], "GET " + url)
+        self.assertIs(entry["gates_transition"], False)
 
     def test_execute_records_readiness_as_non_gating_evidence(self) -> None:
         source = Path(mod.__file__).read_text(encoding="utf-8")
