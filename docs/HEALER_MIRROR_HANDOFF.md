@@ -275,6 +275,8 @@ Source is MERGED on main. Hosted Test Readiness run `33118079568` / job `9867777
 
 Next runtime boundary: the existing sovereign scheduler executes this target on the admitted resident substrate. Missing local source, missing Docker/StegDeploy prerequisites, or missing TVC decision receipt must remain BLOCKED with no fabricated readiness.
 
+> **Superseded 2026-10-14:** there are no Docker prerequisites; the handler starts the host-native launcher (StegVerse-org/LLM-adapter#409). Per `docs/ECOSYSTEM_STATE_TRANSITION_DISPOSITION_INVARIANT.md`, a missing input is a six-field non-ALLOW, never a bare `BLOCKED`. Unobserved readiness is recorded as `NOT_AUTHENTICALLY_OBSERVED` with a reconciliation entrypoint (Healer #116/#117).
+
 
 ### Coinbase Gateway decision source closure
 

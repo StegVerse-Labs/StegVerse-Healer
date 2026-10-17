@@ -28,6 +28,19 @@ class CoinbaseStegDeployGatewayTests(unittest.TestCase):
         body = {k: v for k, v in receipt.items() if k != "receipt_digest"}
         receipt["receipt_digest"] = mod.digest(body)
 
+    def test_a_non_allow_result_carries_the_six_disposition_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as root, \
+                mock.patch.object(mod, "execute", side_effect=mod.GatewayActivationError("LLM_ADAPTER_SOURCE_MISSING")), \
+                mock.patch.dict("os.environ", {"HEALER_COINBASE_GATEWAY_STATE": str(Path(root) / "state.json")}), \
+                mock.patch("builtins.print"):
+            self.assertEqual(mod.main(), 3)
+            result = json.loads((Path(root) / "state.json").read_text(encoding="utf-8"))
+        for field in ("failure_code", "failed_predicate", "required_evidence_or_repair",
+                      "retry_entrypoint", "owning_existing_goal", "next_attempt"):
+            self.assertTrue(result[field], field)
+        self.assertEqual(result["failure_code"], "LLM_ADAPTER_SOURCE_MISSING")
+        self.assertEqual(result["authority_effect"], "NONE")
+
     def test_decision_requires_no_value_tvc_scope(self) -> None:
         mod.validate_decision(self.decision())
         bad = self.decision()
