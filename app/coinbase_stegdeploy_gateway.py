@@ -13,6 +13,11 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
+try:
+    from app.disposition import non_allow
+except ImportError:  # executed as app/coinbase_stegdeploy_gateway.py
+    from disposition import non_allow
+
 LLM_REPO = "StegVerse-org/LLM-adapter"
 TVC_REPO = "StegVerse-Labs/TVC"
 ROLE = "service_gateway_coinbase_skap_ciphertext_intake"
@@ -24,14 +29,8 @@ RETRY_ENTRYPOINT = "python -m app.coinbase_stegdeploy_gateway"
 
 def _non_allow(failure_code: str, failed_predicate: str, repair: str) -> dict[str, str]:
     """The six fields every non-ALLOW carries (ECOSYSTEM_STATE_TRANSITION_DISPOSITION_INVARIANT)."""
-    return {
-        "failure_code": failure_code,
-        "failed_predicate": failed_predicate,
-        "required_evidence_or_repair": repair,
-        "retry_entrypoint": RETRY_ENTRYPOINT,
-        "owning_existing_goal": OWNING_EXISTING_GOAL,
-        "next_attempt": "rerun the Healer target once the named repair is in place",
-    }
+    return non_allow(failure_code, failed_predicate, repair,
+                     retry_entrypoint=RETRY_ENTRYPOINT, owning_existing_goal=OWNING_EXISTING_GOAL)
 TLS_CERT_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_CERT_FILE"
 TLS_KEY_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_KEY_FILE"
 TLS_BIND_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_BIND_ADDRESS"
@@ -646,7 +645,7 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             "provider_operation_started": False,
             "production_public_route_observed": False,
             "tls_enabled": tls_enabled,
-            "runtime_topology": "HOST_NATIVE_PYTHON_UVICORN",
+            "runtime_topology": "HOST_NATIVE_PYTHON_STDLIB",
             "evaluator_intr_enabled": evaluator["enabled"],
             "sv002_observation_enabled": sv002_observe["enabled"],
             "hil_intr_enabled": hil_intr["enabled"],
@@ -738,7 +737,7 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
         "github_token_required": False,
         "render_required": False,
         "tls_enabled": tls_enabled,
-        "runtime_topology": "HOST_NATIVE_PYTHON_UVICORN",
+        "runtime_topology": "HOST_NATIVE_PYTHON_STDLIB",
         "docker_required": False,
         "evaluator_intr_enabled": evaluator["enabled"],
         "evaluator_intr_upstream": evaluator["upstream"] if evaluator["enabled"] else None,

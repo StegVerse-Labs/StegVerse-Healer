@@ -6,6 +6,20 @@ import os
 from pathlib import Path
 from typing import Any
 
+try:
+    from app.disposition import non_allow
+except ImportError:  # loaded by file path or executed as app/pre_carrier_assist.py
+    from disposition import non_allow
+
+OWNING_EXISTING_GOAL = "HEALER-G18-PRE-CARRIER-ASSIST-001"
+RETRY_ENTRYPOINT = "python -m app.pre_carrier_assist"
+
+
+def _non_allow(failure_code: str, failed_predicate: str, repair: str) -> dict[str, str]:
+    return non_allow(failure_code, failed_predicate, repair,
+                     retry_entrypoint=RETRY_ENTRYPOINT, owning_existing_goal=OWNING_EXISTING_GOAL)
+
+
 FORBIDDEN_CREDENTIALS = (
     "HEALER_GH_TOKEN",
     "GITHUB_TOKEN",
@@ -75,6 +89,8 @@ def inspect_pre_carrier() -> dict[str, Any]:
             "github_token_required": False,
             "non_tv_tvc_secret_or_token_used": False,
             "reason": "FORBIDDEN_CREDENTIAL_ENV_PRESENT",
+            **_non_allow("FORBIDDEN_CREDENTIAL_ENV_PRESENT", "forbidden_credential_env_absent",
+                         "unset the variables named in forbidden; credentials come only from TV/TVC"),
             "forbidden": forbidden,
             "next_action": "remove forbidden credential material and retry the bounded local inspection",
         }
@@ -90,6 +106,8 @@ def inspect_pre_carrier() -> dict[str, Any]:
             "github_token_required": False,
             "non_tv_tvc_secret_or_token_used": False,
             "reason": "CANONICAL_GITHUB_REPOSITORY_NOT_MATERIALIZED",
+            **_non_allow("CANONICAL_GITHUB_REPOSITORY_NOT_MATERIALIZED", "dotgithub_repository_root_materialized",
+                         "materialize StegVerse-Labs/.github locally and list its root in STEGVERSE_REPO_ROOTS_JSON"),
             "next_action": "materialize the already-authorized StegVerse-Labs/.github source locally; do not use remote checkout as production transport",
         }
 
@@ -103,6 +121,8 @@ def inspect_pre_carrier() -> dict[str, Any]:
             "github_token_required": False,
             "non_tv_tvc_secret_or_token_used": False,
             "reason": "REQUIRED_LOCAL_SOURCE_MISSING",
+            **_non_allow("REQUIRED_LOCAL_SOURCE_MISSING", "g18_required_local_source_files_present",
+                         "restore the files named in missing in the local StegVerse-Labs/.github source"),
             "missing": missing,
             "next_action": "restore the canonical local source capsule through its existing StegVerse owner before G18 transition execution",
         }
@@ -143,6 +163,8 @@ def inspect_pre_carrier() -> dict[str, Any]:
     return {
         "schema": "stegverse.healer.pre_carrier_assist/v0.1",
         "state": state,
+        **({} if not failed else _non_allow("G18_CANONICAL_CONTRACT_MISMATCH", "g18_pre_carrier_checks_pass:" + ",".join(failed),
+                                            "reconcile the canonical contract fields named in failed_checks")),
         "credential_authority": "TV/TVC",
         "credential_requirement": "NONE",
         "github_token_required": False,
@@ -164,6 +186,8 @@ def main() -> int:
         receipt = {
             "schema": "stegverse.healer.pre_carrier_assist/v0.1",
             "state": "FAILED",
+            **_non_allow("G18_PRE_CARRIER_INPUT_UNREADABLE", "g18_pre_carrier_inputs_readable",
+                         "repair the input named in error (STEGVERSE_REPO_ROOTS_JSON or a canonical JSON file)"),
             "credential_authority": "TV/TVC",
             "credential_requirement": "NONE",
             "github_token_required": False,

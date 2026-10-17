@@ -19,9 +19,15 @@ from typing import Any
 
 import sovereign_scheduler as base
 
+try:
+    from app.disposition import exception_failure_code, non_allow, unobserved_consequence
+except ImportError:  # executed via app/dispatch_orchestrators.py with app/ on sys.path
+    from disposition import exception_failure_code, non_allow, unobserved_consequence
+
 SCHEDULE_FILE = Path(__file__).resolve().parents[1] / "data" / "reusable_task_schedule.json"
 SCHEDULE_SCHEMA = "stegverse.reusable-task-schedule/v1"
 NEUTRAL_SCHEDULER_ID = "RT-REUSABLE-TASK-SCHEDULER-001"
+RETRY_ENTRYPOINT = "python app/dispatch_orchestrators.py"
 NEUTRAL_TRIGGER_REL = Path("scripts/trigger_reusable_task.py")
 SOURCE_REFRESH_TASK_ID = "RT-SOVEREIGN-SOURCE-REFRESH-001"
 RUNTIME_ROOT_ENV = "STEGVERSE_HEARTBEAT_ROOT"
@@ -640,7 +646,32 @@ def build_and_execute(config_path: Path, schedule_path: Path = SCHEDULE_FILE) ->
         or root_observation.get("state") != "RESIDENT_CUSTODY_ROOT_OBSERVED"
     ):
         receipt["state"] = "BLOCKED"
+        receipt.update(_carrier_block_disposition(delegation, root_observation))
     return receipt
+
+
+def _carrier_block_disposition(delegation: dict[str, Any], root_observation: dict[str, Any]) -> dict[str, str]:
+    """Six disposition fields for a COMPLETE base receipt this carrier turns into BLOCKED."""
+    if delegation.get("state") == "BOUNDARY_RECORDED":
+        boundary = str(delegation.get("boundary") or "")
+        if not boundary:
+            # The neutral trigger ran but its runner result was not observed. The
+            # effect is recorded as unobserved and reconciled; nothing is awaited.
+            return {
+                **non_allow("NEUTRAL_SCHEDULER_RUNNER_RESULT_NOT_OBSERVED",
+                            "neutral_trigger_returncode_zero_and_runner_result_written",
+                            "repair the neutral trigger failure named in neutral_reusable_task_scheduler.execution",
+                            retry_entrypoint=RETRY_ENTRYPOINT, owning_existing_goal=NEUTRAL_SCHEDULER_ID),
+                **unobserved_consequence(RETRY_ENTRYPOINT),
+            }
+        return non_allow(f"NEUTRAL_SCHEDULER_DELEGATION_BOUNDARY:{boundary}",
+                         "neutral_reusable_task_scheduler_sources_materialized",
+                         f"materialize the source named by boundary {boundary} on the resident carrier",
+                         retry_entrypoint=RETRY_ENTRYPOINT, owning_existing_goal=NEUTRAL_SCHEDULER_ID)
+    return non_allow(f"RESIDENT_CUSTODY_ROOT_NOT_OBSERVED:{root_observation.get('state')}",
+                     "resident_custody_root_observation_state_RESIDENT_CUSTODY_ROOT_OBSERVED",
+                     f"materialize a valid resident runtime root (set {RUNTIME_ROOT_ENV}) carrying the required runtime markers",
+                     retry_entrypoint=RETRY_ENTRYPOINT, owning_existing_goal=ROOT_OBSERVATION_TASK_ID)
 
 
 def main() -> int:
@@ -652,6 +683,9 @@ def main() -> int:
         receipt = {
             "schema": "stegverse.healer.sovereign_scheduler_receipt/v0.1",
             "state": "FAILED",
+            **non_allow(exception_failure_code(exc, "REUSABLE_TASK_CARRIER_CONFIGURATION_INVALID"), "reusable_task_carrier_configuration_valid",
+                        "repair the configuration named in error", retry_entrypoint=RETRY_ENTRYPOINT,
+                        owning_existing_goal=NEUTRAL_SCHEDULER_ID),
             "credential_authority": "TV/TVC",
             "github_token_required": False,
             "reusable_task_scheduler_owner": NEUTRAL_SCHEDULER_ID,

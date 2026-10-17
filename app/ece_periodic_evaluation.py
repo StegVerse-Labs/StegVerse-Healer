@@ -20,6 +20,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from app.disposition import non_allow
+except ImportError:  # executed as app/ece_periodic_evaluation.py
+    from disposition import non_allow
+
+OWNING_EXISTING_GOAL = "ECOSYSTEM-CONTINUITY-EVALUATOR-001"
+RETRY_ENTRYPOINT = "python -m app.run_ece_periodic_evaluation"
+
+
+def _non_allow(failure_code: str, failed_predicate: str, repair: str) -> dict[str, str]:
+    return non_allow(failure_code, failed_predicate, repair,
+                     retry_entrypoint=RETRY_ENTRYPOINT, owning_existing_goal=OWNING_EXISTING_GOAL)
+
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -173,6 +186,8 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
         return {
             "state": "BLOCKED",
             "outcome": "ECE_REQUIRED_LOCAL_SOURCE_MISSING",
+            **_non_allow("ECE_REQUIRED_LOCAL_SOURCE_MISSING", "ece_required_repository_roots_materialized",
+                         "materialize the repositories named in missing and list their roots in STEGVERSE_REPO_ROOTS_JSON"),
             "missing": sorted(missing),
             "authority_effect": "NONE",
         }
@@ -242,7 +257,7 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
         ], sdk_root)
         steps.append(build_run)
         if build_run["returncode"] != 0 or not manifest_path.is_file():
-            return {"state":"BLOCKED","outcome":"ECE_SDK_DIAGNOSTIC_MANIFEST_BUILD_FAILED","execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_SDK_DIAGNOSTIC_MANIFEST_BUILD_FAILED",**_non_allow("ECE_SDK_DIAGNOSTIC_MANIFEST_BUILD_FAILED", "sdk_manifest_builder_returncode_zero_and_manifest_written", "repair the stegverse.manifest_builder failure named in the last execution entry"),"execution":steps,"authority_effect":"NONE"}
 
         sdk_run = _run([
             sys.executable, "-m", "stegverse.ecosystem_diagnostic_cli",
@@ -250,7 +265,7 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
         ], sdk_root)
         steps.append(sdk_run)
         if sdk_run["returncode"] != 0 or not diagnostic_result_temp.is_file():
-            return {"state":"BLOCKED","outcome":"ECE_SDK_DIAGNOSTIC_EXECUTION_FAILED","execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_SDK_DIAGNOSTIC_EXECUTION_FAILED",**_non_allow("ECE_SDK_DIAGNOSTIC_EXECUTION_FAILED", "sdk_ecosystem_diagnostic_cli_returncode_zero_and_result_written", "repair the stegverse.ecosystem_diagnostic_cli failure named in the last execution entry"),"execution":steps,"authority_effect":"NONE"}
 
         diagnostic_raw = diagnostic_result_temp.read_bytes()
         diagnostic_sha = hashlib.sha256(diagnostic_raw).hexdigest()
@@ -258,7 +273,7 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
         exact_diagnostic = output_root / f"{diagnostic_id}.result.json"
         latest_diagnostic = output_root / "sdk-diagnostic-result.latest.json"
         if exact_diagnostic.exists() and exact_diagnostic.read_bytes() != diagnostic_raw:
-            return {"state":"BLOCKED","outcome":"ECE_SDK_DIAGNOSTIC_IDENTITY_CONFLICT","diagnostic_result_id":diagnostic_id,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_SDK_DIAGNOSTIC_IDENTITY_CONFLICT",**_non_allow("ECE_SDK_DIAGNOSTIC_IDENTITY_CONFLICT", "retained_sdk_diagnostic_result_bytes_match_content_address", "reconcile the resident diagnostic result named by diagnostic_result_id; never overwrite retained bytes"),"diagnostic_result_id":diagnostic_id,"authority_effect":"NONE"}
         exact_diagnostic.write_bytes(diagnostic_raw)
         latest_diagnostic.write_bytes(diagnostic_raw)
         diagnostic_result = json.loads(diagnostic_raw)
@@ -266,7 +281,7 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
         try:
             ece_observation_bundle = _ece_observations_from_diagnostic(diagnostic_result, diagnostic_sha)
         except ValueError as exc:
-            return {"state":"BLOCKED","outcome":str(exc),"diagnostic_result_id":diagnostic_id,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":str(exc),**_non_allow(str(exc), "sdk_diagnostic_result_translates_to_ece_observations", "repair the SDK diagnostic result shape named by failure_code"),"diagnostic_result_id":diagnostic_id,"authority_effect":"NONE"}
         translated_observations = temp_root / "ece-observations-from-sdk.json"
         translated_observations.write_text(json.dumps(ece_observation_bundle, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -277,20 +292,20 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
         ], github_root)
         steps.append(evaluation_run)
         if evaluation_run["returncode"] != 0 or not temp_evaluation.is_file():
-            return {"state":"BLOCKED","outcome":"ECE_EVALUATION_FAILED","execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_EVALUATION_FAILED",**_non_allow("ECE_EVALUATION_FAILED", "ece_evaluator_returncode_zero_and_evaluation_written", "repair the evaluate_ecosystem_continuity.py failure named in the last execution entry"),"execution":steps,"authority_effect":"NONE"}
 
         evaluation = json.loads(temp_evaluation.read_text(encoding="utf-8"))
         if evaluation.get("authority_effect") != "NONE_DIAGNOSTIC_ONLY":
-            return {"state":"BLOCKED","outcome":"ECE_EVALUATION_AUTHORITY_DRIFT","execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_EVALUATION_AUTHORITY_DRIFT",**_non_allow("ECE_EVALUATION_AUTHORITY_DRIFT", "ece_evaluation_authority_effect_NONE_DIAGNOSTIC_ONLY", "restore authority_effect NONE_DIAGNOSTIC_ONLY in the canonical evaluator"),"execution":steps,"authority_effect":"NONE"}
         evaluation_id = str(evaluation.get("evaluation_id", ""))
         if not evaluation_id.startswith("ece_"):
-            return {"state":"BLOCKED","outcome":"ECE_EVALUATION_ID_INVALID","execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_EVALUATION_ID_INVALID",**_non_allow("ECE_EVALUATION_ID_INVALID", "ece_evaluation_id_prefixed_ece_", "restore the ece_ evaluation_id in the canonical evaluator"),"execution":steps,"authority_effect":"NONE"}
 
         exact_eval = output_root / f"{evaluation_id}.evaluation.json"
         latest_eval = output_root / "evaluation.latest.json"
         raw = temp_evaluation.read_bytes()
         if exact_eval.exists() and exact_eval.read_bytes() != raw:
-            return {"state":"BLOCKED","outcome":"ECE_RESIDENT_IDENTITY_CONFLICT","evaluation_id":evaluation_id,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_RESIDENT_IDENTITY_CONFLICT",**_non_allow("ECE_RESIDENT_IDENTITY_CONFLICT", "retained_ece_evaluation_bytes_match_evaluation_id", "reconcile the resident evaluation named by evaluation_id; never overwrite retained bytes"),"evaluation_id":evaluation_id,"authority_effect":"NONE"}
         exact_eval.write_bytes(raw)
         latest_eval.write_bytes(raw)
 
@@ -299,11 +314,11 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
         ], mr_root)
         steps.append(organization_record_run)
         if organization_record_run["returncode"] != 0:
-            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_ORGANIZATION_RECORD_FAILED","evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_ORGANIZATION_RECORD_FAILED",**_non_allow("ECE_MASTER_RECORDS_ORGANIZATION_RECORD_FAILED", "master_records_ingest_returncode_zero", "repair the Master Records ingest failure named in the last execution entry"),"evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
         try:
             organization_record_result = json.loads(organization_record_run["stdout_tail"].strip().splitlines()[-1])
         except Exception:
-            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_ORGANIZATION_RECORD_RECEIPT_INVALID","evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_ORGANIZATION_RECORD_RECEIPT_INVALID",**_non_allow("ECE_MASTER_RECORDS_ORGANIZATION_RECORD_RECEIPT_INVALID", "master_records_ingest_last_stdout_line_is_json_receipt", "repair the Master Records ingest so it prints its JSON receipt as the last stdout line"),"evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
 
         organization_record_ref = Path(str(organization_record_result.get("custody_ref", "")))
         reconstructed = temp_root / "reconstructed.json"
@@ -312,19 +327,19 @@ def execute_periodic_ece(roots: dict[str, Path], resident_root: Path, evaluated_
         ], mr_root)
         steps.append(reconstruction_run)
         if reconstruction_run["returncode"] != 0 or not reconstructed.is_file() or reconstructed.read_bytes() != raw:
-            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_RECONSTRUCTION_FAILED","evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_MASTER_RECORDS_RECONSTRUCTION_FAILED",**_non_allow("ECE_MASTER_RECORDS_RECONSTRUCTION_FAILED", "master_records_reconstruction_bytes_equal_evaluation", "repair the Master Records reconstruction so it reproduces the exact evaluation bytes"),"evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
 
         intake_path = output_root / "healer-intake.latest.json"
         intake_run = _run([sys.executable, str(healer_intake), "--input", str(exact_eval), "--output", str(intake_path)], healer_root)
         steps.append(intake_run)
         if intake_run["returncode"] != 0 or not intake_path.is_file():
-            return {"state":"BLOCKED","outcome":"ECE_HEALER_INTAKE_FAILED","evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_HEALER_INTAKE_FAILED",**_non_allow("ECE_HEALER_INTAKE_FAILED", "healer_ece_finding_intake_returncode_zero_and_intake_written", "repair the app/ece_finding_intake.py failure named in the last execution entry"),"evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
 
         projection_path = output_root / "site-projection.latest.json"
         projection_run = _run([sys.executable, str(site_projection), "--input", str(exact_eval), "--output", str(projection_path)], site_root)
         steps.append(projection_run)
         if projection_run["returncode"] != 0 or not projection_path.is_file():
-            return {"state":"BLOCKED","outcome":"ECE_SITE_PROJECTION_FAILED","evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
+            return {"state":"BLOCKED","outcome":"ECE_SITE_PROJECTION_FAILED",**_non_allow("ECE_SITE_PROJECTION_FAILED", "site_projection_returncode_zero_and_projection_written", "repair the Site project_ecosystem_continuity.py failure named in the last execution entry"),"evaluation_id":evaluation_id,"execution":steps,"authority_effect":"NONE"}
 
     receipt = {
         "schema": "stegverse.healer-ecosystem-continuity-cycle/v1",
