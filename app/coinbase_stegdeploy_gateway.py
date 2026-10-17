@@ -18,6 +18,20 @@ TVC_REPO = "StegVerse-Labs/TVC"
 ROLE = "service_gateway_coinbase_skap_ciphertext_intake"
 DECISION_SCHEMA = "stegverse.tvc.coinbase_service_gateway_no_value_decision/v1"
 READINESS_URL = "http://127.0.0.1:8000/api/coinbase/skap/readiness"
+OWNING_EXISTING_GOAL = "LLMA-DECLARED-PATH-CONFORMANCE-368"
+RETRY_ENTRYPOINT = "python -m app.coinbase_stegdeploy_gateway"
+
+
+def _non_allow(failure_code: str, failed_predicate: str, repair: str) -> dict[str, str]:
+    """The six fields every non-ALLOW carries (ECOSYSTEM_STATE_TRANSITION_DISPOSITION_INVARIANT)."""
+    return {
+        "failure_code": failure_code,
+        "failed_predicate": failed_predicate,
+        "required_evidence_or_repair": repair,
+        "retry_entrypoint": RETRY_ENTRYPOINT,
+        "owning_existing_goal": OWNING_EXISTING_GOAL,
+        "next_attempt": "rerun the Healer target once the named repair is in place",
+    }
 TLS_CERT_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_CERT_FILE"
 TLS_KEY_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_KEY_FILE"
 TLS_BIND_ENV = "STEGVERSE_SERVICE_GATEWAY_TLS_BIND_ADDRESS"
@@ -621,6 +635,8 @@ def execute(roots_json: str | None = None) -> dict[str, Any]:
             "schema": "stegverse.healer.coinbase_stegdeploy_gateway_activation/v1",
             "state": "BLOCKED",
             "outcome": "STEGDEPLOY_BOOTSTRAP_BLOCKED",
+            **_non_allow("STEGDEPLOY_BOOTSTRAP_BLOCKED", "native_gateway_launcher_start_succeeded",
+                         "repair the native launcher start failure named in stderr_tail"),
             "source_head": source_head,
             "decision_ref": str(decision_path),
             "returncode": deploy.returncode,
@@ -759,6 +775,8 @@ def main() -> int:
             "schema": "stegverse.healer.coinbase_stegdeploy_gateway_activation/v1",
             "state": "BLOCKED",
             "outcome": str(exc),
+            **_non_allow(str(exc) or type(exc).__name__, "coinbase_gateway_activation_preconditions_met",
+                         "supply or repair the input named by failure_code"),
             "credential_authority": "TV/TVC",
             "credential_material_present": False,
             "github_token_required": False,
