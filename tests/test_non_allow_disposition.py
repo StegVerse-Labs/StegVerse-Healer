@@ -82,6 +82,22 @@ class TestSovereignScheduler(DispositionAssertions):
         self.assert_six_fields(result)
         self.assertEqual(result["owning_existing_goal"], "StegVerse-Labs/Site#234")
 
+    def test_partial_record_with_failure_code_is_completed_not_passed_through(self) -> None:
+        target = {"repo": "StegVerse-Labs/SCW", "workflow": "uptime.yml", "aliases": ["uptime"],
+                  "canonical_owner": "StegVerse-Labs/SCW#1"}
+        partial = {"state": "BLOCKED", "outcome": "SCW_UPTIME_BLOCKED", "failure_code": "OWN_CODE"}
+        result = sovereign_scheduler._with_disposition(target, partial)
+        self.assert_six_fields(result)
+        self.assertEqual(result["failure_code"], "OWN_CODE")  # a field the record already names is kept
+        self.assertEqual(result["owning_existing_goal"], "StegVerse-Labs/SCW#1")
+        self.assertNotIn("owning_existing_goal_source", result)
+
+    def test_default_owning_goal_is_labelled_when_target_declares_no_owner(self) -> None:
+        target = {"repo": "StegVerse-Labs/SCW", "workflow": "scw_orchestrator.yml", "aliases": ["scw"]}
+        result = sovereign_scheduler._execute_target(target, {}, "{}")
+        self.assert_six_fields(result)
+        self.assertEqual(result["owning_existing_goal_source"], "DEFAULT_TARGET_DECLARES_NO_CANONICAL_OWNER")
+
     def test_unbound_handler_review_required_carries_the_six_fields(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             result = sovereign_scheduler._execute_target(

@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from app.disposition import exception_failure_code, non_allow, unobserved_consequence
+    from app.disposition import DISPOSITION_FIELDS, exception_failure_code, non_allow, unobserved_consequence
 except ImportError:  # executed as app/sovereign_scheduler.py or imported as a top-level module
-    from disposition import exception_failure_code, non_allow, unobserved_consequence
+    from disposition import DISPOSITION_FIELDS, exception_failure_code, non_allow, unobserved_consequence
 
 FORBIDDEN_CREDENTIALS = (
     "HEALER_GH_TOKEN",
@@ -157,7 +157,10 @@ def _target_retry_entrypoint(target: dict[str, Any]) -> str:
 
 def _with_disposition(target: dict[str, Any], record: dict[str, Any]) -> dict[str, Any]:
     """Attach the six disposition fields to a non-ALLOW outcome that lacks them."""
-    if record.get("state") in ALLOW_STATES or record.get("failure_code"):
+    if record.get("state") in ALLOW_STATES:
+        return record
+    missing = [field for field in DISPOSITION_FIELDS if not record.get(field)]
+    if not missing:
         return record
     outcome = str(record.get("outcome", ""))
     failure_code, predicate, repair = OUTCOME_DISPOSITIONS.get(
@@ -166,8 +169,14 @@ def _with_disposition(target: dict[str, Any], record: dict[str, Any]) -> dict[st
     if isinstance(receipt, dict) and receipt.get("failure_code"):
         failure_code = f"{failure_code}:{receipt['failure_code']}"
     owner = str(target.get("canonical_owner") or "").strip()
-    return {**record, **non_allow(failure_code, predicate, repair, retry_entrypoint=_target_retry_entrypoint(target),
-                                  **({"owning_existing_goal": owner} if owner else {}))}
+    derived = non_allow(failure_code, predicate, repair, retry_entrypoint=_target_retry_entrypoint(target),
+                        **({"owning_existing_goal": owner} if owner else {}))
+    # A record that already names some fields keeps them; only the missing ones are completed.
+    completed = {**record, **{field: derived[field] for field in missing}}
+    if "owning_existing_goal" in missing and not owner:
+        # The target declares no canonical_owner, so the lane default is used and labelled as such.
+        completed["owning_existing_goal_source"] = "DEFAULT_TARGET_DECLARES_NO_CANONICAL_OWNER"
+    return completed
 
 
 RECEIVER_UNAVAILABLE_DISPOSITION = "DURABLE_QUEUE_OR_EVENT_EPHEMERAL_MATERIALIZATION"
