@@ -140,6 +140,19 @@ class TestRelay(DispositionAssertions):
         self.assertEqual(body["failure_code"], "STEGDEPLOY_RELAY_BLOCKED:source_repository_not_materialized")
 
 
+class TestAuditSchedulesScriptEntrypoint(unittest.TestCase):
+    def test_script_entrypoint_imports_and_fails_closed_without_repo_roots(self) -> None:
+        # sovereign_scheduler and quiet_enforcer.yml both run `python app/audit_schedules.py`.
+        env = {"PATH": os.environ.get("PATH", ""), "TARGETS_FILE": "data/orchestrator_targets.json"}
+        with tempfile.TemporaryDirectory() as td:
+            env["QUIET_RECEIPT"] = str(Path(td) / "quiet.json")
+            proc = subprocess.run([sys.executable, "app/audit_schedules.py"], cwd=ROOT, env=env,
+                                  text=True, capture_output=True, check=False)
+        self.assertNotIn("ModuleNotFoundError", proc.stderr)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("STEGVERSE_REPO_ROOTS_JSON is required", proc.stderr)
+
+
 class TestPreCarrierAssist(DispositionAssertions):
     def test_failed_and_blocked_paths_carry_the_six_fields(self) -> None:
         with mock.patch.dict(os.environ, {**CLEAN_ENV, "GH_TOKEN": "x"}):

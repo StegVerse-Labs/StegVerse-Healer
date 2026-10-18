@@ -8,8 +8,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.actions_cost_reducer import build_report
-from app.disposition import non_allow
+try:
+    from app.actions_cost_reducer import build_report
+    from app.disposition import non_allow
+except ImportError:  # executed as app/audit_schedules.py (sovereign_scheduler, quiet_enforcer.yml)
+    from actions_cost_reducer import build_report
+    from disposition import non_allow
 
 VALID_STATES = {"COMPLETE", "BLOCKED", "RETRY", "REVIEW_REQUIRED", "FAILED"}
 FORBIDDEN_CREDENTIALS = ("HEALER_GH_TOKEN", "GITHUB_TOKEN", "GH_TOKEN", "HEALER_PAT", "GH_STEGVERSE_AI_TOKEN")
