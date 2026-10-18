@@ -156,8 +156,10 @@ receipt env: STEGVERSE_CHILD_SAFETY_REPORT=<ephemeral/local path>
 schedule: hourly through existing SHWP-HEALER-SOVEREIGN-SCHEDULER-001
 missing Site root: BLOCKED
 missing observer script: BLOCKED
-nonzero observer result: BLOCKED
-non-VERIFIED_PUBLICLY_REACHABLE receipt: BLOCKED
+observer report not materialized (no/invalid JSON object): BLOCKED (six disposition fields)
+report boundary fields not all false: BLOCKED (six disposition fields)
+observer run exceeds 60s bound: BLOCKED (six disposition fields), not retried
+report materialized, public route not verified: COMPLETE + reachability_observation NOT_AUTHENTICALLY_OBSERVED (2026-10-18)
 github_token_required: false
 artifact_custody_required: false
 remote_checkout_required: false
@@ -177,7 +179,7 @@ deterministic Healer tests: PASS
 validation-only authority boundary: PASS
 ```
 
-The handler accepts completion only when the Site observer reports `VERIFIED_PUBLICLY_REACHABLE`, `authority_effect=false`, `github_token_required=false`, and `artifact_custody_required=false`. It writes the public-route observation to an ephemeral/local receipt rather than GitHub artifact custody. No second scheduler or heartbeat was created.
+Until 2026-10-18 the handler accepted completion only when the Site observer reported `VERIFIED_PUBLICLY_REACHABLE`; see the 2026-10-18 note below for the current contract. It writes the public-route observation to an ephemeral/local receipt rather than GitHub artifact custody. No second scheduler or heartbeat was created.
 
 Canonical Site coordination is `StegVerse-Labs/Site#268` / `SITE-WORKFLOW-SURFACE-MINIMIZATION-268-B26-20260817`. Site may retire `.github/workflows/verify-child-safety-public-deployment.yml` only after preserving its local validator/task semantics and validating the resulting exact-current-main tranche.
 
@@ -388,3 +390,7 @@ Merged SDK #478 supplies `validate_remediation_return` with manifest/route/evalu
 Every non-ALLOW record a Healer module produces (BLOCKED, FAILED, FAIL_CLOSED, REVIEW_REQUIRED) now carries the six Task Registry disposition fields — `failure_code`, `failed_predicate`, `required_evidence_or_repair`, `retry_entrypoint`, `owning_existing_goal`, `next_attempt` — through the shared standard-library helper `app/disposition.py::non_allow`. Control flow and returned states are unchanged; the fields are additive. `owning_existing_goal` is the module's existing goal (target `canonical_owner`, `HEALER-G18-PRE-CARRIER-ASSIST-001`, `ECOSYSTEM-CONTINUITY-EVALUATOR-001`, `RT-REUSABLE-TASK-SCHEDULER-001`, `STEG-BROWSER-RESIDENT-CUSTODY-ROOT-OBSERVATION-001`) or `LLMA-DECLARED-PATH-CONFORMANCE-368`. The sovereign scheduler attaches per-outcome dispositions from `OUTCOME_DISPOSITIONS` with a scope-specific retry entrypoint (`RUN_SCOPE=<alias> DISPATCH_MODE=manual python -m app.sovereign_scheduler`).
 
 An effect Healer did not observe (ECE public Site publication after materialization, an unparseable StegDeploy target-intake result, a neutral-scheduler runner result that was not written) is recorded as `consequence_observation: NOT_AUTHENTICALLY_OBSERVED` plus a `reconciliation_entrypoint`; no external machine is awaited or polled, and destination liveness is never a transition predicate. The Coinbase gateway `runtime_topology` label is now `HOST_NATIVE_PYTHON_STDLIB`. Covered by `tests/test_non_allow_disposition.py`.
+
+## 2026-10-18 child-safety observer: destination liveness is no longer a transition predicate (LLM-adapter#368 Q10)
+
+**This changes control flow; the owner decides the merge.** Task Registry invariants `destination_liveness_is_transition_predicate=false`, `external_machine_awaiting_allowed=false` and `receiver_unavailable_disposition=DURABLE_QUEUE_OR_EVENT_EPHEMERAL_MATERIALIZATION` now govern `StegVerse-Labs/Site/child-safety-public-deployment-observer` in `app/sovereign_scheduler.py`. The target transitions to COMPLETE on the step Healer controls: one bounded run of `scripts/check_child_safety_public_deployment.py` that materializes a JSON-object report at `STEGVERSE_CHILD_SAFETY_REPORT` with `authority_effect`, `github_token_required` and `artifact_custody_required` all false. Public reachability is recorded in `reachability_observation`: `OBSERVED` with the report as evidence when the observer reports `VERIFIED_PUBLICLY_REACHABLE` and exits 0; otherwise `consequence_observation: NOT_AUTHENTICALLY_OBSERVED` plus `reconciliation_entrypoint` (the observer's own one-shot command), the observer's reported state and exit status, and `receiver_unavailable_disposition: DURABLE_QUEUE_OR_EVENT_EPHEMERAL_MATERIALIZATION`. Nothing waits, retries or polls for reachability. A report that is not materialized, violates the boundary fields, or an observer run that exceeds its bound remains a non-ALLOW carrying the six fields via `app/disposition.py`. Other targets are unchanged. Covered by `tests/test_site_child_safety_public_observer.py`.

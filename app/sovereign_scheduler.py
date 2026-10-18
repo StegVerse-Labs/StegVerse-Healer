@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from app.disposition import exception_failure_code, non_allow
+    from app.disposition import exception_failure_code, non_allow, unobserved_consequence
 except ImportError:  # executed as app/sovereign_scheduler.py or imported as a top-level module
-    from disposition import exception_failure_code, non_allow
+    from disposition import exception_failure_code, non_allow, unobserved_consequence
 
 FORBIDDEN_CREDENTIALS = (
     "HEALER_GH_TOKEN",
@@ -124,8 +124,9 @@ OUTCOME_DISPOSITIONS: dict[str, tuple[str, str, str]] = {
     "SITE_MARKETPLACE_PROJECTION_IMPORT_FAILED": ("SITE_MARKETPLACE_PROJECTION_IMPORT_FAILED", "site_marketplace_projection_import_returncode_zero_with_status_file", "repair the importer failure named in execution.stderr_tail"),
     "SOVEREIGN_LOCAL_SITE_MARKETPLACE_PROJECTION_IMPORT": ("SITE_MARKETPLACE_PROJECTION_STATE_NOT_ADMITTED", "site_marketplace_projection_state_in_PAPER_ACCESSIBLE_or_PENDING_UPSTREAM", "resolve the projection state named by receipt.state"),
     "SITE_CHILD_SAFETY_OBSERVER_MISSING": ("SITE_CHILD_SAFETY_OBSERVER_MISSING", "site_child_safety_observer_script_present", "materialize scripts/check_child_safety_public_deployment.py in Site"),
-    "SITE_CHILD_SAFETY_PUBLIC_ROUTE_BLOCKED": ("SITE_CHILD_SAFETY_PUBLIC_ROUTE_BLOCKED", "site_child_safety_observer_returncode_zero_with_report", "repair the observer failure named in execution.stderr_tail"),
-    "SOVEREIGN_LOCAL_SITE_CHILD_SAFETY_PUBLIC_OBSERVATION": ("SITE_CHILD_SAFETY_OBSERVATION_PREDICATES_UNMET", "site_child_safety_report_verified_without_authority_token_or_artifact_custody", "resolve the report fields named in receipt (state, authority_effect, github_token_required, artifact_custody_required)"),
+    "SITE_CHILD_SAFETY_OBSERVER_TIMEOUT": ("SITE_CHILD_SAFETY_OBSERVER_TIMEOUT", "site_child_safety_observer_exits_within_bound", "repair the observer so its one-shot run exits within the bound; it must not wait on the public destination"),
+    "SITE_CHILD_SAFETY_REPORT_NOT_MATERIALIZED": ("SITE_CHILD_SAFETY_REPORT_NOT_MATERIALIZED", "site_child_safety_observer_materializes_json_object_report", "repair the observer failure named in execution.stderr_tail so it writes its report to STEGVERSE_CHILD_SAFETY_REPORT"),
+    "SITE_CHILD_SAFETY_REPORT_BOUNDARY_VIOLATED": ("SITE_CHILD_SAFETY_REPORT_BOUNDARY_VIOLATED", "site_child_safety_report_without_authority_token_or_artifact_custody", "resolve the report fields named in receipt (authority_effect, github_token_required, artifact_custody_required must be false)"),
     "SITE_HEARTBEAT_RESPONSE_FORBIDDEN_CREDENTIAL_ENV": ("SITE_HEARTBEAT_RESPONSE_FORBIDDEN_CREDENTIAL_ENV", "site_heartbeat_response_forbidden_credential_env_absent", "unset the variables named in forbidden; credentials come only from TV/TVC"),
     "SITE_HEARTBEAT_RESPONSE_CARRIER_SOURCE_MISSING": ("SITE_HEARTBEAT_RESPONSE_CARRIER_SOURCE_MISSING", "site_heartbeat_response_carrier_scripts_present", "materialize a Site source containing every script named in missing"),
     "SITE_HEARTBEAT_RESPONSE_SOURCE_HEAD_UNPROVEN": ("SITE_HEARTBEAT_RESPONSE_SOURCE_HEAD_UNPROVEN", "site_git_head_resolves_to_40_hex_commit", "materialize Site as a git checkout whose HEAD resolves"),
@@ -167,6 +168,21 @@ def _with_disposition(target: dict[str, Any], record: dict[str, Any]) -> dict[st
     owner = str(target.get("canonical_owner") or "").strip()
     return {**record, **non_allow(failure_code, predicate, repair, retry_entrypoint=_target_retry_entrypoint(target),
                                   **({"owning_existing_goal": owner} if owner else {}))}
+
+
+RECEIVER_UNAVAILABLE_DISPOSITION = "DURABLE_QUEUE_OR_EVENT_EPHEMERAL_MATERIALIZATION"
+CHILD_SAFETY_RECONCILIATION_ENTRYPOINT = "STEGVERSE_CHILD_SAFETY_REPORT=<local report path> python scripts/check_child_safety_public_deployment.py (cwd: StegVerse-Labs/Site root)"
+CHILD_SAFETY_BOUNDARY_FIELDS = ("authority_effect", "github_token_required", "artifact_custody_required")
+
+
+def _child_safety_reachability(payload: dict[str, Any], observer_returncode: int) -> dict[str, Any]:
+    """Record public reachability as an observation field; never wait or poll for it."""
+    if payload.get("state") == "VERIFIED_PUBLICLY_REACHABLE" and observer_returncode == 0:
+        evidence = {key: value for key, value in payload.items() if key not in CHILD_SAFETY_BOUNDARY_FIELDS}
+        return {"reachability_observation": {"consequence_observation": "OBSERVED", "state": "VERIFIED_PUBLICLY_REACHABLE", "evidence": evidence}}
+    observation = {**unobserved_consequence(CHILD_SAFETY_RECONCILIATION_ENTRYPOINT),
+                   "observer_reported_state": payload.get("state"), "observer_returncode": observer_returncode}
+    return {"reachability_observation": observation, "receiver_unavailable_disposition": RECEIVER_UNAVAILABLE_DISPOSITION}
 
 
 def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_json: str) -> dict[str, Any]:
@@ -276,13 +292,22 @@ def _execute_target_handler(target: dict[str, Any], roots: dict[str, Path], all_
     if repo == "StegVerse-Labs/Site" and workflow == "child-safety-public-deployment-observer":
         script = root / "scripts" / "check_child_safety_public_deployment.py"
         if not script.is_file(): return {**base,"state":"BLOCKED","outcome":"SITE_CHILD_SAFETY_OBSERVER_MISSING"}
+        # The controlled step is the one-shot observer run materializing its local
+        # report; public reachability is recorded, never a transition predicate.
         with tempfile.TemporaryDirectory(prefix="stegverse-child-safety-") as temp_dir:
             receipt_path = Path(temp_dir) / "child-safety-public-deployment.report.json"
-            result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGVERSE_CHILD_SAFETY_REPORT": str(receipt_path)}, timeout=60)
-            payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else None
-        if result["returncode"] != 0 or not payload: return {**base,"state":"BLOCKED","outcome":"SITE_CHILD_SAFETY_PUBLIC_ROUTE_BLOCKED","execution":result,"receipt":payload}
-        complete = payload.get("state") == "VERIFIED_PUBLICLY_REACHABLE" and payload.get("authority_effect") is False and payload.get("github_token_required") is False and payload.get("artifact_custody_required") is False
-        return {**base,"state":"COMPLETE" if complete else "BLOCKED","outcome":"SOVEREIGN_LOCAL_SITE_CHILD_SAFETY_PUBLIC_OBSERVATION","execution":result,"receipt":payload}
+            try:
+                result = _run([sys.executable, str(script.relative_to(root))], root, {"STEGVERSE_CHILD_SAFETY_REPORT": str(receipt_path)}, timeout=60)
+            except subprocess.TimeoutExpired:
+                return {**base,"state":"BLOCKED","outcome":"SITE_CHILD_SAFETY_OBSERVER_TIMEOUT","receiver_unavailable_disposition":RECEIVER_UNAVAILABLE_DISPOSITION,"reachability_observation":unobserved_consequence(CHILD_SAFETY_RECONCILIATION_ENTRYPOINT)}
+            try:
+                payload = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.is_file() else None
+            except ValueError:
+                payload = None
+        if not isinstance(payload, dict) or not payload: return {**base,"state":"BLOCKED","outcome":"SITE_CHILD_SAFETY_REPORT_NOT_MATERIALIZED","execution":result,"receipt":payload}
+        if not all(payload.get(name) is False for name in CHILD_SAFETY_BOUNDARY_FIELDS): return {**base,"state":"BLOCKED","outcome":"SITE_CHILD_SAFETY_REPORT_BOUNDARY_VIOLATED","execution":result,"receipt":payload}
+        record = {**base,"state":"COMPLETE","outcome":"SOVEREIGN_LOCAL_SITE_CHILD_SAFETY_PUBLIC_OBSERVATION","execution":result,"receipt":payload}
+        return {**record, **_child_safety_reachability(payload, result["returncode"])}
 
     if repo == "StegVerse-Labs/Site" and workflow == "heartbeat-response-sovereign-carrier":
         local_forbidden = ("GITHUB_TOKEN","GH_TOKEN","GITHUB_PAT","TVC_EPHEMERAL_GITHUB_TOKEN","STEGVERSE_PROVIDER_TOKEN","STEGVERSE_MASTER_RECORDS_TOKEN","CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID","ACTIONS_ID_TOKEN_REQUEST_TOKEN")
