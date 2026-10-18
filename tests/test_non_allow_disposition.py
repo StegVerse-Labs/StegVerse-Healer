@@ -92,11 +92,17 @@ class TestSovereignScheduler(DispositionAssertions):
         self.assertEqual(result["owning_existing_goal"], "StegVerse-Labs/SCW#1")
         self.assertNotIn("owning_existing_goal_source", result)
 
-    def test_default_owning_goal_is_labelled_when_target_declares_no_owner(self) -> None:
+    def test_undeclared_owner_without_registry_carries_a_six_field_refusal(self) -> None:
         target = {"repo": "StegVerse-Labs/SCW", "workflow": "scw_orchestrator.yml", "aliases": ["scw"]}
         result = sovereign_scheduler._execute_target(target, {}, "{}")
         self.assert_six_fields(result)
-        self.assertEqual(result["owning_existing_goal_source"], "DEFAULT_TARGET_DECLARES_NO_CANONICAL_OWNER")
+        self.assertEqual(result["failure_code"], "LOCAL_REPOSITORY_NOT_MATERIALIZED")  # execution outcome unchanged
+        self.assertNotIn("owning_existing_goal_source", result)  # no default label; the gap is a refusal
+        self.assertEqual(result["owning_existing_goal"], "LLMA-DECLARED-PATH-CONFORMANCE-368")
+        refusal = result["owning_goal_refusal"]
+        self.assertEqual(tuple(refusal), DISPOSITION_FIELDS)
+        self.assertTrue(all(refusal.values()))
+        self.assertEqual(refusal["failure_code"], "CANONICAL_TASK_REGISTRY_NOT_MATERIALIZED")
 
     def test_unbound_handler_review_required_carries_the_six_fields(self) -> None:
         with tempfile.TemporaryDirectory() as td:

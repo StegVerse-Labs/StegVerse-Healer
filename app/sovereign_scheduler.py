@@ -11,8 +11,10 @@ from typing import Any
 
 try:
     from app.disposition import DISPOSITION_FIELDS, exception_failure_code, non_allow, unobserved_consequence
+    from app.owning_goal import REGISTRY_SOURCE, owning_goal_for_target, registry_records_from_roots
 except ImportError:  # executed as app/sovereign_scheduler.py or imported as a top-level module
     from disposition import DISPOSITION_FIELDS, exception_failure_code, non_allow, unobserved_consequence
+    from owning_goal import REGISTRY_SOURCE, owning_goal_for_target, registry_records_from_roots
 
 FORBIDDEN_CREDENTIALS = (
     "HEALER_GH_TOKEN",
@@ -155,8 +157,16 @@ def _target_retry_entrypoint(target: dict[str, Any]) -> str:
     return f"RUN_SCOPE={scope} DISPATCH_MODE=manual {RETRY_ENTRYPOINT}"
 
 
-def _with_disposition(target: dict[str, Any], record: dict[str, Any]) -> dict[str, Any]:
-    """Attach the six disposition fields to a non-ALLOW outcome that lacks them."""
+def _with_disposition(target: dict[str, Any], record: dict[str, Any],
+                      registry_records: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Attach the six disposition fields to a non-ALLOW outcome that lacks them.
+
+    The owning goal is the target's canonical_owner, else the one canonical task
+    record that names it (``registry_records``; ``None`` means the registry is not
+    materialized). Otherwise the lane default owns only the gap, and the six-field
+    ``owning_goal_refusal`` says why no owner was derived. Metadata only: the
+    record's state and outcome are never changed here.
+    """
     if record.get("state") in ALLOW_STATES:
         return record
     missing = [field for field in DISPOSITION_FIELDS if not record.get(field)]
@@ -168,14 +178,18 @@ def _with_disposition(target: dict[str, Any], record: dict[str, Any]) -> dict[st
     receipt = record.get("receipt")
     if isinstance(receipt, dict) and receipt.get("failure_code"):
         failure_code = f"{failure_code}:{receipt['failure_code']}"
-    owner = str(target.get("canonical_owner") or "").strip()
-    derived = non_allow(failure_code, predicate, repair, retry_entrypoint=_target_retry_entrypoint(target),
-                        **({"owning_existing_goal": owner} if owner else {}))
+    retry_entrypoint = _target_retry_entrypoint(target)
+    owner, refusal = owning_goal_for_target(target, registry_records, retry_entrypoint=retry_entrypoint)
+    derived = non_allow(failure_code, predicate, repair, retry_entrypoint=retry_entrypoint,
+                        owning_existing_goal=owner or (refusal or {})["owning_existing_goal"])
     # A record that already names some fields keeps them; only the missing ones are completed.
     completed = {**record, **{field: derived[field] for field in missing}}
-    if "owning_existing_goal" in missing and not owner:
-        # The target declares no canonical_owner, so the lane default is used and labelled as such.
-        completed["owning_existing_goal_source"] = "DEFAULT_TARGET_DECLARES_NO_CANONICAL_OWNER"
+    if "owning_existing_goal" in missing:
+        if refusal is not None:
+            # No owner is guessed: the lane default owns the gap, and the refusal names the repair.
+            completed["owning_goal_refusal"] = refusal
+        elif not str(target.get("canonical_owner") or "").strip():
+            completed["owning_existing_goal_source"] = REGISTRY_SOURCE
     return completed
 
 
@@ -194,8 +208,15 @@ def _child_safety_reachability(payload: dict[str, Any], observer_returncode: int
     return {"reachability_observation": observation, "receiver_unavailable_disposition": RECEIVER_UNAVAILABLE_DISPOSITION}
 
 
-def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_json: str) -> dict[str, Any]:
-    return _with_disposition(target, _execute_target_handler(target, roots, all_roots_json))
+_REGISTRY_FROM_ROOTS = object()
+
+
+def _execute_target(target: dict[str, Any], roots: dict[str, Path], all_roots_json: str,
+                    registry_records: Any = _REGISTRY_FROM_ROOTS) -> dict[str, Any]:
+    record = _execute_target_handler(target, roots, all_roots_json)
+    if registry_records is _REGISTRY_FROM_ROOTS:
+        registry_records = registry_records_from_roots(roots)
+    return _with_disposition(target, record, registry_records)
 
 
 def _execute_target_handler(target: dict[str, Any], roots: dict[str, Path], all_roots_json: str) -> dict[str, Any]:
@@ -452,7 +473,8 @@ def build_and_execute(config_path: Path) -> dict[str, Any]:
         short = str(target.get("repo", "")).split("/")[-1].lower(); aliases = {str(value).lower() for value in target.get("aliases", [])}
         if scope != "all" and scope != short and scope not in aliases: continue
         if _due(target, now, mode): selected.append(target)
-    outcomes = [_execute_target(target, roots, roots_json) for target in selected]
+    registry_records = registry_records_from_roots(roots)  # read once; only disposition metadata uses it
+    outcomes = [_execute_target(target, roots, roots_json, registry_records) for target in selected]
     terminal = "COMPLETE"
     if any(item["state"] == "FAILED" for item in outcomes): terminal = "FAILED"
     elif any(item["state"] == "BLOCKED" for item in outcomes): terminal = "BLOCKED"

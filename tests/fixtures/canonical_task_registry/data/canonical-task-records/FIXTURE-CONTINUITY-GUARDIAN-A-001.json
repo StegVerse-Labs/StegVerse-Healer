@@ -1,0 +1,9 @@
+{
+  "schema": "stegverse.canonical-task-record/v1",
+  "task_id": "FIXTURE-CONTINUITY-GUARDIAN-A-001",
+  "parent_task_id": null,
+  "goal": "Fixture task naming the Continuity guardian component.",
+  "coordination_state": "PROPOSED",
+  "repository": "StegVerse-Labs/Continuity",
+  "targets": {"organizations": ["StegVerse-Labs"], "repositories": [], "components": ["continuity-guardian"]}
+}
