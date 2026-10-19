@@ -19,10 +19,10 @@ from app.disposition import DISPOSITION_FIELDS, missing_disposition_fields  # no
 FIXTURE_LABS_ROOT = ROOT / "tests" / "fixtures" / "canonical_task_registry"
 # Byte-for-byte copy of the proposed record at StegVerse-Labs/.github#3257 head (see PROVENANCE.json there).
 LABS_3257_ROOT = ROOT / "tests" / "fixtures" / "canonical_task_registry_3257"
-LABS_3257_HEAD = "d11c9cfd7362bd19a9f5c076a1b562e813865a77"
+LABS_3257_HEAD = "c9e426cd27c53f2f92a3477702b568c0895b1066"
 OWNERSHIP_TASK = "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001"
 OWNERSHIP_RECORD = LABS_3257_ROOT / "data" / "canonical-task-records" / f"{OWNERSHIP_TASK}.json"
-OWNERSHIP_RECORD_SHA256 = "19aaaa0ce14eb76dec27b9f56b0cd34132b602e3c5a2348d6542140a77d56b83"
+OWNERSHIP_RECORD_SHA256 = "72217392111c978322d962cf6fc75205b1a3abd11e71fdd69d720e39d26d0aba"
 DEFAULT_GOAL = "LLMA-DECLARED-PATH-CONFORMANCE-368"
 UPTIME = {"repo": "StegVerse-Labs/SCW", "workflow": "uptime.yml", "aliases": ["scw-uptime", "uptime"]}
 SITE_RUNNER = {"repo": "StegVerse-Labs/Site", "workflow": "site-task-runner.yml", "aliases": ["site"]}
@@ -169,18 +169,63 @@ class TestHealerOrchestratorTargetOwnershipRecord(unittest.TestCase):
             self.assertEqual(result["owning_existing_goal"], target["canonical_owner"])
             self.assertNotIn("owning_existing_goal_source", result)
 
-    def test_each_target_matches_only_through_a_component_of_its_own_repository(self) -> None:
-        # The record lists 6 repositories x 12 components; the 12 intended (repo, component) pairs are the
-        # ones named by its per-target blockers. No current target reaches it through another repo's component.
+    def test_record_declares_the_twelve_intended_pairs_and_each_target_matches_through_its_own(self) -> None:
+        # The flat lists name 6 repositories x 12 components; repository_components declares the 12 intended
+        # (repo, component) pairs, which are the ones named by the record's per-target blockers.
         record = json.loads(OWNERSHIP_RECORD.read_text(encoding="utf-8"))
+        mapping = record["targets"]["repository_components"]
+        declared = {(repo, c) for repo, components in mapping.items() for c in components}
         intended = {tuple(b["failed_predicate"].split(":", 1)[1].rsplit(":", 1)) for b in record["blockers"]}
-        self.assertEqual(len(intended), 12)
-        components = set(record["targets"]["components"])
-        for target in orchestrator_targets():
-            hits = owning_goal._target_keys(target) & components
-            if target["repo"] in record["targets"]["repositories"] and hits:
-                self.assertLessEqual({(target["repo"], hit) for hit in hits}, intended, target)
+        self.assertEqual(len(declared), 12)
+        self.assertEqual(declared, intended)
+        self.assertEqual(sorted(mapping), sorted(record["targets"]["repositories"]))
+        for target in self.undeclared:
+            hits = owning_goal._target_keys(target) & set(mapping[target["repo"]])
+            self.assertTrue(hits, target)
 
+    def test_a_component_owned_in_another_repository_no_longer_matches(self) -> None:
+        # Under the flat lists every one of these would have matched (repo listed, component listed).
+        records = owning_goal.load_registry_records(LABS_3257_ROOT)
+        record = records[0]
+        mapping = record["targets"]["repository_components"]
+        flat_repos, flat_components = set(record["targets"]["repositories"]), set(record["targets"]["components"])
+        cross = 0
+        for repo in mapping:
+            for other, components in mapping.items():
+                if other == repo:
+                    continue
+                for component in components:
+                    target = {"repo": repo, "workflow": f"{component}.yml"}
+                    self.assertTrue(repo in flat_repos and component in flat_components)
+                    self.assertEqual(owning_goal.registry_matches(target, records), [], target)
+                    goal, refusal = owning_goal.owning_goal_for_target(target, records)
+                    self.assertIsNone(goal, target)
+                    self.assertEqual(refusal["failure_code"], "TARGET_OWNING_GOAL_NOT_IN_REGISTRY", target)
+                    cross += 1
+        self.assertEqual(cross, 6 * 12 - 12)
+        # The same synthetic pairs still match a record that only declares the flat lists.
+        flat = {k: v for k, v in record["targets"].items() if k != "repository_components"}
+        flat_record = {**record, "targets": flat}
+        self.assertEqual(owning_goal.registry_matches({"repo": "StegVerse-Labs/TV", "workflow": "uptime.yml"},
+                                                      [flat_record]), [OWNERSHIP_TASK])
+
+    def test_repository_components_replaces_the_flat_lists_and_fails_closed_when_malformed(self) -> None:
+        tv = {"repo": "StegVerse-Labs/TV", "workflow": "tv_self_heal.yml"}
+        base = {"task_id": "T", "repository": "StegVerse-Labs/TV",
+                "targets": {"repositories": ["StegVerse-Labs/TV"], "components": ["tv_self_heal"]}}
+        self.assertEqual(owning_goal.registry_matches(tv, [base]), ["T"])
+        for mapping in ({}, {"StegVerse-Labs/SCW": ["tv_self_heal"]}, {"StegVerse-Labs/TV": "tv_self_heal"},
+                        ["StegVerse-Labs/TV"], None):
+            record = {**base, "targets": {**base["targets"], "repository_components": mapping}}
+            self.assertEqual(owning_goal.registry_matches(tv, [record]), [], mapping)
+        exact = {**base, "targets": {"repository_components": {"StegVerse-Labs/TV": ["tv-self-heal"]}}}
+        self.assertEqual(owning_goal.registry_matches({**tv, "aliases": ["tv-self-heal"]}, [exact]), ["T"])
+        self.assertEqual(owning_goal.registry_matches({**tv, "aliases": ["tv-self-heal-2"]}, [exact]), [])
+        # Two records pairing the same target still refuse rather than pick one.
+        goal, refusal = owning_goal.owning_goal_for_target(
+            {**tv, "aliases": ["tv-self-heal"]}, [exact, {**exact, "task_id": "U"}])
+        self.assertIsNone(goal)
+        self.assertEqual(refusal["failure_code"], "TARGET_OWNING_GOAL_AMBIGUOUS_IN_REGISTRY")
 
 if __name__ == "__main__":
     unittest.main()

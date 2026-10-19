@@ -8,6 +8,13 @@ workflow (with or without ``.yml``), one of its aliases, or its
 returned. Repository overlap alone is never a mapping, since one repository is
 named by many unrelated tasks.
 
+A record that declares ``targets.repository_components`` (repository -> the
+components it owns) is matched only through that mapping: the target
+repository's own list must name the workflow, an alias, or the canonical_path.
+Its flat ``repositories``/``components`` lists are then ignored, so a component
+owned in one repository never matches a same-named target in another; a
+mapping that is not an object matches nothing.
+
 The registry is read only from the locally materialized
 ``StegVerse-Labs/.github`` root listed in STEGVERSE_REPO_ROOTS_JSON
 (``data/canonical-task-registry.json`` tasks plus
@@ -30,6 +37,7 @@ LABS_REPOSITORY = "StegVerse-Labs/.github"
 REGISTRY_PATH = "data/canonical-task-registry.json"
 RECORDS_DIR = "data/canonical-task-records"
 REGISTRY_SOURCE = "CANONICAL_TASK_REGISTRY"
+REPOSITORY_COMPONENTS = "repository_components"
 FAILED_PREDICATE = "TARGET_OWNING_GOAL_DECLARED_OR_REGISTERED"
 NOT_IN_REGISTRY = "TARGET_OWNING_GOAL_NOT_IN_REGISTRY"
 AMBIGUOUS_IN_REGISTRY = "TARGET_OWNING_GOAL_AMBIGUOUS_IN_REGISTRY"
@@ -96,7 +104,7 @@ def _strings(value: Any) -> set[str]:
 
 
 def registry_matches(target: Mapping[str, Any], registry_records: Iterable[Mapping[str, Any]]) -> list[str]:
-    """Sorted task_ids whose structured targets name this target's repository and workflow/alias/path."""
+    """Sorted task_ids whose structured targets pair this target's repository with its workflow/alias/path."""
     repo = str(target.get("repo") or "").strip()
     keys = _target_keys(target)
     if not repo or not keys:
@@ -104,6 +112,12 @@ def registry_matches(target: Mapping[str, Any], registry_records: Iterable[Mappi
     matches = set()
     for record in registry_records:
         targets = record.get("targets") if isinstance(record.get("targets"), dict) else {}
+        if REPOSITORY_COMPONENTS in targets:
+            # The exact pairing replaces the flat lists' cross product; a malformed one matches nothing.
+            mapping = targets[REPOSITORY_COMPONENTS]
+            if isinstance(mapping, dict) and _strings(mapping.get(repo)) & keys:
+                matches.add(str(record["task_id"]))
+            continue
         repositories = _strings(targets.get("repositories"))
         if isinstance(record.get("repository"), str):
             repositories.add(record["repository"])
@@ -133,7 +147,8 @@ def owning_goal_for_target(
     named = f"{repo} {workflow}".strip()
     declare = (f"declare canonical_owner for target {named} in data/orchestrator_targets.json, or register "
                f"it in the canonical task registry (a {LABS_REPOSITORY} {RECORDS_DIR} record whose "
-               f"targets.repositories names {repo} and whose targets.components names the workflow or an alias)")
+               f"targets.repository_components[{repo}] names the workflow or an alias, or, without that "
+               f"mapping, whose targets.repositories names {repo} and targets.components names it)")
     if registry_records is None:
         return None, _refusal(
             REGISTRY_NOT_MATERIALIZED,

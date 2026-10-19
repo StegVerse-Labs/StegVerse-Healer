@@ -42,7 +42,33 @@
       "continuity",
       "quiet_enforcer",
       "stegdeploy-publication-relay"
-    ]
+    ],
+    "repository_components": {
+      "StegVerse-Labs/Continuity": [
+        "continuity"
+      ],
+      "StegVerse-Labs/SCW": [
+        "scw_orchestrator",
+        "uptime"
+      ],
+      "StegVerse-Labs/Site": [
+        "site-task-runner",
+        "site-b27-native-validation",
+        "marketplace-coinbase-local-observer",
+        "marketplace-coinbase-local-projection-import",
+        "child-safety-public-deployment-observer"
+      ],
+      "StegVerse-Labs/StegVerse-Healer": [
+        "quiet_enforcer",
+        "stegdeploy-publication-relay"
+      ],
+      "StegVerse-Labs/TV": [
+        "tv_self_heal"
+      ],
+      "StegVerse-Labs/repo-standards": [
+        "st018-local-task-manager"
+      ]
+    }
   },
   "dependencies": [
     "STEGVERSE-CANONICAL-WORK-COORDINATION-001"
