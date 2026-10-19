@@ -1,0 +1,13 @@
+{
+  "purpose": "Pinned copy of a proposed canonical task record, used only by tests/test_owning_goal.py; not a registry root of record.",
+  "source_repository": "StegVerse-Labs/.github",
+  "source_pull_request": "StegVerse-Labs/.github#3257",
+  "source_pull_request_head_sha": "d11c9cfd7362bd19a9f5c076a1b562e813865a77",
+  "source_base_main_sha": "978b8880d238dc3e3a8b690c0675d8bb0e9d6985",
+  "source_path": "data/canonical-task-records/HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001.json",
+  "source_git_blob_sha": "bce4f5e3c36939dc16414b7a53194e985d6f2910",
+  "fixture_path": "data/canonical-task-records/HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001.json",
+  "fixture_sha256": "19aaaa0ce14eb76dec27b9f56b0cd34132b602e3c5a2348d6542140a77d56b83",
+  "copy": "byte-for-byte (git cat-file blob <head>:<source_path>)",
+  "record_state_at_head": "PROPOSED; absent from StegVerse-Labs/.github main at source_base_main_sha"
+}

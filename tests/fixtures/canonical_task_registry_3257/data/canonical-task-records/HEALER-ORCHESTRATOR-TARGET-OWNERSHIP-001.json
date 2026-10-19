@@ -1,0 +1,319 @@
+{
+  "schema": "stegverse.canonical-task-record/v1",
+  "task_id": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+  "correlation_id": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+  "root_correlation_id": "STEGVERSE-CANONICAL-WORK-COORDINATION-001",
+  "parent_task_id": "STEGVERSE-CANONICAL-WORK-COORDINATION-001",
+  "goal": "Own, as a named and bounded goal, the StegVerse-Healer orchestrator targets that declare no canonical_owner and that no other canonical task record names, so Healer derives an owning goal for each from this record instead of a lane default; each target is released to its specific owner as soon as one is declared.",
+  "coordination_state": "PROPOSED",
+  "cosv": {
+    "profile": "task.v1",
+    "vector": "10900000009000",
+    "source_state_vector_ref": "control/task-vectors/HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001.json",
+    "authority_effect": "NONE"
+  },
+  "source_refs": [
+    "docs/HEALER_ORCHESTRATOR_TARGET_OWNERSHIP_MIRROR_HANDOFF.md",
+    "StegVerse-Labs/StegVerse-Healer:data/orchestrator_targets.json",
+    "StegVerse-Labs/StegVerse-Healer#119"
+  ],
+  "targets": {
+    "organizations": [
+      "StegVerse-Labs"
+    ],
+    "repositories": [
+      "StegVerse-Labs/Continuity",
+      "StegVerse-Labs/SCW",
+      "StegVerse-Labs/Site",
+      "StegVerse-Labs/StegVerse-Healer",
+      "StegVerse-Labs/TV",
+      "StegVerse-Labs/repo-standards"
+    ],
+    "components": [
+      "site-task-runner",
+      "site-b27-native-validation",
+      "marketplace-coinbase-local-observer",
+      "marketplace-coinbase-local-projection-import",
+      "child-safety-public-deployment-observer",
+      "st018-local-task-manager",
+      "scw_orchestrator",
+      "uptime",
+      "tv_self_heal",
+      "continuity",
+      "quiet_enforcer",
+      "stegdeploy-publication-relay"
+    ]
+  },
+  "dependencies": [
+    "STEGVERSE-CANONICAL-WORK-COORDINATION-001"
+  ],
+  "blockers": [
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/Site:site-task-runner",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/Site site-task-runner lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/Site names the goal that owns site-task-runner; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/Site:site-b27-native-validation",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/Site site-b27-native-validation lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/Site names the goal that owns site-b27-native-validation; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/Site:marketplace-coinbase-local-observer",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/Site marketplace-coinbase-local-observer lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/Site names the goal that owns marketplace-coinbase-local-observer; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/Site:marketplace-coinbase-local-projection-import",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/Site marketplace-coinbase-local-projection-import lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/Site names the goal that owns marketplace-coinbase-local-projection-import; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/Site:child-safety-public-deployment-observer",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/Site child-safety-public-deployment-observer lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/Site names the goal that owns child-safety-public-deployment-observer; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/repo-standards:st018-local-task-manager",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/repo-standards st018-local-task-manager lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/repo-standards names the goal that owns st018-local-task-manager; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/SCW:scw_orchestrator",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/SCW scw_orchestrator lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/SCW names the goal that owns scw_orchestrator; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/SCW:uptime",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/SCW uptime lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/SCW names the goal that owns uptime; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/TV:tv_self_heal",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/TV tv_self_heal lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/TV names the goal that owns tv_self_heal; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/Continuity:continuity",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/Continuity continuity lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/Continuity names the goal that owns continuity; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/StegVerse-Healer:quiet_enforcer",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/StegVerse-Healer quiet_enforcer lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/StegVerse-Healer names the goal that owns quiet_enforcer; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    },
+    {
+      "disposition": "FAIL_CLOSED",
+      "evidence_class": "SOURCE_VALIDATION",
+      "consequence_committed": false,
+      "failure_code": "TARGET_SPECIFIC_OWNING_GOAL_NOT_DECLARED",
+      "failed_predicate": "TARGET_DECLARES_ITS_OWN_CANONICAL_OWNER:StegVerse-Labs/StegVerse-Healer:stegdeploy-publication-relay",
+      "satisfying_edge": "a canonical task record whose goal covers StegVerse-Labs/StegVerse-Healer stegdeploy-publication-relay lists it in targets.components, or the Healer target declares canonical_owner; this record then drops the component",
+      "required_evidence_or_repair": "the owner of StegVerse-Labs/StegVerse-Healer names the goal that owns stegdeploy-publication-relay; until then this record owns it as an unowned Healer-orchestrated target",
+      "retry_entrypoint": "StegVerse-Labs/StegVerse-Healer:app/owning_goal.py (owning-goal derivation from canonical task records)",
+      "owning_existing_goal": "HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001",
+      "next_attempt": "when the target's owning goal is declared",
+      "evidence_refs": [
+        "SOURCE_RECORD_ONLY:StegVerse-Labs/StegVerse-Healer#119 comment 6256271474 (TARGET_OWNING_GOAL_NOT_IN_REGISTRY against Labs 978b888)"
+      ]
+    }
+  ],
+  "expected_evidence_predicates": [
+    "EVERY_LISTED_TARGET_HAS_A_TARGET_SPECIFIC_OWNING_GOAL_OR_IS_RETIRED"
+  ],
+  "runtime_requirements": {
+    "capabilities": [
+      "ownership_projection"
+    ],
+    "environment": "DOCUMENTARY_NON_AUTHORIZING",
+    "direction": "REGISTRY_TO_HEALER_PROJECTION",
+    "mutation_required": false,
+    "deployment_required": false,
+    "current_observation_required": false
+  },
+  "worker_claim": {
+    "authority": "WORKERCOORDINATOR",
+    "claim_ref": null,
+    "fence_ref": null,
+    "projection_only": true
+  },
+  "completion": {
+    "claimed": false,
+    "validated": false,
+    "reconciliation_ref": "docs/HEALER_ORCHESTRATOR_TARGET_OWNERSHIP_MIRROR_HANDOFF.md"
+  },
+  "allowed_next_transitions": [
+    "TARGET_RELEASED_TO_SPECIFIC_OWNING_GOAL"
+  ],
+  "authority_model": {
+    "transport_protocol": "NONE",
+    "participating_runtime_authority": "NONE",
+    "stegverse_output_governance": "STEGVERSE",
+    "external_framework_governance": "NOT_ASSUMED"
+  },
+  "execution_substrate_resolution": {
+    "schema": "stegverse.execution-substrate-resolution/v1",
+    "review_order": [
+      "STEG-BROWSER-RETAINED-RESIDENT-NODE",
+      "STEGOS-CURRENT-DEVICE-NODE",
+      "STEG-BROWSER-EPHEMERAL-LEASE",
+      "SAME-DEVICE-SITE-SAFARI-SERVICE-WORKER",
+      "ADMITTED-EPHEMERAL-STEGOS-NODE",
+      "REMOTE-OR-EXTERNAL-DEVICE-LAST-RESORT"
+    ],
+    "reviews": [
+      {
+        "substrate_id": "STEG-BROWSER-RETAINED-RESIDENT-NODE",
+        "disposition": "NOT_APPLICABLE",
+        "limitation_class": "NOT_APPLICABLE",
+        "evidence_refs": []
+      },
+      {
+        "substrate_id": "STEGOS-CURRENT-DEVICE-NODE",
+        "disposition": "NOT_APPLICABLE",
+        "limitation_class": "NOT_APPLICABLE",
+        "evidence_refs": []
+      },
+      {
+        "substrate_id": "STEG-BROWSER-EPHEMERAL-LEASE",
+        "disposition": "NOT_APPLICABLE",
+        "limitation_class": "NOT_APPLICABLE",
+        "evidence_refs": []
+      },
+      {
+        "substrate_id": "SAME-DEVICE-SITE-SAFARI-SERVICE-WORKER",
+        "disposition": "NOT_APPLICABLE",
+        "limitation_class": "NOT_APPLICABLE",
+        "evidence_refs": []
+      },
+      {
+        "substrate_id": "ADMITTED-EPHEMERAL-STEGOS-NODE",
+        "disposition": "NOT_APPLICABLE",
+        "limitation_class": "NOT_APPLICABLE",
+        "evidence_refs": []
+      },
+      {
+        "substrate_id": "REMOTE-OR-EXTERNAL-DEVICE-LAST-RESORT",
+        "disposition": "NOT_APPLICABLE",
+        "limitation_class": "NOT_APPLICABLE",
+        "evidence_refs": []
+      }
+    ],
+    "selected_substrate_id": null,
+    "external_device_required": false,
+    "second_user_operated_device_allowed": false,
+    "authority_effect": "NONE"
+  },
+  "authority_effect": "NONE"
+}
