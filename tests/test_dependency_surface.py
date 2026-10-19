@@ -17,12 +17,14 @@ SKIP_PARTS = {".git", "__pycache__", ".venv", "venv", "node_modules"}
 MANIFESTS = ("requirements.txt", "requirements-dev.txt", "pyproject.toml", "setup.py", "setup.cfg", "Pipfile", "poetry.lock")
 INSTALL_STEP = re.compile(r"\b(pip3?\s+install|python3?\s+-m\s+pip\b|apt(-get)?\s+install|curl\s|wget\s|npm\s+(install|ci)\b)")
 # The complete set of actions the workflows may use; adding one is a dependency decision.
+# Each is pinned to the commit its v4 tag resolved to on 2026-10-19 (#119 M-P9), so a
+# moved tag cannot change what runs.
 ALLOWED_ACTIONS = {
-    "actions/checkout@v4",
-    "actions/cache/restore@v4",
-    "actions/cache/save@v4",
-    "actions/download-artifact@v4",
-    "actions/upload-artifact@v4",
+    "actions/checkout@11d5960a326750d5838078e36cf38b85af677262",  # v4
+    "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830",  # v4
+    "actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830",  # v4
+    "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",  # v4
+    "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",  # v4
 }
 
 
