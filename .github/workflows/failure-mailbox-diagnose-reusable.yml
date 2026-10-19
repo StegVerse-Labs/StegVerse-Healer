@@ -26,11 +26,6 @@ jobs:
           ref: ${{ inputs.healer_ref }}
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
       - name: Restore durable Healer diagnostic state
         uses: actions/cache/restore@v4
         with:
@@ -51,7 +46,7 @@ jobs:
           set -euo pipefail
           cp status/failure-mailbox/tvc-observation/batch.jsonl status/failure-mailbox/current-batch.jsonl
           cp status/failure-mailbox/tvc-observation/manifest.json status/failure-mailbox/current-manifest.json
-          python - <<'PY'
+          python3 - <<'PY'
           import json
           from pathlib import Path
           m=json.loads(Path('status/failure-mailbox/current-manifest.json').read_text())
@@ -68,14 +63,14 @@ jobs:
       - name: Run deterministic Healer mailbox tests
         env:
           PYTHONPATH: .
-        run: python -m unittest discover -s tests -p 'test_failure_mailbox*.py'
+        run: python3 -m unittest discover -s tests -p 'test_failure_mailbox*.py'
 
       - name: Run Healer shadow diagnostics
         env:
           PYTHONPATH: .
         shell: bash
         run: |
-          eval "$(python - <<'PY'
+          eval "$(python3 - <<'PY'
           import json, shlex
           m=json.load(open('status/failure-mailbox/current-manifest.json'))
           for k,v in {
@@ -88,7 +83,7 @@ jobs:
             print(f'{k}={shlex.quote(v)}')
           PY
           )"
-          python -m failure_mailbox.shadow \
+          python3 -m failure_mailbox.shadow \
             --input status/failure-mailbox/current-batch.jsonl \
             --ledger status/failure-mailbox/incident-ledger.json \
             --state status/failure-mailbox/shadow-state.json \
