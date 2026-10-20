@@ -9,11 +9,41 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+try:
+    from app.disposition import non_allow, unobserved_consequence
+except ImportError:  # executed as app/relay_stegdeploy_publication.py
+    from disposition import non_allow, unobserved_consequence
+
 SOURCE_REPO = "StegVerse-org/LLM-adapter"
 TARGET_REPO = "StegVerse-org/core-node-runtime-demo"
 SOURCE_PATH = "receipts/stegdeploy-image-publication.json"
 VALID_SOURCE_SCHEMA = "stegdeploy.image-publication.v2"
 FORBIDDEN_CREDENTIALS = ("HEALER_GH_TOKEN", "GITHUB_TOKEN", "GH_TOKEN", "HEALER_PAT", "GH_STEGVERSE_AI_TOKEN")
+RETRY_ENTRYPOINT = "python app/relay_stegdeploy_publication.py"
+# blocker -> (failed_predicate, required_evidence_or_repair)
+BLOCKER_DISPOSITIONS = {
+    "source_repository_not_materialized": ("source_repository_root_materialized", f"materialize {SOURCE_REPO} and list its root in STEGVERSE_REPO_ROOTS_JSON"),
+    "target_repository_not_materialized": ("target_repository_root_materialized", f"materialize {TARGET_REPO} and list its root in STEGVERSE_REPO_ROOTS_JSON"),
+    "source_publication_receipt_not_materialized": ("source_publication_receipt_present", f"materialize {SOURCE_PATH} in {SOURCE_REPO}"),
+    "source_repository_identity_mismatch": ("source_receipt_repository_equals_source_repo", f"republish the receipt from {SOURCE_REPO}"),
+    "source_receipt_not_v2": ("source_receipt_schema_v2", f"republish the receipt with schema {VALID_SOURCE_SCHEMA}"),
+    "source_receipt_not_published": ("source_receipt_state_PUBLISHED", "complete the StegDeploy image publication"),
+    "source_digest_not_sha256": ("source_digest_is_sha256", "republish the receipt with a sha256 image digest"),
+    "historical_consumer_pull_not_verified": ("source_consumer_pull_verified", "record the verified consumer pull in the publication receipt"),
+    "source_receipt_hash_missing": ("source_receipt_sha256_present", "republish the receipt with receipt_sha256"),
+    "target_local_intake_not_materialized": ("target_local_intake_script_present", f"materialize tools/stegdeploy_runtime_intake_local.py in {TARGET_REPO}"),
+    "target_local_intake_not_compatible": ("target_local_intake_state_COMPATIBLE", "resolve the target intake result named in target_intake"),
+}
+
+
+def blocked_disposition(blockers: list[str]) -> dict[str, str]:
+    first = sorted(set(blockers))[0] if blockers else "target_local_intake_not_compatible"
+    key = first.split(":", 1)[0]
+    predicate, repair = BLOCKER_DISPOSITIONS.get(
+        key, ("target_local_intake_state_COMPATIBLE", "resolve the blockers listed in blockers"))
+    if key == "source_receipt_invalid":
+        predicate, repair = "source_receipt_is_json_object", "repair the publication receipt JSON named in the blocker"
+    return non_allow(f"STEGDEPLOY_RELAY_BLOCKED:{key}", predicate, repair, retry_entrypoint=RETRY_ENTRYPOINT)
 
 
 def load_roots() -> dict[str, Path]:
@@ -144,7 +174,15 @@ def main() -> int:
             try:
                 intake = json.loads(proc.stdout.strip().splitlines()[-1])
             except Exception:
-                intake = {"state": "FAILED", "stdout_tail": proc.stdout[-2000:], "stderr_tail": proc.stderr[-2000:]}
+                intake = {
+                    "state": "FAILED",
+                    **non_allow("TARGET_LOCAL_INTAKE_OUTPUT_UNPARSEABLE", "target_local_intake_last_stdout_line_is_json",
+                                "repair the target intake so it prints its JSON result as the last stdout line",
+                                retry_entrypoint=RETRY_ENTRYPOINT),
+                    **unobserved_consequence(RETRY_ENTRYPOINT),
+                    "stdout_tail": proc.stdout[-2000:],
+                    "stderr_tail": proc.stderr[-2000:],
+                }
             if proc.returncode != 0 or intake.get("state") != "COMPATIBLE":
                 blockers.extend(str(value) for value in intake.get("blockers", []) if value)
                 if not blockers:
@@ -154,6 +192,7 @@ def main() -> int:
     body = {
         "schema": "stegverse.healer.stegdeploy_publication_relay.v3",
         "state": state,
+        **({} if state == "COMPLETE" else blocked_disposition(blockers)),
         "source_repository": SOURCE_REPO,
         "source_path": SOURCE_PATH,
         "target_repository": TARGET_REPO,

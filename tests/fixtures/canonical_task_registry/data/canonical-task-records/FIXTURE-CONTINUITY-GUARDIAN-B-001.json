@@ -1,0 +1,8 @@
+{
+  "schema": "stegverse.canonical-task-record/v1",
+  "task_id": "FIXTURE-CONTINUITY-GUARDIAN-B-001",
+  "parent_task_id": null,
+  "goal": "A second fixture task naming the same Continuity workflow; two owners must refuse, not pick one.",
+  "coordination_state": "PROPOSED",
+  "targets": {"organizations": ["StegVerse-Labs"], "repositories": ["StegVerse-Labs/Continuity"], "components": ["continuity"]}
+}

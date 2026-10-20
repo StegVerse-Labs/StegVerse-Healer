@@ -1,0 +1,14 @@
+{
+  "purpose": "Pinned copy of a proposed canonical task record, used only by tests/test_owning_goal.py; not a registry root of record.",
+  "source_repository": "StegVerse-Labs/.github",
+  "source_pull_request": "StegVerse-Labs/.github#3257",
+  "source_pull_request_head_sha": "c9e426cd27c53f2f92a3477702b568c0895b1066",
+  "source_base_main_sha": "978b8880d238dc3e3a8b690c0675d8bb0e9d6985",
+  "source_path": "data/canonical-task-records/HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001.json",
+  "source_git_blob_sha": "66a382c97db0873f4fe28467f6090b51fb56fc63",
+  "fixture_path": "data/canonical-task-records/HEALER-ORCHESTRATOR-TARGET-OWNERSHIP-001.json",
+  "fixture_sha256": "72217392111c978322d962cf6fc75205b1a3abd11e71fdd69d720e39d26d0aba",
+  "copy": "byte-for-byte (git cat-file blob <head>:<source_path>)",
+  "record_state_at_head": "PROPOSED; absent from StegVerse-Labs/.github main at source_base_main_sha",
+  "not_copied": "AWAIT-SURFACE-TRANSITION-OWNERSHIP-001 (same head, blob 79cb618fabb4bdbb28a6686ef1d5a806d42829ff) also declares targets.repository_components, but pairs StegVerse-Labs/.github and StegVerse-Labs/Site with script and workflow paths that no Healer target names"
+}

@@ -20,19 +20,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout pinned Healer source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: StegVerse-Labs/StegVerse-Healer
           ref: ${{ inputs.healer_ref }}
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
       - name: Restore durable Healer diagnostic state
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: status/failure-mailbox
           key: healer-failure-mailbox-state-${{ github.run_id }}
@@ -40,7 +35,7 @@ jobs:
             healer-failure-mailbox-state-
 
       - name: Download TVC-sanitized observation
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: ${{ inputs.observation_artifact }}
           path: status/failure-mailbox/tvc-observation
@@ -51,7 +46,7 @@ jobs:
           set -euo pipefail
           cp status/failure-mailbox/tvc-observation/batch.jsonl status/failure-mailbox/current-batch.jsonl
           cp status/failure-mailbox/tvc-observation/manifest.json status/failure-mailbox/current-manifest.json
-          python - <<'PY'
+          python3 - <<'PY'
           import json
           from pathlib import Path
           m=json.loads(Path('status/failure-mailbox/current-manifest.json').read_text())
@@ -68,14 +63,14 @@ jobs:
       - name: Run deterministic Healer mailbox tests
         env:
           PYTHONPATH: .
-        run: python -m unittest discover -s tests -p 'test_failure_mailbox*.py'
+        run: python3 -m unittest discover -s tests -p 'test_failure_mailbox*.py'
 
       - name: Run Healer shadow diagnostics
         env:
           PYTHONPATH: .
         shell: bash
         run: |
-          eval "$(python - <<'PY'
+          eval "$(python3 - <<'PY'
           import json, shlex
           m=json.load(open('status/failure-mailbox/current-manifest.json'))
           for k,v in {
@@ -88,7 +83,7 @@ jobs:
             print(f'{k}={shlex.quote(v)}')
           PY
           )"
-          python -m failure_mailbox.shadow \
+          python3 -m failure_mailbox.shadow \
             --input status/failure-mailbox/current-batch.jsonl \
             --ledger status/failure-mailbox/incident-ledger.json \
             --state status/failure-mailbox/shadow-state.json \
@@ -101,14 +96,14 @@ jobs:
 
       - name: Save durable Healer diagnostic state
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: status/failure-mailbox
           key: healer-failure-mailbox-state-${{ github.run_id }}
 
       - name: Upload Healer diagnostic result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: healer-failure-mailbox-diagnostic-state
           path: status/failure-mailbox

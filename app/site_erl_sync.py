@@ -6,6 +6,14 @@ import os
 from pathlib import Path
 from typing import Any
 
+try:
+    from app.disposition import non_allow
+except ImportError:  # imported as a top-level module from app/
+    from disposition import non_allow
+
+OWNING_EXISTING_GOAL = "StegVerse-Labs/StegVerse-Healer#39"
+RETRY_ENTRYPOINT = "RUN_SCOPE=site-erl-sync DISPATCH_MODE=manual python -m app.sovereign_scheduler"
+
 FORBIDDEN_CREDENTIALS = (
     "GITHUB_TOKEN",
     "GH_TOKEN",
@@ -17,8 +25,10 @@ FORBIDDEN_CREDENTIALS = (
 )
 
 
-def _blocked(base: dict[str, Any], outcome: str, **extra: Any) -> dict[str, Any]:
-    return {**base, "state": "BLOCKED", "outcome": outcome, **extra}
+def _blocked(base: dict[str, Any], outcome: str, predicate: str, repair: str, **extra: Any) -> dict[str, Any]:
+    return {**base, "state": "BLOCKED", "outcome": outcome,
+            **non_allow(outcome, predicate, repair, retry_entrypoint=RETRY_ENTRYPOINT,
+                        owning_existing_goal=OWNING_EXISTING_GOAL), **extra}
 
 
 def execute_site_erl_sync(
@@ -28,15 +38,18 @@ def execute_site_erl_sync(
 ) -> dict[str, Any]:
     present = [name for name in FORBIDDEN_CREDENTIALS if os.getenv(name)]
     if present:
-        return _blocked(base, "SITE_ERL_SYNC_FORBIDDEN_CREDENTIAL_ENV", forbidden=sorted(present))
+        return _blocked(base, "SITE_ERL_SYNC_FORBIDDEN_CREDENTIAL_ENV", "site_erl_sync_forbidden_credential_env_absent",
+                        "unset the variables named in forbidden; credentials come only from TV/TVC", forbidden=sorted(present))
 
     site_root = roots.get("StegVerse-Labs/Site")
     source_repo = str(target.get("source_repository", "StegVerse-Labs/Executive_Rhetoric_Ledger"))
     source_root = roots.get(source_repo)
     if site_root is None:
-        return _blocked(base, "SITE_ERL_SYNC_SITE_ROOT_NOT_MATERIALIZED")
+        return _blocked(base, "SITE_ERL_SYNC_SITE_ROOT_NOT_MATERIALIZED", "site_repository_root_materialized",
+                        "materialize StegVerse-Labs/Site and list its root in STEGVERSE_REPO_ROOTS_JSON")
     if source_root is None:
-        return _blocked(base, "SITE_ERL_SYNC_SOURCE_ROOT_NOT_MATERIALIZED", source_repository=source_repo)
+        return _blocked(base, "SITE_ERL_SYNC_SOURCE_ROOT_NOT_MATERIALIZED", "erl_source_repository_root_materialized",
+                        "materialize the repository named in source_repository and list its root in STEGVERSE_REPO_ROOTS_JSON", source_repository=source_repo)
 
     source_rel = Path(str(target.get("source_path", "publication/compendium.json")))
     destination_rel = Path(str(target.get("destination_path", "public/data/executive-rhetoric-ledger/compendium.json")))
@@ -46,15 +59,18 @@ def execute_site_erl_sync(
     acknowledgment_path = site_root / acknowledgment_rel
 
     if not source_path.is_file():
-        return _blocked(base, "SITE_ERL_SYNC_SOURCE_MISSING", source_path=str(source_rel))
+        return _blocked(base, "SITE_ERL_SYNC_SOURCE_MISSING", "erl_source_compendium_file_present",
+                        "publish the compendium at source_path in the source repository", source_path=str(source_rel))
 
     try:
         source_bytes = source_path.read_bytes()
         source_json = json.loads(source_bytes.decode("utf-8"))
     except Exception as exc:
-        return _blocked(base, "SITE_ERL_SYNC_SOURCE_INVALID_JSON", source_path=str(source_rel), error=str(exc))
+        return _blocked(base, "SITE_ERL_SYNC_SOURCE_INVALID_JSON", "erl_source_compendium_is_utf8_json",
+                        "repair the compendium JSON named in error", source_path=str(source_rel), error=str(exc))
     if not isinstance(source_json, (dict, list)):
-        return _blocked(base, "SITE_ERL_SYNC_SOURCE_INVALID_SHAPE", source_path=str(source_rel))
+        return _blocked(base, "SITE_ERL_SYNC_SOURCE_INVALID_SHAPE", "erl_source_compendium_is_object_or_array",
+                        "republish the compendium as a JSON object or array", source_path=str(source_rel))
 
     source_sha256 = hashlib.sha256(source_bytes).hexdigest()
     destination_path.parent.mkdir(parents=True, exist_ok=True)
@@ -66,6 +82,8 @@ def execute_site_erl_sync(
         return _blocked(
             base,
             "SITE_ERL_SYNC_DESTINATION_IDENTITY_MISMATCH",
+            "site_destination_bytes_equal_source_sha256",
+            "repair the Site destination path so the written bytes read back identical to the source",
             source_sha256=source_sha256,
             destination_sha256=destination_sha256,
         )

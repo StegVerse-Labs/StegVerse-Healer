@@ -7,7 +7,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from app.ece_periodic_evaluation import execute_periodic_ece
+from app.disposition import unobserved_consequence
+from app.ece_periodic_evaluation import _non_allow, execute_periodic_ece
+
+RETRY_ENTRYPOINT = "python -m app.run_ece_periodic_evaluation"
 
 
 def _persist_cycle(receipt_path: Path, result: dict) -> None:
@@ -28,7 +31,7 @@ def bind_site_materialization(result: dict, roots: dict[str, Path], runtime_root
     output_root = runtime_root.expanduser().resolve() / "receipts" / "ecosystem-continuity"
     cycle_receipt = output_root / "cycle.latest.json"
     if not cycle_receipt.is_file():
-        return {"state":"BLOCKED","outcome":"ECE_CYCLE_RECEIPT_MISSING_BEFORE_SITE_MATERIALIZATION","authority_effect":"NONE"}
+        return {"state":"BLOCKED","outcome":"ECE_CYCLE_RECEIPT_MISSING_BEFORE_SITE_MATERIALIZATION",**_non_allow("ECE_CYCLE_RECEIPT_MISSING_BEFORE_SITE_MATERIALIZATION", "ece_cycle_receipt_written_before_site_materialization", "rerun the ECE cycle so receipts/ecosystem-continuity/cycle.latest.json is written"),"authority_effect":"NONE"}
 
     served_raw = os.getenv("STEGVERSE_SITE_SERVED_ROOT", "").strip()
     if not served_raw:
@@ -39,15 +42,15 @@ def bind_site_materialization(result: dict, roots: dict[str, Path], runtime_root
 
     site_root = roots.get("StegVerse-Labs/Site")
     if site_root is None:
-        return {"state":"BLOCKED","outcome":"ECE_SITE_LOCAL_SOURCE_MISSING_FOR_MATERIALIZER","authority_effect":"NONE"}
+        return {"state":"BLOCKED","outcome":"ECE_SITE_LOCAL_SOURCE_MISSING_FOR_MATERIALIZER",**_non_allow("ECE_SITE_LOCAL_SOURCE_MISSING_FOR_MATERIALIZER", "site_repository_root_materialized", "materialize StegVerse-Labs/Site and list its root in STEGVERSE_REPO_ROOTS_JSON"),"authority_effect":"NONE"}
     materializer = site_root / "scripts" / "materialize_ecosystem_continuity_current.py"
     if not materializer.is_file():
-        return {"state":"BLOCKED","outcome":"ECE_SITE_MATERIALIZER_SOURCE_MISSING","authority_effect":"NONE"}
+        return {"state":"BLOCKED","outcome":"ECE_SITE_MATERIALIZER_SOURCE_MISSING",**_non_allow("ECE_SITE_MATERIALIZER_SOURCE_MISSING", "site_materializer_script_present", "materialize scripts/materialize_ecosystem_continuity_current.py in Site"),"authority_effect":"NONE"}
 
     projection_ref = result.get("site_projection_ref")
     projection_sha = result.get("site_projection_sha256")
     if not isinstance(projection_ref, str) or not projection_ref or not isinstance(projection_sha, str) or len(projection_sha) != 64:
-        return {"state":"BLOCKED","outcome":"ECE_SITE_PROJECTION_BINDING_INVALID","authority_effect":"NONE"}
+        return {"state":"BLOCKED","outcome":"ECE_SITE_PROJECTION_BINDING_INVALID",**_non_allow("ECE_SITE_PROJECTION_BINDING_INVALID", "ece_site_projection_ref_and_sha256_bound", "rerun the ECE cycle so site_projection_ref and a 64-hex site_projection_sha256 are recorded"),"authority_effect":"NONE"}
 
     materialization_receipt = output_root / "site-materialization.latest.json"
     command = [
@@ -69,6 +72,8 @@ def bind_site_materialization(result: dict, roots: dict[str, Path], runtime_root
         result.update({
             "state": "BLOCKED",
             "outcome": "ECE_SITE_MATERIALIZATION_FAILED",
+            **_non_allow("ECE_SITE_MATERIALIZATION_FAILED", "site_materializer_returncode_zero_and_receipt_written",
+                         "repair the Site materializer failure named in the last execution entry"),
             "site_materialization_state": "BLOCKED",
             "site_live_publication_observed": False,
         })
@@ -78,7 +83,7 @@ def bind_site_materialization(result: dict, roots: dict[str, Path], runtime_root
     try:
         receipt = json.loads(materialization_receipt.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        result.update({"state":"BLOCKED","outcome":"ECE_SITE_MATERIALIZATION_RECEIPT_INVALID","site_materialization_state":"BLOCKED"})
+        result.update({"state":"BLOCKED","outcome":"ECE_SITE_MATERIALIZATION_RECEIPT_INVALID","site_materialization_state":"BLOCKED",**_non_allow("ECE_SITE_MATERIALIZATION_RECEIPT_INVALID", "site_materialization_receipt_is_readable_json", "repair the Site materializer so it writes a JSON receipt")})
         _persist_cycle(cycle_receipt, result)
         return result
 
@@ -93,7 +98,7 @@ def bind_site_materialization(result: dict, roots: dict[str, Path], runtime_root
         and receipt.get("recovery_verified") is False
     )
     if not valid:
-        result.update({"state":"BLOCKED","outcome":"ECE_SITE_MATERIALIZATION_RECEIPT_DRIFT","site_materialization_state":"BLOCKED"})
+        result.update({"state":"BLOCKED","outcome":"ECE_SITE_MATERIALIZATION_RECEIPT_DRIFT","site_materialization_state":"BLOCKED",**_non_allow("ECE_SITE_MATERIALIZATION_RECEIPT_DRIFT", "site_materialization_receipt_copy_only_exact_bytes_matching_projection_sha256", "repair the Site materializer receipt fields (schema, COMPLETE, NONE_COPY_ONLY, projection_sha256, exact bytes, no recalculation/observation claims)")})
         _persist_cycle(cycle_receipt, result)
         return result
 
@@ -103,6 +108,8 @@ def bind_site_materialization(result: dict, roots: dict[str, Path], runtime_root
         "site_current_projection_ref": receipt.get("target_ref"),
         "site_current_projection_sha256": receipt.get("projection_sha256"),
         "site_live_publication_observed": False,
+        # Public publication is not awaited or polled; it is reconciled separately.
+        **unobserved_consequence(RETRY_ENTRYPOINT),
     })
     _persist_cycle(cycle_receipt, result)
     return result
@@ -112,7 +119,7 @@ def main() -> int:
     raw_roots = os.getenv("STEGVERSE_REPO_ROOTS_JSON", "").strip()
     raw_runtime = os.getenv("STEGVERSE_HEARTBEAT_ROOT", "").strip()
     if not raw_roots or not raw_runtime:
-        print(json.dumps({"state":"BLOCKED","outcome":"ECE_RUNTIME_BINDING_MISSING","authority_effect":"NONE"}, sort_keys=True))
+        print(json.dumps({"state":"BLOCKED","outcome":"ECE_RUNTIME_BINDING_MISSING",**_non_allow("ECE_RUNTIME_BINDING_MISSING", "STEGVERSE_REPO_ROOTS_JSON_and_STEGVERSE_HEARTBEAT_ROOT_set", "set STEGVERSE_REPO_ROOTS_JSON and STEGVERSE_HEARTBEAT_ROOT for the resident carrier"),"authority_effect":"NONE"}, sort_keys=True))
         return 3
     parsed = json.loads(raw_roots)
     if not isinstance(parsed, dict):

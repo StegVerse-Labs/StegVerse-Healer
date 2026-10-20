@@ -1,0 +1,16 @@
+{
+  "schema": "stegverse.canonical-task-record/v1",
+  "task_id": "FIXTURE-SCW-UPTIME-OBSERVATION-001",
+  "correlation_id": "FIXTURE-SCW-UPTIME-OBSERVATION-001",
+  "root_correlation_id": "FIXTURE-SCW-UPTIME-OBSERVATION-001",
+  "parent_task_id": null,
+  "goal": "Fixture task that owns the SCW uptime probe and status publication run by the Healer sovereign scheduler.",
+  "coordination_state": "PROPOSED",
+  "source_refs": ["scripts/status/uptime_probe.py", "scripts/status/publish_status.sh"],
+  "targets": {
+    "organizations": ["StegVerse-Labs"],
+    "repositories": ["StegVerse-Labs/SCW"],
+    "components": ["uptime", "scw-status-publication"]
+  },
+  "completion": {"state": "NOT_COMPLETE"}
+}

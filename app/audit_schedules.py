@@ -8,10 +8,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.actions_cost_reducer import build_report
+try:
+    from app.actions_cost_reducer import build_report
+    from app.disposition import non_allow
+except ImportError:  # executed as app/audit_schedules.py (sovereign_scheduler, quiet_enforcer.yml)
+    from actions_cost_reducer import build_report
+    from disposition import non_allow
 
 VALID_STATES = {"COMPLETE", "BLOCKED", "RETRY", "REVIEW_REQUIRED", "FAILED"}
 FORBIDDEN_CREDENTIALS = ("HEALER_GH_TOKEN", "GITHUB_TOKEN", "GH_TOKEN", "HEALER_PAT", "GH_STEGVERSE_AI_TOKEN")
+RETRY_ENTRYPOINT = "python app/audit_schedules.py"
 
 
 def utc_now() -> str:
@@ -67,6 +73,9 @@ def audit_repo(repo: str, root: Path | None) -> dict[str, Any]:
     }
     if root is None:
         result["state"] = "BLOCKED"
+        result.update(non_allow("LOCAL_REPOSITORY_NOT_MATERIALIZED", "managed_repository_root_listed_in_STEGVERSE_REPO_ROOTS_JSON_and_is_dir",
+                                f"materialize {repo} on the sovereign carrier and list its root in STEGVERSE_REPO_ROOTS_JSON",
+                                retry_entrypoint=RETRY_ENTRYPOINT))
         result["errors"].append("local_repository_not_materialized")
         return result
     workflow_root = root / ".github" / "workflows"
@@ -83,6 +92,9 @@ def audit_repo(repo: str, root: Path | None) -> dict[str, Any]:
             result["violations"].append(rel)
     if result["violations"]:
         result["state"] = "FAILED"
+        result.update(non_allow("REPOSITORY_LOCAL_SCHEDULE_TRIGGER_PRESENT", "no_repository_local_workflow_schedule_trigger",
+                                "remove the schedule trigger from the workflows named in violations; cadence belongs to the resident heartbeat",
+                                retry_entrypoint=RETRY_ENTRYPOINT))
     return result
 
 
@@ -161,11 +173,18 @@ def main() -> int:
     blocked = sum(repo["state"] == "BLOCKED" for repo in repositories)
     failed = sum(repo["state"] == "FAILED" for repo in repositories)
 
+    disposition: dict[str, str] = {}
     if failed or violations:
         state = "FAILED"
+        disposition = non_allow("REPOSITORY_LOCAL_SCHEDULE_TRIGGER_PRESENT", "no_managed_repository_has_a_local_schedule_trigger",
+                                "remove every repository-local schedule trigger named in repositories[].violations",
+                                retry_entrypoint=RETRY_ENTRYPOINT)
         next_task = "Remove every repository-local schedule trigger, preserve cadence in the resident heartbeat/Healer target registry, and consume the ranked cost-analysis candidates in descending priority."
     elif blocked:
         state = "BLOCKED"
+        disposition = non_allow("LOCAL_REPOSITORY_NOT_MATERIALIZED", "every_managed_repository_materialized_locally",
+                                "materialize the repositories whose state is BLOCKED and list their roots in STEGVERSE_REPO_ROOTS_JSON",
+                                retry_entrypoint=RETRY_ENTRYPOINT)
         next_task = "Materialize every managed repository on the sovereign carrier and rerun the local schedule and cost-pressure audit."
     else:
         state = "COMPLETE"
@@ -174,6 +193,7 @@ def main() -> int:
     receipt: dict[str, Any] = {
         "schema": "stegverse.healer.quiet-enforcer-receipt.v3",
         "state": state,
+        **disposition,
         "manager": "single_stegverse_heartbeat",
         "allowed_scheduler_repository": None,
         "observed_at": utc_now(),

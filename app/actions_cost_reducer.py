@@ -8,6 +8,12 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Iterable
 
+try:
+    from app.disposition import non_allow
+except ImportError:  # executed as app/actions_cost_reducer.py
+    from disposition import non_allow
+
+RETRY_ENTRYPOINT = "python -m app.actions_cost_reducer"
 
 CRON_RE = re.compile(r"cron\s*:\s*['\"]?([^'\"\n]+)")
 JOB_RE = re.compile(r"^\s{2}([A-Za-z0-9_.-]+):\s*$")
@@ -281,6 +287,12 @@ def build_report(roots: list[Path], policy: dict) -> dict:
         "estimated_scheduled_job_starts_per_month": round(scheduled_monthly, 3),
         "ranked_findings": [asdict(row) for row in findings],
     }
+    if report["state"] == "BLOCKED":
+        report.update(non_allow(
+            "REPOSITORY_ROOTS_MISSING" if missing_roots else "REPOSITORY_ROOTS_NOT_SUPPLIED",
+            "repository_roots_supplied_and_every_root_is_dir",
+            "materialize the roots named in missing_repository_roots (or supply roots) and rerun the analyzer",
+            retry_entrypoint=RETRY_ENTRYPOINT))
     return report
 
 
@@ -309,6 +321,11 @@ def main() -> int:
     report["enforcement_failures"] = failures
     if failures:
         report["state"] = "FAIL_CLOSED"
+        report.update(non_allow(
+            "SCHEDULED_WORKFLOW_MONTHLY_STARTS_OVER_THRESHOLD",
+            "scheduled_workflow_monthly_starts_below_enforce_threshold",
+            "reduce or migrate the scheduled workflows named in enforcement_failures to heartbeat-owned cadence",
+            retry_entrypoint=RETRY_ENTRYPOINT + " --enforce"))
     Path(args.output).write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({
         "state": report["state"],

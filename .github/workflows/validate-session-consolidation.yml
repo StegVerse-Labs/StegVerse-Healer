@@ -22,18 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # Standard library only: the runner's preinstalled python3 is the interpreter (no setup-python).
       - name: Validate JSON syntax
         run: |
-          python -m json.tool schemas/session_execution_inventory.schema.json >/dev/null
-          python -m json.tool data/session_consolidation/single_scheduler_session_inventory.json >/dev/null
+          python3 -m json.tool schemas/session_execution_inventory.schema.json >/dev/null
+          python3 -m json.tool data/session_consolidation/single_scheduler_session_inventory.json >/dev/null
       - name: Validate execution inventory contract
-        run: python scripts/validate_session_execution_inventory.py
+        run: python3 scripts/validate_session_execution_inventory.py
       - name: Upload canonical consolidation record
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: single-scheduler-session-consolidation-${{ github.run_id }}
           path: |

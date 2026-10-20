@@ -331,7 +331,7 @@ Evaluator configuration remains fail-closed:
 
 TLS paths remain confined to TV/TVC and are delivered to the native launcher through the child environment rather than embedded in the launcher command. Receipt/result state does not serialize the private-key path or bytes.
 
-The Healer result now records `runtime_topology=HOST_NATIVE_PYTHON_UVICORN` and `docker_required=false`. (Since StegVerse-org/LLM-adapter#422 the launcher serves on the standard-library server, not Uvicorn. The label is unchanged so that the LLM-adapter, Healer and StegVerse-Labs `activate_resident_stack.py` receipts stay consistent; renaming it is a review query on LLM-adapter#368.) It still records public reachability and hostname verification as false until independently observed.
+The Healer result now records `runtime_topology=HOST_NATIVE_PYTHON_STDLIB` and `docker_required=false`. (Since StegVerse-org/LLM-adapter#422 the launcher serves on the standard-library server, not Uvicorn, so the label was renamed from `HOST_NATIVE_PYTHON_UVICORN` to `HOST_NATIVE_PYTHON_STDLIB` per the LLM-adapter#368 review query. The label is descriptive only: no Healer code compares it.) It still records public reachability and hostname verification as false until independently observed.
 
 This source change does not establish a live native Gateway, TLS adoption, public route, or evaluator resident execution.
 

@@ -1,0 +1,21 @@
+{
+  "schema": "stegverse.canonical-task-registry/v1",
+  "generation": 1,
+  "status": "HEALER_TEST_FIXTURE",
+  "tasks": [
+    {
+      "schema": "stegverse.canonical-task-record/v1",
+      "task_id": "FIXTURE-SITE-PAPERS-001",
+      "correlation_id": "FIXTURE-SITE-PAPERS-001",
+      "root_correlation_id": "FIXTURE-SITE-PAPERS-001",
+      "parent_task_id": null,
+      "goal": "Fixture task naming StegVerse-Labs/Site by repository only; repository overlap alone must never map a Healer target.",
+      "coordination_state": "PROPOSED",
+      "targets": {
+        "organizations": ["StegVerse-Labs"],
+        "repositories": ["StegVerse-Labs/Site", "StegVerse-Labs/.github"],
+        "components": ["site-papers-formalisms-directory", "canonical-task-registration"]
+      }
+    }
+  ]
+}
