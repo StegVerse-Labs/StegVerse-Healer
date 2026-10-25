@@ -1,0 +1,1 @@
+python3 scripts/validate_session_execution_inventory.py

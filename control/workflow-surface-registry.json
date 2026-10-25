@@ -1,0 +1,191 @@
+{
+  "schema": "stegverse.workflow-surface-registry/v1",
+  "goal_id": "G17-WORKFLOW-SURFACE-MINIMIZATION",
+  "repository": "StegVerse-Labs/StegVerse-Healer",
+  "policy_issue": "StegVerse-Labs/.github#167, #168; StegVerse-org/.github#166",
+  "preferred_repository_workflow_count_max": 2,
+  "exception_repository_workflow_count_max": 3,
+  "credential_authority": "the SKAP Vault inside KV is the only PII and credential store for every user, including the StegVerse ecosystem's own; no secret or token is referenced, introduced or moved by this fold",
+  "invariants": [
+    "Every workflow file is registered in surfaces[]; an unregistered or changed one fails closed (tests/test_workflow_surface_registry.py).",
+    "A new check is a group in tools/tasks/task_catalog.json, never a new workflow file.",
+    "The stable dispatcher carries no workflow_dispatch, schedule, repository_dispatch, issues or workflow_run trigger; a kept surface is pinned by sha256 and unchanged by the fold.",
+    "G17 documented exception: above 2 workflow files, every kept surface other than the dispatcher carries an exception record (lifecycle and technical-necessity justification); the count never exceeds exception_repository_workflow_count_max (3)."
+  ],
+  "unregistered_workflow_outcome": {
+    "disposition": "FAIL_CLOSED",
+    "failure_code": "UNREGISTERED_WORKFLOW_SURFACE",
+    "failed_predicate": "EVERY_WORKFLOW_FILE_IS_REGISTERED",
+    "required_evidence_or_repair": "register the file in control/workflow-surface-registry.json surfaces[] or fold it into tools/tasks/task_catalog.json",
+    "retry_entrypoint": "tests/test_workflow_surface_registry.py",
+    "owning_existing_goal": "G17-WORKFLOW-SURFACE-MINIMIZATION (StegVerse-Labs/.github#167/#168); StegVerse-org/.github#166",
+    "next_attempt": "the next pull request touching .github/workflows/"
+  },
+  "surfaces": [
+    {
+      "path": ".github/workflows/validation-dispatcher.yml",
+      "classification": "KEEP_STABLE_DISPATCHER",
+      "triggers": [
+        "pull_request",
+        "push"
+      ],
+      "permissions": {},
+      "variant": "runner-python (LLMA-368 pattern): no actions/setup-python, no actions/checkout; anonymous exact-source fetch; only actions/upload-artifact@ea165f8d (in tests/test_dependency_surface.py ALLOWED_ACTIONS)"
+    },
+    {
+      "path": ".github/workflows/failure-mailbox-diagnose-reusable.yml",
+      "classification": "KEEP_EXISTING_SURFACE_UNCHANGED",
+      "triggers": [
+        "workflow_call"
+      ],
+      "permissions": {
+        "contents": "read",
+        "actions": "read"
+      },
+      "reason": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, reusable writer): workflow_call only, with actions: read; it restores and saves the durable status/failure-mailbox cache and diagnoses a TVC-sanitized observation artifact for its caller. A run block in the dispatcher cannot be a reusable workflow or carry the caller's artifact, so it stays byte-unchanged.",
+      "verbatim_sha256": "000532677ab71f0659ec98bfcd0061073fe0901a2067142138c438446628f187",
+      "exception": {
+        "lifecycle": "reusable writer (durable cache, caller artifact)",
+        "justification": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, reusable writer): workflow_call only, with actions: read; it restores and saves the durable status/failure-mailbox cache and diagnoses a TVC-sanitized observation artifact for its caller. A run block in the dispatcher cannot be a reusable workflow or carry the caller's artifact, so it stays byte-unchanged.",
+        "within_exception_ceiling": true
+      }
+    },
+    {
+      "path": ".github/workflows/supercheck_core.yml",
+      "classification": "KEEP_EXISTING_SURFACE_UNCHANGED",
+      "triggers": [
+        "workflow_call",
+        "workflow_dispatch"
+      ],
+      "permissions": {},
+      "reason": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, reusable called cross-repo): StegVerse-Labs/StegVerse-SCW .github/workflows/supercheck_remote.yml calls this path with uses:, so moving it would break that caller. Byte-unchanged.",
+      "verbatim_sha256": "9fa53f5bbcb77bccd5a7f0c8d0b49c0259aa2c4f1a8972c0919f0fddf30ed052",
+      "exception": {
+        "lifecycle": "reusable workflow called by StegVerse-SCW supercheck_remote.yml",
+        "justification": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, reusable called cross-repo): StegVerse-Labs/StegVerse-SCW .github/workflows/supercheck_remote.yml calls this path with uses:, so moving it would break that caller. Byte-unchanged.",
+        "within_exception_ceiling": true
+      }
+    },
+    {
+      "path": ".github/workflows/quiet_enforcer.yml",
+      "classification": "KEEP_EXISTING_SURFACE_UNCHANGED",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "permissions": {},
+      "reason": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, scheduler target): app/sovereign_scheduler.py L426 and data/orchestrator_targets.json L156 name this exact workflow file as a sovereign-scheduler target; renaming or folding it would break that target. Byte-unchanged.",
+      "verbatim_sha256": "32553b399730a2e9885b01c8cd9618345d403e5b80f4e94917737684b0c95881",
+      "exception": {
+        "lifecycle": "sovereign-scheduler target named by app/sovereign_scheduler.py",
+        "justification": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, scheduler target): app/sovereign_scheduler.py L426 and data/orchestrator_targets.json L156 name this exact workflow file as a sovereign-scheduler target; renaming or folding it would break that target. Byte-unchanged.",
+        "within_exception_ceiling": true
+      }
+    },
+    {
+      "path": ".github/workflows/stegdeploy-publication-relay.yml",
+      "classification": "KEEP_EXISTING_SURFACE_UNCHANGED",
+      "triggers": [
+        "workflow_dispatch"
+      ],
+      "permissions": {},
+      "reason": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, scheduler target): app/sovereign_scheduler.py L434 and data/orchestrator_targets.json L166 name this exact workflow file as a sovereign-scheduler target. Byte-unchanged.",
+      "verbatim_sha256": "8a1d66fd832dfcbbc64674ef003d70497b1358efc666a62ab2b6bb1baa3ccb49",
+      "exception": {
+        "lifecycle": "sovereign-scheduler target named by app/sovereign_scheduler.py",
+        "justification": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, scheduler target): app/sovereign_scheduler.py L434 and data/orchestrator_targets.json L166 name this exact workflow file as a sovereign-scheduler target. Byte-unchanged.",
+        "within_exception_ceiling": true
+      }
+    }
+  ],
+  "folded": [
+    {
+      "workflow": ".github/workflows/forward-to-bridge.yml",
+      "name": "AI Bridge Forwarding Legacy Boundary",
+      "triggers_before": [
+        "workflow_dispatch"
+      ],
+      "classification": "ELIMINATE",
+      "status": "DONE",
+      "reason": "ELIMINATE: its only trigger is workflow_dispatch (dispatch-only); no code, test or orchestrator target names it (only the stored migration inventories data/session_consolidation/tv-tvc-no-github-token-dispatch-migration.json and data/summary/single_scheduler_migration.json, which are not edited). This lane carries no dispatch. Kept verbatim as a record.",
+      "verbatim_record": "tools/tasks/folded/forward-to-bridge.yml",
+      "verbatim_sha256": "ffebea40e8e3c3cb10d07ee0389d3d6a0afd889dc2ae19475207c1ca22152136"
+    },
+    {
+      "workflow": ".github/workflows/healer_scheduler.yml",
+      "name": "Healer Scheduler Contract Validation",
+      "triggers_before": [
+        "workflow_dispatch"
+      ],
+      "classification": "ELIMINATE",
+      "status": "DONE",
+      "reason": "ELIMINATE: its only trigger is workflow_dispatch (dispatch-only; its schedule was removed, last run 2026-08-12). No code or test reads this path (app/actions_cost_reducer.py only names the policy key prefer_existing_healer_scheduler...); the stored inventories that mention it are not edited. Kept verbatim as a record.",
+      "verbatim_record": "tools/tasks/folded/healer_scheduler.yml",
+      "verbatim_sha256": "87f0579c25d613cf822d6e3634797b4d4040c7aeddfdd0d9d78d0f2e18d93ca6"
+    },
+    {
+      "workflow": ".github/workflows/quiet-enforcer.yml",
+      "name": "Quiet Enforcer Legacy Redirect",
+      "triggers_before": [
+        "workflow_dispatch"
+      ],
+      "classification": "ELIMINATE",
+      "status": "DONE",
+      "reason": "ELIMINATE: dispatch-only duplicate of quiet_enforcer.yml (last run 2026-03-07). The sovereign-scheduler target is quiet_enforcer.yml (data/orchestrator_targets.json L156; 'quiet-enforcer' is only an alias there). Kept verbatim as a record.",
+      "verbatim_record": "tools/tasks/folded/quiet-enforcer.yml",
+      "verbatim_sha256": "8f132056faae9d79474b7ee6ed0674581aa3f6895099fa9963b514d108bc2772"
+    },
+    {
+      "workflow": ".github/workflows/sync-to-canonical.yml",
+      "name": "Canonical Sync Legacy Boundary",
+      "triggers_before": [
+        "workflow_dispatch"
+      ],
+      "classification": "ELIMINATE",
+      "status": "DONE",
+      "reason": "ELIMINATE: its only trigger is workflow_dispatch (dispatch-only; last run 2026-03-09). No code, test or orchestrator target names it; the stored records data/session_consolidation/stegdb-healer-canonical-import.json and the migration inventories are not edited. Kept verbatim as a record.",
+      "verbatim_record": "tools/tasks/folded/sync-to-canonical.yml",
+      "verbatim_sha256": "f7795eb7cae93c5381d856af9074707ad1c80a08067c08decc4812901e4abbc0"
+    },
+    {
+      "workflow": ".github/workflows/test-readiness.yml",
+      "name": "Test Readiness",
+      "triggers_before": [
+        "push",
+        "pull_request",
+        "workflow_dispatch"
+      ],
+      "classification": "CONSOLIDATE_INTO_STABLE_DISPATCHER",
+      "status": "DONE",
+      "catalog_groups": [
+        "test-readiness.repo-smoke"
+      ],
+      "verbatim_record": "tools/tasks/folded/test-readiness.yml",
+      "verbatim_sha256": "fd2f17cb8302e8542738f390c437e7c29b0f51e7b92890a2b1a0f589912ed6fe"
+    },
+    {
+      "workflow": ".github/workflows/validate-session-consolidation.yml",
+      "name": "Validate Session Consolidation",
+      "triggers_before": [
+        "workflow_dispatch",
+        "push"
+      ],
+      "classification": "CONSOLIDATE_INTO_STABLE_DISPATCHER",
+      "status": "DONE",
+      "catalog_groups": [
+        "validate-session-consolidation.validate"
+      ],
+      "verbatim_record": "tools/tasks/folded/validate-session-consolidation.yml",
+      "verbatim_sha256": "9e83c90b218a929f70a018a5895e476aeeb3931b5be0052703c5c0dd1d40aec2"
+    }
+  ],
+  "ceiling_fail_closed": {
+    "disposition": "FAIL_CLOSED",
+    "workflow_count": 5,
+    "failure_code": "G17_CONTRACT_FLOOR_ABOVE_EXCEPTION_CEILING",
+    "failed_predicate": "workflow_count <= exception_repository_workflow_count_max (3)",
+    "required_evidence_or_repair": "Four kept surfaces are each bound by an existing contract: failure-mailbox-diagnose-reusable.yml (reusable writer with durable cache), supercheck_core.yml (called by StegVerse-Labs/StegVerse-SCW supercheck_remote.yml), and quiet_enforcer.yml and stegdeploy-publication-relay.yml (named as targets by app/sovereign_scheduler.py L426/L434 and data/orchestrator_targets.json). Going below 4 needs those callers and targets re-pointed to catalog groups, which is a contract change in their owning repos and the scheduler.",
+    "retry_entrypoint": "tests/test_workflow_surface_registry.py",
+    "owning_existing_goal": "G17-WORKFLOW-SURFACE-MINIMIZATION (StegVerse-Labs/.github#167/#168); StegVerse-org/.github#166",
+    "next_attempt": "the next pull request touching .github/workflows/ or those contracts"
+  }
+}
