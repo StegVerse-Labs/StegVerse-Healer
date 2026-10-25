@@ -1,0 +1,160 @@
+{
+ "schema": "stegverse.task-catalog/v1",
+ "repository": "StegVerse-Labs/StegVerse-Healer",
+ "goal_id": "G17-WORKFLOW-SURFACE-MINIMIZATION",
+ "authority": "Rigel 2026-10-24 retroactive G17 enforcement (StegVerse-org/.github#166); pattern StegVerse-Labs/StegDB#60 (eab2e773)",
+ "dispatcher": ".github/workflows/validation-dispatcher.yml",
+ "runner": "tools/tasks/run_catalog.py",
+ "runner_source": "StegVerse-Labs/StegDB tools/tasks/run_catalog.py @ eab2e773271f3e63466a710f1b4555f677882848 (sha256 f741f30557888fd8e4852a52adfc65736a08898d49ade7519f6bcc2672921e9b), copied unmodified",
+ "rule": "Every check a folded workflow job ran is one group here; its step bodies are the original run blocks byte for byte, pinned by sha256, except the repairs listed. A new check is a new group (or a step in one), never a new workflow file.",
+ "path_filters": "Dropped: every group runs on every pull_request and push to main (a superset of the original path-filtered runs). workflow_dispatch/schedule triggers are not carried (no manual dispatch, no cron).",
+ "repairs": [
+  "Dispatcher variant: tests/test_dependency_surface.py forbids actions/setup-python and allows only five SHA-pinned actions, so the dispatcher here is the runner-python variant (LLMA-368 pattern, documented in docs/G17_RUNNER_PYTHON_DISPATCHER.md). It has no setup-python or checkout action; each job refuses a credential-bearing environment, fetches the exact source anonymously by URL with no named remote, and runs run_catalog.py on the runner image's python3. Its only action, actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02, is in ALLOWED_ACTIONS.",
+  "test-readiness.repo-smoke keeps its own anonymous fetch step (git init / git remote add origin / fetch / checkout) byte for byte; the dispatcher adds no named remote, so it still runs inside its group.",
+  "validate-session-consolidation ran on path-filtered pushes to main and dispatch; as a catalog group it runs on pushes to main only (its declared event), without the path filter. Dispatch is not carried.",
+  "test-readiness ran on push, pull_request and dispatch (paths-ignore docs/** and README.md); as a group it runs on pull requests and pushes to main. Dispatch is not carried."
+ ],
+ "folded_from_commit": "57b55839890e967088a95c566641db01eb72927a",
+ "groups": [
+  {
+   "id": "test-readiness.repo-smoke",
+   "source": {
+    "workflow": ".github/workflows/test-readiness.yml",
+    "workflow_name": "Test Readiness",
+    "job": "repo-smoke",
+    "job_name": null,
+    "commit": "57b5583",
+    "triggers_before": [
+     "push",
+     "pull_request",
+     "workflow_dispatch"
+    ],
+    "permissions_before": {}
+   },
+   "events": [
+    "pull_request",
+    "push"
+   ],
+   "env": {},
+   "steps": [
+    {
+     "name": "Refuse credential-bearing environment",
+     "run_file": "tools/tasks/steps/test-readiness.repo-smoke/01-refuse-credential-bearing-environment.sh",
+     "run_sha256": "07505c6716afe627a4f1095328776b3f6e05d82357ed7369685565bd0762b83b",
+     "shell": "bash --noprofile --norc -e -o pipefail {0}"
+    },
+    {
+     "name": "Fetch exact Healer source anonymously",
+     "run_file": "tools/tasks/steps/test-readiness.repo-smoke/02-fetch-exact-healer-source-anonymously.sh",
+     "run_sha256": "ebc6fb838f17f5a472178cb96e35606ed13d26add92071e2bdd7864b26e97299",
+     "shell": "bash --noprofile --norc -e -o pipefail {0}",
+     "env": {
+      "PR_NUMBER": "${{ github.event.pull_request.number }}"
+     }
+    },
+    {
+     "name": "Verify preinstalled Python",
+     "run_file": "tools/tasks/steps/test-readiness.repo-smoke/03-verify-preinstalled-python.sh",
+     "run_sha256": "bd89327df31c7eaec2100589ff9d7b1c1a267dab02a2154ca38962eb7228e103"
+    },
+    {
+     "name": "Baseline repository smoke test",
+     "run_file": "tools/tasks/steps/test-readiness.repo-smoke/04-baseline-repository-smoke-test.sh",
+     "run_sha256": "3214cbcd23bc623a2e15a28812ece6672e9e464fb44b3ac68ff6a68952b4f6a9"
+    },
+    {
+     "name": "Run deterministic Healer tests",
+     "run_file": "tools/tasks/steps/test-readiness.repo-smoke/05-run-deterministic-healer-tests.sh",
+     "run_sha256": "8fdf0852bd64927f6bc5bc8ad3aa4433ad93d3d22fd6e1535db9264a36d793a2"
+    },
+    {
+     "name": "Run failure mailbox product benchmark",
+     "run_file": "tools/tasks/steps/test-readiness.repo-smoke/06-run-failure-mailbox-product-benchmark.sh",
+     "run_sha256": "4abe528ea56ccab11e96e2e30dd22c524db615ffee70ce6cf35c4a3f7f44114b"
+    },
+    {
+     "name": "Confirm validation-only authority boundary",
+     "run_file": "tools/tasks/steps/test-readiness.repo-smoke/07-confirm-validation-only-authority-boundary.sh",
+     "run_sha256": "3e8fff368da623f13d0f5f99012f71fda109457831b1e3edf7cd664914408143"
+    }
+   ],
+   "artifacts": [],
+   "runner": {
+    "timeout_minutes": 5,
+    "runs_on": "ubuntu-latest"
+   }
+  },
+  {
+   "id": "validate-session-consolidation.validate",
+   "source": {
+    "workflow": ".github/workflows/validate-session-consolidation.yml",
+    "workflow_name": "Validate Session Consolidation",
+    "job": "validate",
+    "job_name": null,
+    "commit": "57b5583",
+    "triggers_before": [
+     "workflow_dispatch",
+     "push"
+    ],
+    "permissions_before": {
+     "contents": "read"
+    }
+   },
+   "events": [
+    "push"
+   ],
+   "env": {},
+   "steps": [
+    {
+     "name": "Validate JSON syntax",
+     "run_file": "tools/tasks/steps/validate-session-consolidation.validate/01-validate-json-syntax.sh",
+     "run_sha256": "48ae1e10594ecf6550109074ddde04d9a0a3eb277219975b250a2721d068e35a"
+    },
+    {
+     "name": "Validate execution inventory contract",
+     "run_file": "tools/tasks/steps/validate-session-consolidation.validate/02-validate-execution-inventory-contract.sh",
+     "run_sha256": "a782f62d3f4f0c2436b922149d2c97955251b2b3bc09a80537bb1021ffaf7d39"
+    }
+   ],
+   "artifacts": [
+    {
+     "name": "single-scheduler-session-consolidation-${{ github.run_id }}",
+     "path": "data/session_consolidation/single_scheduler_session_inventory.json\nschemas/session_execution_inventory.schema.json\n",
+     "if_no_files_found": "error",
+     "if": "success()"
+    }
+   ],
+   "runner": {
+    "timeout_minutes": 10,
+    "artifact_name": "single-scheduler-session-consolidation",
+    "artifact_if_no_files_found": "error",
+    "runs_on": "ubuntu-latest"
+   },
+   "fold_notes": [
+    "events kept as the folded workflow declared them: push"
+   ]
+  },
+  {
+   "id": "workflow-surface-registry.validate",
+   "catalog_addition": "G17 registry gate (no folded source workflow)",
+   "events": [
+    "pull_request",
+    "push"
+   ],
+   "env": {},
+   "steps": [
+    {
+     "name": "Workflow files equal the registered surfaces; catalog verifies ALLOW",
+     "run_file": "tools/tasks/steps/workflow-surface-registry.validate/01-registry.sh",
+     "run_sha256": "811824e88664923006be2eeb35632d710f5504145967f61632ad9e8fbdcb35ca"
+    }
+   ],
+   "artifacts": [],
+   "runner": {
+    "timeout_minutes": 10,
+    "runs_on": "ubuntu-latest"
+   }
+  }
+ ],
+ "dispatcher_note": "Runner-python variant (LLMA-368 pattern; docs/G17_RUNNER_PYTHON_DISPATCHER.md): the dispatcher uses no setup-python or checkout action. Each job refuses a credential-bearing environment, fetches the exact source anonymously and runs run_catalog.py on the runner image's python3, as tests/test_dependency_surface.py requires."
+}
