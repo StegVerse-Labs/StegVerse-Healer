@@ -12,7 +12,11 @@ name: Stable validator dispatcher
 # actions/checkout; every job refuses a credential-bearing environment, fetches the
 # exact source anonymously and runs on the runner image's python3, as
 # tests/test_dependency_surface.py requires. The only action is the allowed, SHA-pinned
-# actions/upload-artifact. A new check is a catalog entry, never a new workflow file;
+# actions/upload-artifact. The original-path-filter selection (the pattern of
+# StegVerse-org/StegVerse-SDK#561, Site#1647): each folded group keeps the push / pull_request
+# paths its workflow had and a group they do not select records NOT_SELECTED (a run, never a
+# skipped job); the plan job fetches enough anonymous history to diff the event. A new check is
+# a catalog entry, never a new workflow file;
 # control/workflow-surface-registry.json fails closed on an unregistered workflow.
 # permissions: {}; no secret is referenced.
 on:
@@ -50,8 +54,18 @@ jobs:
         run: |
           git init .
           # No named remote: each folded group's own anonymous fetch adds `origin`.
-          git -c http.extraheader= fetch --depth 1 https://github.com/StegVerse-Labs/StegVerse-Healer.git "$SOURCE_SHA"
+          git -c http.extraheader= fetch --depth 100 https://github.com/StegVerse-Labs/StegVerse-Healer.git "$SOURCE_SHA"
           git checkout --detach FETCH_HEAD
+
+      - name: Fetch the pull request base anonymously (to diff the event)
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # A fetch that fails leaves the diff undeterminable, and then every group is selected.
+          if [ -n "${BASE_SHA}" ]; then
+            git -c http.extraheader= fetch --depth 100 https://github.com/StegVerse-Labs/StegVerse-Healer.git "${BASE_SHA}" || true
+          fi
 
       - name: The catalog matches its pinned step bodies
         shell: bash
@@ -60,6 +74,11 @@ jobs:
       - name: Select the catalog groups this event runs
         id: select
         shell: bash
+        env:
+          CATALOG_EVENT_BEFORE: ${{ github.event.before }}
+          CATALOG_EVENT_AFTER: ${{ github.event.after }}
+          CATALOG_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          CATALOG_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: echo "matrix=$(python3 tools/tasks/run_catalog.py matrix --event "$GITHUB_EVENT_NAME")" >> "$GITHUB_OUTPUT"
 
   check:
@@ -101,13 +120,15 @@ jobs:
 
       - name: Run the catalog group
         shell: bash
+        env:
+          CATALOG_SELECTED: ${{ matrix.selected }}
         run: |
           set -euo pipefail
           runner_python="$(command -v python3 || command -v python)"
           "$runner_python" tools/tasks/run_catalog.py run --group "${{ matrix.group }}"
 
       - name: Retain the artifact the folded job uploaded
-        if: always() && matrix.artifact_name
+        if: always() && matrix.artifact_name && matrix.selected != 'false'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ matrix.artifact_name }}-${{ github.run_id }}
