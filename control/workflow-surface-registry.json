@@ -65,36 +65,6 @@
         "justification": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, reusable called cross-repo): StegVerse-Labs/StegVerse-SCW .github/workflows/supercheck_remote.yml calls this path with uses:, so moving it would break that caller. Byte-unchanged.",
         "within_exception_ceiling": true
       }
-    },
-    {
-      "path": ".github/workflows/quiet_enforcer.yml",
-      "classification": "KEEP_EXISTING_SURFACE_UNCHANGED",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": {},
-      "reason": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, scheduler target): app/sovereign_scheduler.py L426 and data/orchestrator_targets.json L156 name this exact workflow file as a sovereign-scheduler target; renaming or folding it would break that target. Byte-unchanged.",
-      "verbatim_sha256": "32553b399730a2e9885b01c8cd9618345d403e5b80f4e94917737684b0c95881",
-      "exception": {
-        "lifecycle": "sovereign-scheduler target named by app/sovereign_scheduler.py",
-        "justification": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, scheduler target): app/sovereign_scheduler.py L426 and data/orchestrator_targets.json L156 name this exact workflow file as a sovereign-scheduler target; renaming or folding it would break that target. Byte-unchanged.",
-        "within_exception_ceiling": true
-      }
-    },
-    {
-      "path": ".github/workflows/stegdeploy-publication-relay.yml",
-      "classification": "KEEP_EXISTING_SURFACE_UNCHANGED",
-      "triggers": [
-        "workflow_dispatch"
-      ],
-      "permissions": {},
-      "reason": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, scheduler target): app/sovereign_scheduler.py L434 and data/orchestrator_targets.json L166 name this exact workflow file as a sovereign-scheduler target. Byte-unchanged.",
-      "verbatim_sha256": "8a1d66fd832dfcbbc64674ef003d70497b1358efc666a62ab2b6bb1baa3ccb49",
-      "exception": {
-        "lifecycle": "sovereign-scheduler target named by app/sovereign_scheduler.py",
-        "justification": "KEEP_EXISTING_SURFACE_UNCHANGED (documented exception, scheduler target): app/sovereign_scheduler.py L434 and data/orchestrator_targets.json L166 name this exact workflow file as a sovereign-scheduler target. Byte-unchanged.",
-        "within_exception_ceiling": true
-      }
     }
   ],
   "folded": [
@@ -176,16 +146,36 @@
       ],
       "verbatim_record": "tools/tasks/folded/validate-session-consolidation.yml",
       "verbatim_sha256": "9e83c90b218a929f70a018a5895e476aeeb3931b5be0052703c5c0dd1d40aec2"
+    },
+    {
+      "workflow": ".github/workflows/quiet_enforcer.yml",
+      "name": "Quiet Enforcer Contract Validation",
+      "triggers_before": [
+        "workflow_dispatch"
+      ],
+      "classification": "CONSOLIDATE_INTO_STABLE_DISPATCHER",
+      "status": "DONE",
+      "reason": "ELIMINATE-AND-FOLD (contract validation preserved as catalog group quiet_enforcer.validate): its only trigger is workflow_dispatch with permissions {} and no schedule; it never runs the audit, it validates that `app/audit_schedules.py` compiles, `data/orchestrator_targets.json` parses, no GitHub credential variable is present, and the script fails closed without STEGVERSE_REPO_ROOTS_JSON. The sovereign-scheduler target `quiet_enforcer.yml` (app/sovereign_scheduler.py L426, data/orchestrator_targets.json L156) is a (repo, workflow) identifier matched in Python and handled locally by `sovereign-local-handler-bound-no-github-token`; no code reads or dispatches the workflow file, so the target and its handler are unchanged.",
+      "catalog_groups": [
+        "quiet_enforcer.validate"
+      ],
+      "verbatim_record": "tools/tasks/folded/quiet_enforcer.yml",
+      "verbatim_sha256": "32553b399730a2e9885b01c8cd9618345d403e5b80f4e94917737684b0c95881"
+    },
+    {
+      "workflow": ".github/workflows/stegdeploy-publication-relay.yml",
+      "name": "StegDeploy Publication Relay Contract Validation",
+      "triggers_before": [
+        "workflow_dispatch"
+      ],
+      "classification": "CONSOLIDATE_INTO_STABLE_DISPATCHER",
+      "status": "DONE",
+      "reason": "ELIMINATE-AND-FOLD (contract validation preserved as catalog group stegdeploy-publication-relay.validate): its only trigger is workflow_dispatch with permissions {} and no schedule; it validates that `app/relay_stegdeploy_publication.py` compiles, no GitHub credential variable is present, and the script fails closed without STEGVERSE_REPO_ROOTS_JSON. The sovereign-scheduler target `stegdeploy-publication-relay.yml` (app/sovereign_scheduler.py L434, data/orchestrator_targets.json L166) is a (repo, workflow) identifier handled locally (`sovereign-local-handler-bound-local-image-proof-required`); no code reads or dispatches the workflow file, so the target and its handler are unchanged.",
+      "catalog_groups": [
+        "stegdeploy-publication-relay.validate"
+      ],
+      "verbatim_record": "tools/tasks/folded/stegdeploy-publication-relay.yml",
+      "verbatim_sha256": "8a1d66fd832dfcbbc64674ef003d70497b1358efc666a62ab2b6bb1baa3ccb49"
     }
-  ],
-  "ceiling_fail_closed": {
-    "disposition": "FAIL_CLOSED",
-    "workflow_count": 5,
-    "failure_code": "G17_CONTRACT_FLOOR_ABOVE_EXCEPTION_CEILING",
-    "failed_predicate": "workflow_count <= exception_repository_workflow_count_max (3)",
-    "required_evidence_or_repair": "Four kept surfaces are each bound by an existing contract: failure-mailbox-diagnose-reusable.yml (reusable writer with durable cache), supercheck_core.yml (called by StegVerse-Labs/StegVerse-SCW supercheck_remote.yml), and quiet_enforcer.yml and stegdeploy-publication-relay.yml (named as targets by app/sovereign_scheduler.py L426/L434 and data/orchestrator_targets.json). Going below 4 needs those callers and targets re-pointed to catalog groups, which is a contract change in their owning repos and the scheduler.",
-    "retry_entrypoint": "tests/test_workflow_surface_registry.py",
-    "owning_existing_goal": "G17-WORKFLOW-SURFACE-MINIMIZATION (StegVerse-Labs/.github#167/#168); StegVerse-org/.github#166",
-    "next_attempt": "the next pull request touching .github/workflows/ or those contracts"
-  }
+  ]
 }
