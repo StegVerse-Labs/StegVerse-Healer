@@ -1,0 +1,6 @@
+echo "## Quiet Enforcer contract" >> "$GITHUB_STEP_SUMMARY"
+echo "Hosted schedule: NONE" >> "$GITHUB_STEP_SUMMARY"
+echo "GitHub API audit: RETIRED" >> "$GITHUB_STEP_SUMMARY"
+echo "GitHub token production authority: NONE" >> "$GITHUB_STEP_SUMMARY"
+echo "Production audit source: locally materialized repositories" >> "$GITHUB_STEP_SUMMARY"
+echo "Production carrier: single StegVerse resident heartbeat" >> "$GITHUB_STEP_SUMMARY"

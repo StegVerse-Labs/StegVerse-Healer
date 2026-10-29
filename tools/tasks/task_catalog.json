@@ -154,6 +154,128 @@
     "timeout_minutes": 10,
     "runs_on": "ubuntu-latest"
    }
+  },
+  {
+   "id": "quiet_enforcer.validate",
+   "source": {
+    "workflow": ".github/workflows/quiet_enforcer.yml",
+    "workflow_name": "Quiet Enforcer Contract Validation",
+    "job": "validate",
+    "job_name": null,
+    "commit": "b9a46f5",
+    "triggers_before": [
+     "workflow_dispatch"
+    ],
+    "permissions_before": {}
+   },
+   "events": [
+    "pull_request",
+    "push"
+   ],
+   "env": {},
+   "steps": [
+    {
+     "name": "Anonymous public checkout without GitHub token",
+     "run_file": "tools/tasks/steps/quiet_enforcer.validate/01-anonymous-public-checkout-without-github-token.sh",
+     "run_sha256": "86ec471e7c30a342ace5a5b36836fcbc61d797299317ebb5e2a8bd553646cf89",
+     "env": {
+      "PR_NUMBER": "${{ github.event.pull_request.number }}"
+     },
+     "shell": "bash --noprofile --norc -e -o pipefail {0}"
+    },
+    {
+     "name": "Validate local audit implementation",
+     "run_file": "tools/tasks/steps/quiet_enforcer.validate/02-validate-local-audit-implementation.sh",
+     "run_sha256": "a07fe1619e03018305c8fa188bfc849e175d1e82cc317fd89466368f52925b1d"
+    },
+    {
+     "name": "Assert GitHub credential variables are absent",
+     "run_file": "tools/tasks/steps/quiet_enforcer.validate/03-assert-github-credential-variables-are-absent.sh",
+     "run_sha256": "4635547157e94daabfad71b5569e44bb26d39c0746375b75accdcdb9b3a6c4e3"
+    },
+    {
+     "name": "Validate fail-closed local-root requirement",
+     "run_file": "tools/tasks/steps/quiet_enforcer.validate/04-validate-fail-closed-local-root-requirement.sh",
+     "run_sha256": "bd8a768d7da6763e7f32eb0596e2207ec3c0eaab517943ac72da705ee5ec6cbe",
+     "env": {
+      "TARGETS_FILE": "data/orchestrator_targets.json",
+      "QUIET_RECEIPT": "/tmp/quiet_enforcer_latest.json"
+     }
+    },
+    {
+     "name": "Record authority boundary",
+     "run_file": "tools/tasks/steps/quiet_enforcer.validate/05-record-authority-boundary.sh",
+     "run_sha256": "fcdd8359556defbcb301292661cd2fb132f47066bdbf41f435b5285e70b27352",
+     "if": "always()"
+    }
+   ],
+   "artifacts": [],
+   "runner": {
+    "timeout_minutes": 10,
+    "runs_on": "ubuntu-latest"
+   },
+   "repairs": [
+    "The anonymous checkout resolves the exact source as refs/pull/<n>/merge on pull_request and GITHUB_SHA on push (the test-readiness.repo-smoke precedent), because the group now runs on pull_request and push instead of workflow_dispatch; the rest of the step is byte for byte. The workflow's concurrency group and step-summary lines are carried unchanged."
+   ]
+  },
+  {
+   "id": "stegdeploy-publication-relay.validate",
+   "source": {
+    "workflow": ".github/workflows/stegdeploy-publication-relay.yml",
+    "workflow_name": "StegDeploy Publication Relay Contract Validation",
+    "job": "validate",
+    "job_name": null,
+    "commit": "b9a46f5",
+    "triggers_before": [
+     "workflow_dispatch"
+    ],
+    "permissions_before": {}
+   },
+   "events": [
+    "pull_request",
+    "push"
+   ],
+   "env": {},
+   "steps": [
+    {
+     "name": "Anonymous public checkout without GitHub token",
+     "run_file": "tools/tasks/steps/stegdeploy-publication-relay.validate/01-anonymous-public-checkout-without-github-token.sh",
+     "run_sha256": "86ec471e7c30a342ace5a5b36836fcbc61d797299317ebb5e2a8bd553646cf89",
+     "env": {
+      "PR_NUMBER": "${{ github.event.pull_request.number }}"
+     },
+     "shell": "bash --noprofile --norc -e -o pipefail {0}"
+    },
+    {
+     "name": "Compile sovereign relay",
+     "run_file": "tools/tasks/steps/stegdeploy-publication-relay.validate/02-compile-sovereign-relay.sh",
+     "run_sha256": "fb3ca10d44427478d5c8b5bfa1c14194fa32154e8c084c22ce9ff2f2b701827d"
+    },
+    {
+     "name": "Assert GitHub credential variables are absent",
+     "run_file": "tools/tasks/steps/stegdeploy-publication-relay.validate/03-assert-github-credential-variables-are-absent.sh",
+     "run_sha256": "4635547157e94daabfad71b5569e44bb26d39c0746375b75accdcdb9b3a6c4e3"
+    },
+    {
+     "name": "Validate fail-closed local-root requirement",
+     "run_file": "tools/tasks/steps/stegdeploy-publication-relay.validate/04-validate-fail-closed-local-root-requirement.sh",
+     "run_sha256": "87de9fe8ffae5cea1f76dd36805a80f2f282e98832421c999a787db1ce36a41c"
+    },
+    {
+     "name": "Record authority boundary",
+     "run_file": "tools/tasks/steps/stegdeploy-publication-relay.validate/05-record-authority-boundary.sh",
+     "run_sha256": "32fa1058ccbc0cb518d0ca6f052533f17634db43368fc4f57c759d0a46c4c8cf",
+     "if": "always()"
+    }
+   ],
+   "artifacts": [],
+   "runner": {
+    "timeout_minutes": 10,
+    "runs_on": "ubuntu-latest"
+   },
+   "repairs": [
+    "The anonymous checkout resolves the exact source as refs/pull/<n>/merge on pull_request and GITHUB_SHA on push (the test-readiness.repo-smoke precedent), because the group now runs on pull_request and push instead of workflow_dispatch; the rest of the step is byte for byte. The workflow's concurrency group and step-summary lines are carried unchanged."
+   ]
   }
  ],
  "dispatcher_note": "Runner-python variant (LLMA-368 pattern; docs/G17_RUNNER_PYTHON_DISPATCHER.md): the dispatcher uses no setup-python or checkout action. Each job refuses a credential-bearing environment, fetches the exact source anonymously and runs run_catalog.py on the runner image's python3, as tests/test_dependency_surface.py requires."

@@ -1,0 +1,7 @@
+echo "## StegDeploy sovereign relay contract" >> "$GITHUB_STEP_SUMMARY"
+echo "Hosted schedule: NONE" >> "$GITHUB_STEP_SUMMARY"
+echo "GitHub API/repository_dispatch production role: RETIRED" >> "$GITHUB_STEP_SUMMARY"
+echo "GitHub token production authority: NONE" >> "$GITHUB_STEP_SUMMARY"
+echo "Source: locally materialized LLM-adapter publication receipt" >> "$GITHUB_STEP_SUMMARY"
+echo "Target: locally materialized core-node sovereign intake" >> "$GITHUB_STEP_SUMMARY"
+echo "Production carrier: single StegVerse resident heartbeat" >> "$GITHUB_STEP_SUMMARY"
